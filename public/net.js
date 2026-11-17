@@ -17,10 +17,10 @@ function connect(){if(kicked)return;
   if(m.t==='kick')return kick();
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
    for(const g of mons){g.own=null;if(g.dead){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy}}
-   for(const[i,hp,dead,own]of m.ms){const g=mons[i];if(!g)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null}}}
+   for(const[i,hp,dead,own,left]of m.ms){const g=mons[i];if(!g)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
   else if(m.t==='mh'){const g=mons[m.i];if(g&&!g.dead)g.hp=Math.max(1,m.hp)}
   else if(m.t==='mo'){const g=mons[m.i];if(g){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
-  else if(m.t==='mk'){const g=mons[m.i];if(g&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
+  else if(m.t==='mk'){const g=mons[m.i];if(g&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
   else if(m.t==='mr'){const g=mons[m.i];if(g){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
   else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[o.mp[k]];if(g&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
@@ -48,7 +48,7 @@ function tick(dt){if(kicked)return;
    else{const c=b[b.length-1];x=c.x;y=c.y;d=c.d}}
   const dist=Math.hypot(x-r.x,y-r.y);r.walk+=dist*.09;r.moving=r.mv&&dist>.05||dist>.6;
   if(dist>400){r.walk=0}r.x=x;r.y=y;r.d=d;if(r.swingT>0)r.swingT=Math.max(0,r.swingT-dt)}
- for(const g of mons)if(g.claimT>0)g.claimT-=dt;
+ for(const g of mons){if(g.claimT>0)g.claimT-=dt;if(g.dead&&g.respT>0&&on())g.respT-=dt}
  saveT-=dt;if(saveDirty&&saveT<=0)pushSave()}
 
 // 다른 플레이어 그리기: 내 캐릭터 그리는 함수를 그대로 빌려 씀 (스킬·이펙트·보조무기 없음)

@@ -96,6 +96,9 @@ const clients = new Map(); // id -> {sock, u, st}
 // 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
 const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
 function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } return m; }
+const MONS_FILE = path.join(DATA, 'mons.json');
+try { for (const [i, g] of Object.entries(JSON.parse(fs.readFileSync(MONS_FILE, 'utf8')))) if (g.rt > Date.now()) mons.set(+i, { hp: 0, max: g.max, dead: true, hit: new Set(), own: null, last: 0, resp: g.resp, rt: g.rt }); } catch (e) {}
+function saveMons() { const o = {}; for (const [i, g] of mons) if (g.dead && g.rt > Date.now() && g.resp >= 60) o[i] = { max: g.max, resp: g.resp, rt: g.rt }; fs.writeFile(MONS_FILE, JSON.stringify(o), () => {}); }
 function release(id) { for (const [i, m] of mons) if (m.own === id) { m.own = null; broadcast({ t: 'mo', i, o: null }); } }
 function wsSend(sock, obj) {
   if (sock.destroyed) return;
@@ -127,7 +130,7 @@ server.on('upgrade', (req, sock) => {
   if (old && old.sock !== sock) { wsSend(old.sock, { t: 'kick' }); setTimeout(() => wsClose(old.sock), 50); }
   const c = { sock, u, st: null, alive: Date.now() };
   clients.set(u.id, c);
-  wsSend(sock, { t: 'hi', id: u.id, ms: [...mons].map(([i, m]) => [i, m.hp, m.dead ? 1 : 0, m.own]), all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
+  wsSend(sock, { t: 'hi', id: u.id, ms: [...mons].map(([i, m]) => [i, m.hp, m.dead ? 1 : 0, m.own, m.dead ? Math.max(0, (m.rt - Date.now()) / 1000) : 0]), all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
   let buf = Buffer.alloc(0);
   sock.on('data', chunk => {
     buf = Buffer.concat([buf, chunk]);
@@ -162,7 +165,7 @@ function onMsg(c, m) {
     const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || i < 0 || i > 5000) return;
     const g = mon(i, mx, +m.rs); if (g.dead) return;
     g.hp -= d; g.hit.add(c.u.id); g.last = Date.now();
-    if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit] }); g.hit.clear(); }
+    if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: g.resp }); saveMons(); g.hit.clear(); }
     else broadcast({ t: 'mh', i, hp: g.hp });
   } else if (m.t === 'c') { // 몬스터 주인 요청
     const i = m.i | 0, g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs);
