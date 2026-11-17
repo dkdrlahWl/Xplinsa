@@ -414,13 +414,13 @@ const Q=[
  {t:'금화를 모으세요',type:'dep',need:50,rw:{gem:5}},
  {t:'금화 70개로 대장간 짓기',type:'build',key:'smith',cost:70,rw:{cry:5}},
  {t:'대장간에서 무기 제작',type:'craft',need:1,rw:{gold:60}},
- {t:'상자를 찾아서 부수세요',type:'chest',need:1,rw:{cry:5,scr:2}},
+ 
  {t:'왕슬라임 처치',type:'kill',key:'king',need:1,rw:{gem:10,cry:5}},
  {t:'이끼 골렘 처치',type:'kill',key:'golem',need:1,rw:{gem:50,gold:500}},
  {t:'Lv.8 달성 (사막 열림)',type:'lv',need:8,rw:{gem:20}},
  {t:'금화를 모으세요',type:'dep',need:2000,rw:{gem:15}},
  {t:'전갈왕 처치',type:'kill',key:'skorp',need:1,rw:{gem:80,gold:3000}},
- {t:'상자를 찾아서 부수세요',type:'chest',need:2,rw:{cry:10,scr:4}},
+ 
  {t:'Lv.16 달성 (숲 열림)',type:'lv',need:16,rw:{gem:30}},
  {t:'금화를 모으세요',type:'dep',need:18500,rw:{gem:25}},
  {t:'타락 거목 처치',type:'kill',key:'elder',need:1,rw:{gem:120,gold:15000}},
@@ -439,7 +439,7 @@ let S=fresh();
 const KEY='camp_save_v2';
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&typeof d==='object'&&d.up){S=Object.assign(fresh(),d);S.up=Object.assign(fresh().up,d.up);S.built=Object.assign(fresh().built,d.built);S.bi=Object.assign(fresh().bi,d.bi);S.slots=(Array.isArray(d.slots)?d.slots:[]).slice(0,6);while(S.slots.length<6)S.slots.push(null);S.slv=Array.isArray(d.slv)?d.slv:[1,1,1,1,1,1];S.bp=Object.assign(fresh().bp,d.bp);S.pity=d.pity||{};S.shards=d.shards||{};S.sq=Object.assign(fresh().sq,d.sq);S.bk=Array.isArray(d.bk)?d.bk:[0,0,0,0,0,0];for(const k in S.weapons)if(!WT[k.split('_')[0]])delete S.weapons[k];fixSlots();delete S.equip}}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.NET)NET.markSave()}
-load();if(!window.IS_ADMIN)S.admin=false;
+load();if(!window.IS_ADMIN)S.admin=false;if(S.qv!==2){const RM=[7, 13];let d=0;for(const r of RM)if(S.q>r)d++;else if(S.q===r){S.qok=0;S.qp=0}S.q-=d;S.qv=2}
 const ST={};
 function wq(k){const a=S.wq&&S.wq[k];return a&&a.length?Math.max(...a):1}
 function addW(k){S.weapons[k]=(S.weapons[k]||0)+1;S.wq=S.wq||{};(S.wq[k]=S.wq[k]||[]).push(Math.round(rnd(.8,1.2)*100)/100)}
