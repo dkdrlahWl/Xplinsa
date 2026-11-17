@@ -292,6 +292,30 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .hero-growth .hero-skills>.growth-row>span{grid-column:2;grid-row:1;font-size:11px}
 .hero-growth .hero-skills>.growth-row>b{grid-column:2;grid-row:2}
 .hero-summary>div{min-width:0}.hero-summary p,.hero-summary small{overflow-wrap:anywhere}
+.collection-claim-all{display:block;width:100%;margin:0 0 8px;min-height:40px;font-size:14px;flex:none}
+
+.adventurer-rank>img{width:68px;height:68px}
+.promotion-scene{position:absolute;inset:0;z-index:30;display:grid;place-items:center;overflow:hidden;background:rgba(14,11,27,.95);color:#fff1c7;text-align:center;text-shadow:0 2px 3px #170d2a;touch-action:none}
+.promotion-content{position:relative;z-index:2;width:min(90%,380px);padding:20px}
+.promotion-kicker{font-size:21px;letter-spacing:3px;color:#efd48a;animation:promotion-title .8s .8s both}
+.promotion-evolution{height:220px;position:relative;display:grid;place-items:center;margin:12px 0}
+.promotion-old,.promotion-new{position:absolute;display:grid;place-items:center}
+.promotion-old img{width:130px;height:130px;object-fit:contain}
+.promotion-old{animation:promotion-old 1.1s both}
+.promotion-new img{width:200px;height:200px;object-fit:contain;filter:drop-shadow(0 0 22px #ffc85a88)}
+.promotion-new{animation:promotion-emerge 1.4s .45s both}
+.promotion-former{font-size:13px;color:#c5ad86;animation:promotion-title .7s 1s both}
+#promotion-new-title{font-size:31px;margin:8px 0;color:#ffe277;animation:promotion-title .7s 1.1s both}
+.promotion-result{font-size:15px;animation:promotion-title .7s 1.35s both}
+.promotion-confirm{display:block;width:100%;margin-top:24px;animation:promotion-title .7s 1.7s both}
+.promotion-rays{position:absolute;width:760px;height:760px;background:repeating-conic-gradient(from 0deg,transparent 0deg 13deg,#f6bd4020 13deg 21deg,transparent 21deg 35deg);border-radius:50%;mask-image:radial-gradient(#000,transparent 68%);animation:promotion-rays 16s linear infinite}
+.promotion-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse,#fff4beaa,transparent 68%);animation:promotion-flash 1.1s .6s both}
+@keyframes promotion-emerge{0%{opacity:0;transform:scale(.15) rotate(-20deg)}65%{opacity:1;transform:scale(1.15) rotate(4deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes promotion-old{0%,30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes promotion-title{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes promotion-flash{0%,100%{opacity:0}40%{opacity:1}}
+@keyframes promotion-rays{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.promotion-rays{animation:none}.promotion-new,.promotion-old,.promotion-content *{animation-duration:.01s;animation-delay:0s}.promotion-old{display:none}.promotion-flash{display:none}}
 </style>
 </head>
 <body>
@@ -326,7 +350,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=10"></script>
+<script src="net.js?v=11"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -670,9 +694,25 @@ function collectionState(){
  if(!S.collection){S.collection={weapons:{...S.weapons},monsters:{...(S.bossKills||{})},claimed:{}}}
  return S.collection;
 }
-function collectionEntries(){
- if(bookTab==='monster')return Object.keys(MT).map(k=>({id:k,name:MT[k].n,img:'mon_'+k,count:collectionState().monsters[k]||0,detail:'Lv.'+MT[k].lv+' · '+(MT[k].boss?'보스':MT[k].elite?'정예':'일반')+' · 체력 '+fmt(MT[k].hp)+' · 공격력 '+fmt(MT[k].atk)}));
+function collectionEntries(tab=bookTab){
+ if(tab==='monster')return Object.keys(MT).map(k=>({id:k,name:MT[k].n,img:'mon_'+k,count:collectionState().monsters[k]||0,detail:'Lv.'+MT[k].lv+' · '+(MT[k].boss?'보스':MT[k].elite?'정예':'일반')+' · 체력 '+fmt(MT[k].hp)+' · 공격력 '+fmt(MT[k].atk)}));
  return GR.flatMap((grade,g)=>Object.keys(WT).map(k=>({id:k+'_'+g,name:wName(k+'_'+g),img:'wpn_'+k+'_'+g,count:collectionState().weapons[k+'_'+g]||0,detail:grade.n+' · '+WT[k].ds+' · 사거리 '+WT[k].rg})));
+}
+function collectAllRewards(apply=false){
+ const state=collectionState();let count=0,gems=0;
+ for(const tab of ['weapon','monster'])for(const item of collectionEntries(tab)){
+  const key=tab+':'+item.id;let claimed=state.claimed[key]||0;
+  while(claimed<COLLECT_STEPS.length&&item.count>=COLLECT_STEPS[claimed]){
+   claimed++;count++;gems+=2*claimed;
+  }
+  if(apply)state.claimed[key]=claimed;
+ }
+ if(apply&&count){S.gem+=gems;calc();save()}
+ return{count,gems};
+}
+function collectionClaimButton(){
+ const rewards=collectAllRewards();
+ return '<button class="growth-button collection-claim-all" data-a="collectall" '+(rewards.count?'':'disabled')+'>'+ (rewards.count?'모두 받기 · '+rewards.count+'개 / 보석 '+fmt(rewards.gems):'받을 보상 없음')+'</button>';
 }
 function collectionScore(){return Object.values(collectionState().claimed).reduce((a,v)=>a+(Number(v)||0),0)}
 function collectionBonus(){return Math.min(5,Math.floor(collectionScore()/15))*.01}
@@ -712,14 +752,32 @@ function exchangePanel(){
 }
 function promotionRank(){return clamp(Math.floor(Number(S.promotion)||0),0,5)}
 function specialUnlocked(key){const rank=promotionRank(),requirement=SPU[key].rank||0;return rank>=requirement}
+const ADVENTURER_TITLES=['초보 모험가','견습 탐험가','숙련 탐험가','정예 모험가','영웅 모험가','전설의 모험가'];
+let promotionPlaying=false;
+function adventurerTitle(rank=promotionRank()){return ADVENTURER_TITLES[rank]||ADVENTURER_TITLES[0]}
+function rankBadge(rank){return '<img src="assets/adventurer_rank_'+rank+'.webp" alt="'+adventurerTitle(rank)+' 휘장">'}
+function playPromotion(rank){
+ promotionPlaying=true;joy.on=false;joy.x=joy.y=0;for(const key in keys)delete keys[key];
+ const overlay=document.createElement('div');overlay.id='promotion-scene';overlay.className='promotion-scene';
+ overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','promotion-new-title');
+ overlay.innerHTML='<div class="promotion-rays"></div><div class="promotion-flash"></div><div class="promotion-content"><p class="promotion-kicker">모험가 승급</p><div class="promotion-evolution"><span class="promotion-old">'+rankBadge(rank-1)+'</span><div class="promotion-new">'+rankBadge(rank)+'</div></div><p class="promotion-former">'+adventurerTitle(rank-1)+'</p><h2 id="promotion-new-title">'+adventurerTitle(rank)+'</h2><p class="promotion-result">공격력 +5% · '+rank+'차 승급 완료</p><button type="button" class="growth-button promotion-confirm" disabled>계속 모험하기</button></div>';
+ document.getElementById('game').appendChild(overlay);
+ const button=overlay.querySelector('button');
+ button.addEventListener('click',()=>{if(button.disabled)return;overlay.remove();promotionPlaying=false});
+ setTimeout(()=>{button.disabled=false;button.focus()},1900);
+}
 function promotionPanel(){
  const rank=promotionRank(),cost=5000*(rank+1)**2,need=(rank+1)*10,eligible=S.lv>=need;
- return '<div class="feature-head">'+featureImage('promotion')+'<div><b>모험가 승급 '+rank+' / 5</b><small>승급당 공격력 +5% · 특수 능력 해금</small></div></div><button class="growth-button" data-a="promote" '+(rank>=5||!eligible||S.gold<cost?'disabled':'')+'>'+(rank>=5?'최대 승급':'Lv.'+need+' · 금화 '+fmt(cost)+' · '+(rank+1)+'차 승급')+'</button>';
+ return '<div class="feature-head adventurer-rank">'+rankBadge(rank)+'<div><b>'+adventurerTitle(rank)+'</b><small>승급 '+rank+' / 5 · 누적 공격력 +'+(rank*5)+'%<br>'+(rank<5?'다음 · '+adventurerTitle(rank+1):'최고 등급 도달')+'</small></div></div><button class="growth-button" data-a="promote" '+(rank>=5||!eligible||S.gold<cost?'disabled':'')+'>'+(rank>=5?'최대 승급':'Lv.'+need+' · 금화 '+fmt(cost)+' · '+(rank+1)+'차 승급')+'</button>';
 }
 function featureAct(action,value){
  if(action==='collection'){panel='collection';bookFocus=null}
  else if(action==='booktab'){if(!['weapon','monster'].includes(value))return true;bookTab=value;bookFocus=null;panel='collection'}
  else if(action==='bookentry'){bookFocus=value;panel='collectionDetail'}
+ else if(action==='collectall'){
+  const rewards=collectAllRewards(true);
+  toast(rewards.count?'도감 보상 '+rewards.count+'개 · 보석 '+fmt(rewards.gems)+'개 획득':'받을 보상이 없어요');
+ }
  else if(action==='collectclaim'){
   const e=collectionEntries().find(x=>x.id===bookFocus);if(!e)return true;
   const state=collectionState(),key=bookTab+':'+e.id,claimed=state.claimed[key]||0;
@@ -753,8 +811,8 @@ function featureAct(action,value){
   S.gem-=cost;S[key]+=amount;save();toast(RWN[key]+' '+fmt(amount)+'개 획득');
  }
  else if(action==='promote'){
-  const rank=promotionRank(),cost=5000*(rank+1)**2;if(rank>=5||S.lv<(rank+1)*10||S.gold<cost)return true;
-  S.gold-=cost;S.promotion=rank+1;calc();save();toast((rank+1)+'차 승급! 공격력 +5%');
+  const rank=promotionRank(),cost=5000*(rank+1)**2;if(promotionPlaying||rank>=5||S.lv<(rank+1)*10||S.gold<cost)return true;
+  S.gold-=cost;S.promotion=rank+1;calc();save();playPromotion(rank+1);
  }
  else return false;
  draw();return true;
@@ -1311,7 +1369,7 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(30,22,46,.7)';ctx.lineWidth=7.5;ctx.beginPath();P.scarf.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();ctx.strokeStyle='#e8402f';ctx.lineWidth=5;ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2}
  if(P.recall&&!window.REM&&!PV){const k=1-P.recall.t/2;ctx.globalAlpha=.35+.2*Math.sin(T*12);ell(x,y-2,26,10,'#7fd0ff',1);ctx.globalAlpha=1;bar(x,y-96,44,5,k,'#7fd0ff')}
  if(P.hitT>0){ctx.globalAlpha=.35;ell(x,y-28,17,27,'#ff5a5a',1);ctx.globalAlpha=1}
- if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff')}}
+ if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0){label(adventurerTitle(rank),x+7,y-105,11,'#ffe4a2');const badge=AI('adventurer_rank_'+rank);if(badge)ctx.drawImage(badge,x-48,y-116,16,16)}}}
 function crown(y){ctx.beginPath();ctx.moveTo(-14,y);ctx.lineTo(-14,y-16);ctx.lineTo(-7,y-8);ctx.lineTo(0,y-18);ctx.lineTo(7,y-8);ctx.lineTo(14,y-16);ctx.lineTo(14,y);ctx.closePath();ctx.fillStyle='#ffc93c';ctx.fill();ctx.stroke()}
 function drawMon(m){const d=m.d,x=m.x,y=m.y,r=d.r,sq=Math.sin(m.ph)*.08,hs=m.hitT>0?1.12:1,sp=m.spawnT>0?1-m.spawnT/.3:1,c=d.c,c2=d.c2,fly=d.sh==='bat'?12+Math.sin(m.ph)*4:0;let top=r*2.2;
  shadow(x,y,r*1.05);ctx.save();ctx.translate(x,y-fly);ctx.scale(hs*sp,hs*sp);
@@ -1490,7 +1548,7 @@ function open(p){
  panel=p;$('modal').className='open';draw()}
 function close(){closePop();swapKey=null;mergeSel=null;panel=null;lastGot=[];resetArm=false;$('modal').className=''}
 function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
- if(panel==='collection'||panel==='collectionDetail'){$('mtitle').textContent='도감';cur(['gem']);B.innerHTML=panel==='collection'?collectionPanel():collectionDetail();F.innerHTML='<div class="tabs">'+['weapon','monster'].map(k=>'<button class="tab '+(bookTab===k?'on':'')+'" data-a="booktab:'+k+'">'+(k==='weapon'?'무기':'몬스터')+'</button>').join('')+'</div>'}
+ if(panel==='collection'||panel==='collectionDetail'){$('mtitle').textContent='도감';cur(['gem']);B.innerHTML=panel==='collection'?collectionPanel():collectionDetail();F.innerHTML=collectionClaimButton()+'<div class="tabs">'+['weapon','monster'].map(k=>'<button class="tab '+(bookTab===k?'on':'')+'" data-a="booktab:'+k+'">'+(k==='weapon'?'무기':'몬스터')+'</button>').join('')+'</div>'}
  else if(panel==='tasks'){$('mtitle').textContent=taskTab==='weekly'?'주간 임무':'일일 임무';cur(['gem']);B.innerHTML=tasksPanel();F.innerHTML='<div class="tabs"><button class="tab" data-a="goatt">출석</button><button class="tab '+(taskTab==='daily'?'on':'')+'" data-a="tasktab:daily">일일</button><button class="tab '+(taskTab==='weekly'?'on':'')+'" data-a="tasktab:weekly">주간</button></div>'}
  else if(panel==='exchange'){$('mtitle').textContent='상점 · 교환';cur(['gem']);B.innerHTML=exchangePanel();F.innerHTML=shopTabs(true)}
  else if(panel==='up'){$('mtitle').textContent='강화';cur(['rb','orb','gold']);
@@ -1561,7 +1619,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일·주간</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0342 (상점 교환·가방 연동)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일·주간</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0344 (도감 모두 받기·승급 연출)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(featureAct(k,v))return;if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='goatt'){panel='att'}else if(k==='goshop'){panel='shop'}
  else if(k==='soon'){toast('준비 중이에요');return}

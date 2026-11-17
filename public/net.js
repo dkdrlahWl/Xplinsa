@@ -28,7 +28,7 @@ function connect(){if(kicked)return;
 }
 function upd(o){const now=performance.now();let r=others.get(o.id);
  if(!r){r={id:o.id,buf:[],x:o.x,y:o.y,d:o.d,walk:0,swingT:0,sw:.3,sc:o.sc,trail:[],scarf:[],hitT:0,flS:1};others.set(o.id,r)}
- r.n=o.n;r.w=o.w;r.h=o.h;r.hp=o.hp;r.lv=o.lv;r.dead=o.dead;r.mv=o.mv;
+ r.rank=Math.max(0,Math.min(5,o.rank|0));r.n=o.n;r.w=o.w;r.h=o.h;r.hp=o.hp;r.lv=o.lv;r.dead=o.dead;r.mv=o.mv;
  if(o.sc!==r.sc){r.sc=o.sc;r.sw=o.sw||.3;r.swingT=r.sw}
  r.buf.push({t:now,x:o.x,y:o.y,d:o.d});if(r.buf.length>20)r.buf.shift();r.seen=now}
 
@@ -40,7 +40,7 @@ function tick(dt){if(kicked)return;
   const mp=[];for(const g of mons){if(g.dead)continue;
    if(g.agg&&!g.own&&(g.claimT||0)<=0){g.claimT=.5;ws.send(JSON.stringify({t:'c',i:g.i,mx:g.d.hp,rs:g.d.resp}))}
    if(g.own===ME){if(!g.agg){g.own=null;ws.send(JSON.stringify({t:'r',i:g.i}))}else mp.push(g.i,Math.round(g.x),Math.round(g.y))}}
-  ws.send(JSON.stringify({t:'s',mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:S.slots[0],h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,dead:P.dead}))}
+  ws.send(JSON.stringify({t:'s',mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:S.slots[0],h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,rank:promotionRank(),dead:P.dead}))}
  const rt=performance.now()-DELAY;
  for(const r of others.values()){const b=r.buf;let x=r.x,y=r.y,d=r.d;
   if(b.length){let i=b.length-1;while(i>0&&b[i-1].t>rt)i--;
