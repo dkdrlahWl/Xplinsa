@@ -95,7 +95,7 @@ const server = http.createServer(async (req, res) => {
 const clients = new Map(); // id -> {sock, u, st}
 // 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
 const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
-function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } return m; }
+function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } else if (mx > 1 && m.max !== mx) { const fraction = m.max > 0 ? m.hp / m.max : 1; m.max = mx; if (!m.dead) m.hp = Math.max(1, Math.round(mx * fraction)); } return m; }
 const MONS_FILE = path.join(DATA, 'mons.json');
 try { for (const [i, g] of Object.entries(JSON.parse(fs.readFileSync(MONS_FILE, 'utf8')))) if (g.rt > Date.now()) mons.set(+i, { hp: 0, max: g.max, dead: true, hit: new Set(), own: null, last: 0, resp: g.resp, rt: g.rt }); } catch (e) {}
 function saveMons() { const o = {}; for (const [i, g] of mons) if (g.dead && g.rt > Date.now() && g.resp >= 60) o[i] = { max: g.max, resp: g.resp, rt: g.rt }; fs.writeFile(MONS_FILE, JSON.stringify(o), () => {}); }
