@@ -52,6 +52,19 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .lbb{position:relative}.ldot{position:absolute;right:-4px;top:-4px;width:16px;height:16px;border-radius:50%;background:#e8402f;border:2px solid #fff;color:#fff;font:12px/13px Jua,sans-serif;text-align:center;font-style:normal;display:none}.ldot.on{display:block}
 .lbb{width:40px;height:40px;display:grid;place-items:center;filter:drop-shadow(0 2px 0 #1c1830)}
 .lbb :is(svg,img){width:38px;height:38px}
+.reward-shortcut{padding:0;border:0;background:none;color:inherit;cursor:pointer}
+.attendance{max-width:510px;margin:0 auto;padding:14px;border:1px solid #b48953;border-radius:20px;background:linear-gradient(155deg,#30213b,#21192c);box-shadow:0 8px 24px #160e2080;text-shadow:none}
+.att-summary{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:#fff3dc}
+.att-summary :is(img,svg){width:42px;height:42px;flex:none}
+.att-summary strong,.att-summary small{display:block}.att-summary small{color:#e2cdb9;font-size:12px;margin-top:2px}
+.attg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.att-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:89px;padding:8px 3px;text-align:center;color:#412a23;border:2px solid #976839;border-radius:11px;background:#f3d8a5 url('assets/ui_att_card.webp') center/100% 100% no-repeat}
+.att-card:last-child{grid-column:1/-1;min-height:70px;display:grid;grid-template-columns:1fr 42px 1fr;gap:8px;justify-items:center}
+.att-card.claimable{border-color:#88ea8e;box-shadow:0 0 8px #72df7899}.att-card.claimed{filter:saturate(.72)}
+.att-card :is(img,svg){width:31px;height:31px;object-fit:contain;margin:2px 0}
+.att-card strong,.att-card span{font-size:12px}.att-card span{line-height:1.25}.att-card small{font-size:10px;color:#5e4535;display:block}
+.att-claim{display:block;width:min(100%,240px);min-height:44px;margin:10px auto 0;padding:8px;color:white;font:inherit;text-shadow:0 1px 2px #143619;border:2px solid #8ad578;border-radius:12px;background:#307948 url('assets/ui_att_claim.webp') center/100% 100% no-repeat}
+.att-status{text-align:center;color:#ebd8c0;margin:10px 0 0;font-size:13px}
 .lbb:active{transform:translateY(2px)}
 .mapw :is(svg,img){width:100%;height:auto;display:block}
 .bb :is(svg,img){width:42px;height:42px}
@@ -103,7 +116,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .wimg{width:100%;height:100%;object-fit:contain;transform:rotate(-35deg) scale(1.15)}
 .wslot{width:44px;height:30px;margin:2px auto}
 .eqtop{position:relative;height:300px;padding-top:4px;background:linear-gradient(#f7ead0,#e8d1a2);border:3px solid #1c1830;border-radius:16px;margin-bottom:8px;overflow:hidden}
-#eqcv{position:absolute;left:50%;top:40px;width:228px;height:220px;transform:translateX(-50%)}
+#eqcv{position:absolute;left:50%;top:40px;width:calc(100% - 150px);height:220px;transform:translateX(-50%)}
 .eqpow{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#6b4326;border:2.5px solid #1c1830;border-radius:14px;padding:1px 14px;font-size:17px;white-space:nowrap}
 .eqs{position:absolute;width:66px;height:66px;border-radius:12px;border:3px solid #1c1830;display:grid;place-items:center;background:#cdb88e}
 .eqs img{width:84%;height:84%;object-fit:contain;transform:rotate(-40deg)}
@@ -226,7 +239,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
   <div id="menu" class="hud ts">☰</div>
   <div id="quests" class="hud ts"><div class="qc main" id="qc0"><div class="qtx"><div id="qt"></div><div class="qb"><i id="qfill"></i><span id="qs"></span></div></div><div class="qi" id="qi0"></div><div class="qget">받기</div></div></div>
-  <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><div class="lbb" data-p="box" data-ic="chestb"><i class="ldot" id="dotbox">!</i></div><div class="lbb" data-p="att" data-ic="gift"><i class="ldot" id="dotatt">!</i></div><div class="lbb" data-p="home" data-ic="home"></div></div>
+  <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><button type="button" class="lbb reward-shortcut" data-p="box" data-ic="gift" aria-label="선물함"><i class="ldot" id="dotbox">!</i></button><button type="button" class="lbb reward-shortcut" data-p="att" data-ic="attendance" aria-label="출석 보상"><i class="ldot" id="dotatt">!</i></button><div class="lbb" data-p="home" data-ic="home"></div></div>
   <div id="bagw" class="hud ts"><div id="bag"><div id="bagf"></div><span id="bagt"></span></div><div id="bagc"></div></div>
   <div id="toast" class="hud ts"></div>
   <div id="pop"></div>
@@ -258,6 +271,7 @@ function fmt(n){n=Math.floor(n+1e-6);if(n<1000)return''+n;const u=['K','M','B','
 /* ---------- icons ---------- */
 const OL='stroke="#1c1830" stroke-width="2.5" stroke-linejoin="round"';
 const SVGIC={
+ get attendance(){return this.cal},
  gift:`<svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="12" rx="2" fill="#e8402f" stroke="#1c1830" stroke-width="1.8"/><rect x="2.5" y="6.5" width="19" height="4.5" rx="1.5" fill="#ff6a5a" stroke="#1c1830" stroke-width="1.8"/><rect x="10.5" y="6.5" width="3" height="14.5" fill="#ffd23c" stroke="#1c1830" stroke-width="1.4"/><path d="M12 6.5C9 2 5 4 7.5 6.5M12 6.5C15 2 19 4 16.5 6.5" fill="none" stroke="#1c1830" stroke-width="1.8"/></svg>`,
  home:`<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="#1c1830" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10.5V20h13v-9.5L12 5z" fill="#ffd23c" stroke="#1c1830" stroke-width="2" stroke-linejoin="round"/><rect x="10" y="13.5" width="4" height="6.5" rx="1" fill="#e8402f" stroke="#1c1830" stroke-width="1.6"/></svg>`,
  gold:`<svg viewBox="0 0 24 24"><defs><radialGradient id="gG" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff6b0"/><stop offset=".45" stop-color="#ffd23c"/><stop offset="1" stop-color="#df9410"/></radialGradient></defs><circle cx="12" cy="12" r="10" fill="url(#gG)" stroke="#8a5a10" stroke-width="1.6"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#e5a01c" stroke-width="1.8"/><path d="M8 8.6a5 5 0 0 1 4-2.4" stroke="#fffbe0" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
@@ -898,13 +912,26 @@ function gripInfo(im,k){let r=GI.get(im);if(r)return r;r={gx:GRIP[k]||.14,gy:.5,
    let fx=k==='spear'||k==='staff'?hs+(he-hs)*.42:he-fw*.6;fx=Math.max(hs+fw*.5,fx);r.gx=fx;r.bx=Math.max(hs+fw*.3,fx-fw*.95);
    const p=P[Math.round(fx*N)];if(p){r.gy=(p.a+p.b)/2/H;r.th=p.t/H}}
  }catch(e){}GI.set(im,r);return r}
-function handInfo(k,gr){const im=AI('wpn_'+k+'_'+gr)||AI('wpn_'+k);if(!im||k==='dagger')return{fist:6.4,off:TWO[k]||-7};const gi=gripInfo(im,k),L=wLen(k),h=L*im.height/im.width,fist=clamp(gi.th*h*1.4,6.6,8.6);
- if(k==='bow'||k==='gun')return{fist:clamp(fist,6.4,7.4),off:(gi.bx-gi.gx)*L,perp:(gi.by-gi.gy)*h-1};return{fist,off:Math.max(-7.5,(gi.bx-gi.gx)*L),perp:0}}
+const PISTOL_GRIPS=[[.19,.65],[.18,.67],[.115,.67],[.165,.70],[.16,.64]];
+function weaponGrip(im,k,gr){
+ if(k==='gun'&&!LOCAL['wpn_gun_'+gr]&&(AI('wpn_gun_'+gr)||!LOCAL.wpn_gun)){
+  const [gx,gy]=PISTOL_GRIPS[gr]||PISTOL_GRIPS[0];return{gx,gy,th:.18};
+ }
+ return gripInfo(im,k);
+}
+function handInfo(k,gr){
+ const im=AI('wpn_'+k+'_'+gr)||AI('wpn_'+k);
+ if(!im||k==='dagger'||k==='gun')return{fist:6.4,off:TWO[k]||-7,perp:0};
+ const grip=weaponGrip(im,k,gr),width=wLen(k),height=width*im.height/im.width;
+ return{fist:clamp(grip.th*height*1.25,6.2,7.2),
+  off:k==='bow'?clamp((grip.bx-grip.gx)*width,6,11):clamp((grip.bx-grip.gx)*width,-8,-4),
+  perp:k==='bow'?clamp((grip.by-grip.gy)*height-1,-2,4):0};
+}
 function gripY(im,gx){let m=GY.get(im);if(!m){m={};GY.set(im,m)}if(m[gx]!==undefined)return m[gx];let r=.5;try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.drawImage(im,0,0);const x=Math.round(im.width*gx),d=g.getImageData(x,0,1,im.height).data;let a=0,b=0;for(let y=0;y<im.height;y++){const al=d[y*4+3];if(al>120){a+=y;b++}}if(b)r=a/b/im.height}catch(e){}m[gx]=r;return r}
 function blade(x0,x1,w,tip,c){const g=ctx.createLinearGradient(0,-w,0,w);g.addColorStop(0,'#ffffff');g.addColorStop(.45,c);g.addColorStop(1,lt(c,-.35));ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x0,-w);ctx.lineTo(x1,-w*.8);ctx.lineTo(x1+tip,0);ctx.lineTo(x1,w*.8);ctx.lineTo(x0,w);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x0+2,-w*.25);ctx.lineTo(x1+tip*.4,-w*.1);ctx.stroke();ctx.strokeStyle=OLC;ctx.lineWidth=2}
 function handle(x0,x1,h){const g=ctx.createLinearGradient(0,-h,0,h);g.addColorStop(0,'#b07a4a');g.addColorStop(1,'#5e3a1e');ctx.fillStyle=g;rr(x0,-h,x1-x0,h*2,h);ctx.fill();ctx.stroke()}
 function drawWeapon(k,gc,glow,gi){ // pointing +x from the hand
- {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const L=((WL[k]||40)+8)*(PV?1.05:1)*(k==='dagger'?1.1:k==='bow'||k==='gun'?1.0:1.38),h=L*im.height/im.width,GIi=gripInfo(im,k),gx=GIi.gx,gy=GIi.gy;if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
+ {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const L=((WL[k]||40)+8)*(PV?1.05:1)*(k==='dagger'?1.1:k==='bow'||k==='gun'?1.0:1.38),h=L*im.height/im.width,GIi=weaponGrip(im,k,gi),gx=GIi.gx,gy=GIi.gy;if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
  ctx.lineWidth=2;ctx.strokeStyle=OLC;const metal=gc==='#c3cad6'?'#d6dde8':lt(gc,.25);
  if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}
  if(k==='sword'||k==='dagger'){const L=k==='sword'?34:20;handle(-6,4,2.6);ell(-7,0,3.2,3.2,'#ffd23c');blade(7,L,4.4,9,metal);frr('#ffd23c',3,-8.5,5,17,2.5)}
@@ -955,8 +982,13 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  const lg=(sg)=>{const sw=mv?.62*Math.sin(ph+(sg>0?0:Math.PI)):0,bend=mv?.18+.5*Math.max(0,Math.cos(ph+(sg>0?0:Math.PI))):.12;const ax=hipx+sg*3,a1=Math.PI/2-sw+(mv?0:-sg*.22),l1=IMG?8.5:7.5,l2=IMG?8:7.5,ex=ax+Math.cos(a1)*l1+Math.cos(a1+bend)*l2,ey=hipy+Math.sin(a1)*l1+Math.sin(a1+bend)*l2;(HA('foot')?pimg(HA('foot'),ex+2,ey-1,11):ell(ex+1.5,ey+.5,4.6,3.2,lt(L,-.2)));seg2(ax,hipy,a1,l1,bend,l2,6.5,L,HA('leg'))};
  lg(-1);lg(1);
  // back arm
- const two=k!=='dagger',BWI=HA('body'),BW=BWI?Math.min(22,22*BWI.width/BWI.height):10,bs0={x:chx-(IMG?BW*.36:2)*Math.cos(lean),y:chy+(IMG?3.8:2.5)},bs=k!=='dagger'?{x:chx-(IMG?BW*.04:0)*Math.cos(lean),y:chy+(IMG?4.4:2.5)}:bs0,l1=IMG?9.5:8.5,l2=IMG?9:8;
- let BA=Math.PI/2+.3;if(!two){const bu=Math.PI/2-(p>=0?.2+eio(p)*.9:-.38)-(mv?.2*s:0),bh=(BA=bu,seg2)(bs.x,bs.y,bu,IMG?9.5:8,-.55,IMG?9:7.5,5.2,L,HA('arm'));const ba=p>=0?-1.2+eio(p)*1.6:.2+(mv?.1*s:0);if(k==='dagger'){ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore()}(HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.8):ell(bh.x,bh.y,3.6,3.6,h.body))}
+ const two=k!=='dagger'&&k!=='gun',BWI=HA('body'),BW=BWI?Math.min(22,22*BWI.width/BWI.height):10,bs={x:chx-(IMG?BW*.29:2)*Math.cos(lean),y:chy+(IMG?4.5:3)},l1=IMG?9.5:8.5,l2=IMG?9:8;
+ if(!two){
+  const bu=k==='gun'?Math.PI/2+.28-(mv?.18*s:0):Math.PI/2-(p>=0?.2+eio(p)*.9:-.38)-(mv?.2*s:0);
+  const bh=seg2(bs.x,bs.y,bu,l1,k==='gun'?-.24:-.55,l2,4.5,L,HA('arm'));
+  if(k==='dagger'){const ba=p>=0?-1.2+eio(p)*1.6:.2+(mv?.1*s:0);ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore()}
+  HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.5):ell(bh.x,bh.y,3.2,3.2,h.body);
+ }
  const NK=IMG?neckAdj(h):0,hx=chx+Math.sin(lean)*(IMG?11.5-NK:11),hy=chy-Math.cos(lean)*(IMG?11.5-NK:11);
  // front arm + weapon
  const fs={x:chx+(IMG?BW*.3:1.5)*Math.cos(lean),y:chy+(IMG?3.4:2.5)};
@@ -965,11 +997,23 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  //  근접 양손: 배 앞에서 두 주먹을 포개고 칼날은 위로 / 활·총: 가슴 앞에서 두 손으로 앞을 겨눔
  if(p<0&&k!=='dagger'){const rng=k==='bow'||k==='gun',sw2=mv?Math.sin(ph)*.8:Math.sin(T*2.5)*.3;
   const gx=fs.x+(rng?4.5:6.5),gy=(rng?chy+9.5:hipy-7)+sw2;
-  const ik=IK(fs.x,fs.y,gx,gy,l1,l2);ua=ik[0];ea=ik[1];fhx=gx;fhy=gy;wa=rng?-.04+sw2*.02:-1.3+sw2*.03}
+  const ik=IK(fs.x,fs.y,gx,gy,l1,l2);ua=ik[0];ea=ik[1];fhx=gx;fhy=gy;wa=rng?-.04+sw2*.02:-1.02+sw2*.03}
  const HI=handInfo(k,gr),off=HI.off,pp=HI.perp||0,tx=fhx+Math.cos(wa)*off-Math.sin(wa)*pp,ty=fhy+Math.sin(wa)*off+Math.cos(wa)*pp;
- const drawBack=()=>{if(!two)return;const dx=tx-bs.x,dy=ty-bs.y,dd=Math.hypot(dx,dy),st=Math.max(1,dd/(l1+l2-.3)),L1=l1*st,L2=l2*st,d=Math.min(dd,L1+L2-.05),base=Math.atan2(dy,dx),A=Math.acos(clamp((L1*L1+d*d-L2*L2)/(2*L1*d),-1,1)),a1=base+A,jx=bs.x+Math.cos(a1)*L1,jy=bs.y+Math.sin(a1)*L1,a2=Math.atan2(ty-jy,tx-jx)-a1;BA=a1;seg2(bs.x,bs.y,a1,L1,a2,L2,5.2,L,HA('arm'))};
- const drawArm=()=>{ctx.save();ctx.translate(fhx,fhy);ctx.rotate(wa);drawWeapon(k,gc,gr>=2,gr);ctx.restore();if(two)HA('hand')?pimg(HA('hand'),tx,ty,HI.fist):ell(tx,ty,HI.fist*.6,HI.fist*.6,h.body);const hand=seg2(fs.x,fs.y,ua,l1,ea,l2,5.4,L,HA('arm'));HA('hand')?pimg(HA('hand'),hand.x,hand.y,HI.fist):ell(hand.x,hand.y,HI.fist*.6,HI.fist*.6,h.body);return hand};
- drawTorso(h,hipx,hipy,lean);drawBack();if(IMG&&HA('arm'))segImg(HA('arm'),bs0.x,bs0.y-.6,two?Math.PI/2+.1:BA,two?2.4:3.2,BW*.3);
+ const drawBack=()=>{
+  if(!two)return;
+  const reach=Math.max(1,Math.hypot(tx-bs.x,ty-bs.y)/(l1+l2-.35));
+  const upper=l1*reach,fore=l2*reach,[angle,bend]=IK(bs.x,bs.y,tx,ty,upper,fore);
+  seg2(bs.x,bs.y,angle,upper,bend,fore,4.7,L,HA('arm'));
+ };
+ const fist=(x,y,w)=>HA('hand')?pimg(HA('hand'),x,y,w):ell(x,y,w*.56,w*.56,h.body);
+ const drawArm=()=>{
+  const hand=seg2(fs.x,fs.y,ua,l1,ea,l2,5.3,L,HA('arm'));
+  ctx.save();ctx.translate(hand.x,hand.y);ctx.rotate(wa);drawWeapon(k,gc,gr>=2,gr);ctx.restore();
+  if(two)fist(tx+hand.x-fhx,ty+hand.y-fhy,HI.fist*.9);
+  fist(hand.x,hand.y,HI.fist);
+  return hand;
+ };
+ drawTorso(h,hipx,hipy,lean);drawBack();
  let hand;if(up){hand=drawArm();drawHead(h,hx,hy,lean,up,fl)}else{drawHead(h,hx,hy,lean,up,fl);hand=drawArm()}
  ctx.restore();
  // weapon tip in world space -> slash trail
@@ -1073,10 +1117,10 @@ const BOX={
  hero:{n:'영혼 상자',sub:'<b style="color:#ffd23c">영혼 파편</b> 획득 · 모아서 영웅 제작',cost:150,c10:1350,img:'shop_herobox',fb:'hero_knight_head'}};
 BOX.bossc={n:'보스 보물상자',img:'shop_chest3',fb:'mon_chest2'};BOX.attc={n:'출석 보상 상자',img:'shop_chest2',fb:'mon_chest6'};
 function today(){return new Date().toDateString()}
-const SUPT=4*3600e3,ATT=[{gold:300},{gem:30},{cry:30},{orb:3},{gem:60},{scr:10},{wpn:3}];
+const SUPT=4*3600e3,ATT=[{gold:1000},{gem:30},{cry:30},{orb:3},{gem:60},{scr:10},{wpn:3}];
 function topZone(){let z=0;for(let i=0;i<6;i++)if(zoneOpen(i))z=i;return z}
 function supRw(){const z=topZone(),G=[1.5,6,22,91,330,990];return{gold:Math.round(G[z]*250),cry:8+4*z,scr:2+z}}
-function attRw(i){const r=Object.assign({},ATT[i]);if(r.gold)r.gold=Math.round(r.gold*[1,4,15,60,220,660][topZone()]);return r}
+function attRw(i){return {...ATT[i]}}
 function rwTxt(r){return Object.keys(r).map(k=>k==='wpn'?'에픽 무기':RWN[k]+' '+fmt(r[k])).join(', ')}
 function openBossChest(){S.bch=S.bch||[];if(!S.bch.length)return;const z=S.bch.shift();let g=[1,1,2,2,3,3][z];if(Math.random()<.15)g=Math.min(4,g+1);const ts=Object.keys(WT),k=ts[Math.floor(Math.random()*ts.length)]+'_'+g;addW(k);toast(give({gem:10+10*z,cry:5+5*z}));save();close();startGacha('bossc',1,[{k,g}])}
 function attOK(){return(S.att||{}).day!==today()}
@@ -1097,7 +1141,7 @@ function startGacha(id,n,res){const best=Math.max(...res.map(r=>r.g)),el=$('gach
 const GCOL=['#c3cad6','#6fe04f','#5ab4ff','#c97bff','#ffd23c'];
 function zig(ctx2,x1,y1,x2,y2,d){if(d<6){ctx2.lineTo(x2,y2);return}const mx=(x1+x2)/2+rnd(-d,d)*.5,my=(y1+y2)/2+rnd(-d,d)*.5;zig(ctx2,x1,y1,mx,my,d/2);zig(ctx2,mx,my,x2,y2,d/2)}
 function gLoop(ts){if(!GA)return;const now=performance.now(),dt=Math.min(.05,(now-GA.last)/1000);GA.last=now;GA.t+=dt;const el=$('gacha'),c=$('gcv');if(!c)return;
- const W=el.clientWidth,H=el.clientHeight,dp=Math.min(window.devicePixelRatio||1,2);if(c.width!==Math.round(W*dp)){c.width=Math.round(W*dp);c.height=Math.round(H*dp)}
+ const W=el.clientWidth,H=el.clientHeight,dp=Math.min(window.devicePixelRatio||1,2);if(!W||!H)return;if(c.width!==Math.round(W*dp)||c.height!==Math.round(H*dp)){c.width=Math.round(W*dp);c.height=Math.round(H*dp)}
  const g=c.getContext('2d');g.setTransform(dp,0,0,dp,0,0);g.clearRect(0,0,W,H);const cx=W/2,cy=H*.46,col=GCOL[GA.best],b=GA.best;
  const ch=$('gchest');
  if(GA.ph==='drop'&&GA.t>.5){GA.ph='charge';GA.t=0}
@@ -1210,8 +1254,8 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
  else if(panel==='map'){$('mtitle').textContent='챕터 1';$('mcur').innerHTML='';B.innerHTML=`<div class="mapw">${mapSVG()}</div><div class="note">스테이지를 누르면 정보를 볼 수 있어요.</div><div id="mapinfo" class="note"></div>`}
  else if(panel==='box'){$('mtitle').textContent='보물상자';cur(['gold','cry']);const left=(S.sup||0)+SUPT-Date.now(),ok=left<=0,n=(S.bch||[]).length,hm=t=>Math.floor(t/3600e3)+'시간 '+Math.ceil(t%3600e3/60e3)+'분';
   B.innerHTML=`<div class="row" style="border-color:${ok?'#7be36a':''}"><div class="ric">${IC.box}</div><div class="rin"><h4>무료 보급 상자</h4><p>4시간마다 무료 · ${rwTxt(supRw())}</p></div><button class="btn ${ok?'':'no'}" data-a="sup" style="min-width:86px">${ok?'열기':hm(left)}</button></div><div class="row" style="border-color:${n?'#ffd23c':''}"><div class="ric">${IC.chestb}</div><div class="rin"><h4>보스 보물상자 <b style="color:#ffd23c">${n}개</b></h4><p>보스를 잡으면 생겨요 (같이 때린 사람 모두). 지역이 높을수록 좋은 무기</p></div><button class="btn ${n?'':'no'}" data-a="bossc" style="min-width:86px">열기</button></div><div class="note">보스 상자는 열 때까지 쌓여요.</div>`}
- else if(panel==='att'){$('mtitle').textContent='출석 보상';cur(['gem','gold']);const a=S.att||{n:0},ok=attOK();
-  B.innerHTML=`<div class="note">하루에 한 번 받을 수 있어요. 7일째에는 에픽 무기!</div><div class="attg">${ATT.map((_,i)=>{const done=i<a.n%7||(!ok&&i===((a.n-1)%7)),now=ok&&i===a.n%7;return `<div class="row" style="opacity:${done?.5:1};border-color:${now?'#7be36a':''}"><div class="rin"><h4>${i+1}일차 ${done?'✔':''}</h4><p>${rwTxt(attRw(i))}</p></div>${now?'<button class="btn" data-a="att" style="min-width:76px">받기</button>':''}</div>`}).join('')}</div>`}
+ else if(panel==='att'){$('mtitle').textContent='출석 보상';$('mcur').innerHTML='';const a=S.att||{n:0},ok=attOK(),next=a.n%7,claimed=!ok&&next===0?7:next;
+  B.innerHTML=`<section class="attendance"><div class="att-summary">${IC.attendance}<div><strong>7일 출석</strong><small>매일 한 번 · 7일차 에픽 무기 지급</small></div></div><div class="attg">${ATT.map((_,i)=>{const reward=attRw(i),type=Object.keys(reward)[0],done=i<claimed,now=ok&&i===next;return `<div class="att-card ${done?'claimed':now?'claimable':''}"><strong>${i+1}일차</strong>${IC[type==='wpn'?'sword':type]}<span>${rwTxt(reward)}${done?'<small>수령 완료</small>':now?'<small>받을 수 있음</small>':''}</span></div>`}).join('')}</div>${ok?`<button type="button" class="att-claim" data-a="att">${next+1}일차 보상 받기</button>`:'<p class="att-status">오늘 보상을 받았어요</p>'}</section>`}
  else if(panel==='quests'){$('mtitle').textContent='임무';$('mcur').innerHTML='';
   B.innerHTML=`<div class="note">임무는 하나씩 순서대로 열려요.</div>`+Q.map((q,i)=>i<S.q?`<div class="row" style="opacity:.55"><div class="rin"><h4>✔ ${q.t}</h4></div></div>`:i===S.q?`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>${q.t}</h4><p>보상: ${Object.keys(q.rw).map(k=>RWN[k]+' '+fmt(q.rw[k])).join(', ')}</p></div></div>`:i===S.q+1?`<div class="row" style="opacity:.6"><div class="rin"><h4>🔒 다음 임무</h4><p>지금 임무를 끝내면 열려요</p></div></div>`:'').join('')+
   `<div class="note">챕터 1 보스</div><div class="odds">${ZS.map((z,i)=>`<div style="color:${S.bk[i]?'#7be36a':'#777196'}">${S.bk[i]?'✔':'?'}<br>${MT[z.boss].n}</div>`).join('')}</div>`}
@@ -1220,7 +1264,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0250 (투명벽 완전 제거)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0300 (출석 보상·무기 자세)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='soon'){toast('준비 중이에요');return}
  if(k==='up'){const u=UP[v],l=S.up[v];if(l>=u.max)return;const c=u.cost(l);if(!afford(c)){toast('재화가 부족해요');return}S.gold-=c.gold;if(c.orb)S.orb-=c.orb;if(c.rb)S.rb-=c.rb;S.up[v]++;const oh=ST.maxhp;calc();if(v==='hp')P.hp+=ST.maxhp-oh;qev('up',v,1);save()}
@@ -1290,9 +1334,9 @@ function questTap(){const q=Q[S.q];if(q&&q.type==='build')toast('금화를 들�
 
 /* ---------- loop ---------- */
 let last=0;
-function drawPreview(){const c=$('eqcv');if(!c)return;const g=c.getContext('2d'),dp=Math.min(window.devicePixelRatio||1,2),W=c.clientWidth,H=c.clientHeight;if(c.width!==Math.round(W*dp)){c.width=Math.round(W*dp);c.height=Math.round(H*dp)}
+function drawPreview(){const c=$('eqcv');if(!c)return;const g=c.getContext('2d'),dp=Math.min(window.devicePixelRatio||1,2),W=c.clientWidth,H=c.clientHeight;if(!W||!H)return;if(c.width!==Math.round(W*dp)||c.height!==Math.round(H*dp)){c.width=Math.round(W*dp);c.height=Math.round(H*dp)}
  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);const keep={x:P.x,y:P.y,dir:P.dir,moving:P.moving,swingT:P.swingT,dead:P.dead,hitT:P.hitT},old=ctx;
- P.x=0;P.y=0;P.dir=.35;P.moving=false;P.swingT=0;P.dead=false;P.hitT=0;ctx=g;PV=1;g.setTransform(dp*1.95,0,0,dp*1.95,W*dp*.44,H*dp*.86);g.lineWidth=2.2;g.strokeStyle=OLC;
+ P.x=0;P.y=0;P.dir=.35;P.moving=false;P.swingT=0;P.dead=false;P.hitT=0;ctx=g;PV=1;const scale=dp*Math.min(1.83,W/116);g.setTransform(scale,0,0,scale,W*dp*.39,H*dp*.84);g.lineWidth=2.2;g.strokeStyle=OLC;
  g.fillStyle='rgba(120,150,170,.55)';g.beginPath();g.ellipse(0,0,34,11,0,0,TAU);g.fill();g.fillStyle='rgba(95,224,111,.55)';g.beginPath();g.ellipse(0,0,22,7,0,0,TAU);g.fill();
  try{drawPlayer()}catch(e){}PV=0;ctx=old;Object.assign(P,keep)}
 function frame(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;update(dt);if(window.NET)NET.tick(dt);render();hud();if(panel==='wpn')drawPreview();requestAnimationFrame(frame)}
