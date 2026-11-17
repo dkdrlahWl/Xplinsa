@@ -225,7 +225,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
   <div id="menu" class="hud ts">☰</div>
   <div id="quests" class="hud ts"><div class="qc main" id="qc0"><div class="qtx"><div id="qt"></div><div class="qb"><i id="qfill"></i><span id="qs"></span></div></div><div class="qi" id="qi0"></div><div class="qget">받기</div></div></div>
-  <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><div class="lbb" data-p="box" data-ic="chestb"></div></div>
+  <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><div class="lbb" data-p="box" data-ic="chestb"></div><div class="lbb" data-p="home" data-ic="home"></div></div>
   <div id="bagw" class="hud ts"><div id="bag"><div id="bagf"></div><span id="bagt"></span></div><div id="bagc"></div></div>
   <div id="toast" class="hud ts"></div>
   <div id="pop"></div>
@@ -257,6 +257,7 @@ function fmt(n){n=Math.floor(n+1e-6);if(n<1000)return''+n;const u=['K','M','B','
 /* ---------- icons ---------- */
 const OL='stroke="#1c1830" stroke-width="2.5" stroke-linejoin="round"';
 const SVGIC={
+ home:`<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="#1c1830" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10.5V20h13v-9.5L12 5z" fill="#ffd23c" stroke="#1c1830" stroke-width="2" stroke-linejoin="round"/><rect x="10" y="13.5" width="4" height="6.5" rx="1" fill="#e8402f" stroke="#1c1830" stroke-width="1.6"/></svg>`,
  gold:`<svg viewBox="0 0 24 24"><defs><radialGradient id="gG" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff6b0"/><stop offset=".45" stop-color="#ffd23c"/><stop offset="1" stop-color="#df9410"/></radialGradient></defs><circle cx="12" cy="12" r="10" fill="url(#gG)" stroke="#8a5a10" stroke-width="1.6"/><circle cx="12" cy="12" r="6.2" fill="none" stroke="#e5a01c" stroke-width="1.8"/><path d="M8 8.6a5 5 0 0 1 4-2.4" stroke="#fffbe0" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
  gem:`<svg viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="#d93a86" stroke="#6e1742" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 2l9 5-9 5-9-5z" fill="#ff9fd2"/><path d="M12 12v10l-9-5V7z" fill="#f25eaa"/></svg>`,
  cry:`<svg viewBox="0 0 24 24"><path d="M15.5 1.5l5 7.5-9.5 13.5-5.5-6.5z" fill="#28b86f" stroke="#0e5f38" stroke-width="1.5" stroke-linejoin="round"/><path d="M15.5 1.5L11 22.5l-5.5-6.5z" fill="#74eeac"/><path d="M15.5 1.5l-2 8.5 7-1z" fill="#d2ffe8"/></svg>`,
@@ -687,7 +688,7 @@ window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true});window.ad
 
 /* ---------- update ---------- */
 let T=0,saveT=0,fullT=0,lockT=0;
-function update(dt){T+=dt;lockT-=dt;if(banner.t>0)banner.t-=dt;
+function update(dt){T+=dt;if(P.recall){if(P.dead||Math.hypot(P.x-P.recall.x,P.y-P.recall.y)>6){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
  // player
  if(P.dead){P.respT-=dt;if(P.respT<=0){P.dead=false;P.x=BASE.x;P.y=BASE.y+120;P.hp=ST.maxhp}}
  else{
@@ -969,6 +970,7 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  if(!PV&&P.trail.length>1){for(let i=1;i<P.trail.length;i++){const a=P.trail[i-1],b=P.trail[i],al=1-(T-a.t)/.16;if(al<=0)continue;ctx.fillStyle='rgba(205,232,255,'+(.62*al)+')';ctx.beginPath();ctx.moveTo(a.ix,a.iy);ctx.lineTo(a.tx,a.ty);ctx.lineTo(b.tx,b.ty);ctx.lineTo(b.ix,b.iy);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(255,255,255,'+al+')';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(a.tx,a.ty);ctx.lineTo(b.tx,b.ty);ctx.stroke()}ctx.strokeStyle=OLC;ctx.lineWidth=2}
  if(!PV&&!window.REM&&h.k==='rogue'&&!AI('hero_rogue_body')){const nx=x+fl*(chx-2)*HS,ny=y+(chy+1)*HS;if(!P.scarf.length)for(let i=0;i<5;i++)P.scarf.push({x:nx,y:ny});P.scarf[0].x=nx;P.scarf[0].y=ny;for(let i=1;i<P.scarf.length;i++){const q=P.scarf[i],pr=P.scarf[i-1];const tx=pr.x-fl*(P.moving?4.6:2.2),ty=pr.y+(P.moving?1.4:3.6)+Math.sin(T*(P.moving?12:4)+i*1.3)*(P.moving?1.6:.7);q.x+=(tx-q.x)*.4;q.y+=(ty-q.y)*.4}
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(30,22,46,.7)';ctx.lineWidth=7.5;ctx.beginPath();P.scarf.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();ctx.strokeStyle='#e8402f';ctx.lineWidth=5;ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2}
+ if(P.recall&&!window.REM&&!PV){const k=1-P.recall.t/2;ctx.globalAlpha=.35+.2*Math.sin(T*12);ell(x,y-2,26,10,'#7fd0ff',1);ctx.globalAlpha=1;bar(x,y-96,44,5,k,'#7fd0ff')}
  if(P.hitT>0){ctx.globalAlpha=.35;ell(x,y-28,17,27,'#ff5a5a',1);ctx.globalAlpha=1}
  if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff')}}
 function crown(y){ctx.beginPath();ctx.moveTo(-14,y);ctx.lineTo(-14,y-16);ctx.lineTo(-7,y-8);ctx.lineTo(0,y-18);ctx.lineTo(7,y-8);ctx.lineTo(14,y-16);ctx.lineTo(14,y);ctx.closePath();ctx.fillStyle='#ffc93c';ctx.fill();ctx.stroke()}
@@ -1126,6 +1128,7 @@ function eqFree(k){return 0}
 function cur(list){$('mcur').innerHTML=list.map(k=>`<div class="pill">${IC[k]}<span>${fmt(S[k])}</span></div>`).join('')}
 function costBtn(c,act,ok,extra){return `<button class="btn ${ok?'':'no'}" data-a="${act}">${c.scr?`<span>${IC.scr}${c.scr}</span>`:''}${c.rb?`<span>${IC.rb}${c.rb}</span>`:''}${c.orb?`<span>${IC.orb}${c.orb}</span>`:''}${c.cry?`<span>${IC.cry}${c.cry}</span>`:''}${c.gold!=null?`<span>${IC.gold}${fmt(c.gold)}</span>`:''}${extra||''}</button>`}
 function open(p){
+ if(p==='home'){if(P.dead)return;if(Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand){toast('이미 기지에 있어요');return}P.recall={t:2,x:P.x,y:P.y};toast('기지로 귀환 중… (움직이면 취소)');return}
  if(p==='tower'){toast('준비 중인 콘텐츠예요');return}
  if(p==='up'&&!S.built.fire){toast('먼저 모닥불을 지어야 해요');return}
  if(p==='smith'&&!S.built.smith){toast('먼저 대장간을 지어야 해요');return}
@@ -1191,7 +1194,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0210 (장비화면 자세·능력치 랜덤 보정·보스 시간 서버 기준)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0220 (기지 귀환 버튼)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='soon'){toast('준비 중이에요');return}
  if(k==='up'){const u=UP[v],l=S.up[v];if(l>=u.max)return;const c=u.cost(l);if(!afford(c)){toast('재화가 부족해요');return}S.gold-=c.gold;if(c.orb)S.orb-=c.orb;if(c.rb)S.rb-=c.rb;S.up[v]++;const oh=ST.maxhp;calc();if(v==='hp')P.hp+=ST.maxhp-oh;qev('up',v,1);save()}
