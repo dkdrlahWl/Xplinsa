@@ -927,16 +927,16 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  const lg=(sg)=>{const sw=mv?.62*Math.sin(ph+(sg>0?0:Math.PI)):0,bend=mv?.18+.5*Math.max(0,Math.cos(ph+(sg>0?0:Math.PI))):.12;const ax=hipx+sg*3,a1=Math.PI/2-sw+(mv?0:-sg*.22),l1=IMG?8.5:7.5,l2=IMG?8:7.5,ex=ax+Math.cos(a1)*l1+Math.cos(a1+bend)*l2,ey=hipy+Math.sin(a1)*l1+Math.sin(a1+bend)*l2;(HA('foot')?pimg(HA('foot'),ex+2,ey-1,11):ell(ex+1.5,ey+.5,4.6,3.2,lt(L,-.2)));seg2(ax,hipy,a1,l1,bend,l2,6.5,L,HA('leg'))};
  lg(-1);lg(1);
  // back arm
- const two=k!=='dagger',bs={x:chx-(IMG?4.6:2)*Math.cos(lean),y:chy+(IMG?3.2:2.5)},l1=IMG?9.5:8.5,l2=IMG?9:8;
- if(!two){const bu=Math.PI/2-(p>=0?.2+eio(p)*.9:.75)-(mv?.2*s:0),bh=seg2(bs.x,bs.y,bu,IMG?9.5:8,-.55,IMG?9:7.5,5.2,L,HA('arm'));const ba=p>=0?-1.2+eio(p)*1.6:.2+(mv?.1*s:0);ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore();(HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.8):ell(bh.x,bh.y,3.6,3.6,h.body))}
+ const two=k!=='dagger',BWI=HA('body'),BW=BWI?Math.min(22,22*BWI.width/BWI.height):10,bs={x:chx-(IMG?BW*.36:2)*Math.cos(lean),y:chy+(IMG?3.8:2.5)},l1=IMG?9.5:8.5,l2=IMG?9:8;
+ let BA=Math.PI/2+.3;if(!two){const bu=Math.PI/2-(p>=0?.2+eio(p)*.9:-.38)-(mv?.2*s:0),bh=(BA=bu,seg2)(bs.x,bs.y,bu,IMG?9.5:8,-.55,IMG?9:7.5,5.2,L,HA('arm'));const ba=p>=0?-1.2+eio(p)*1.6:.2+(mv?.1*s:0);ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore();(HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.8):ell(bh.x,bh.y,3.6,3.6,h.body))}
  const hx=chx+Math.sin(lean)*(IMG?11.5:11),hy=chy-Math.cos(lean)*(IMG?11.5:11);
  // front arm + weapon
- const fs={x:chx+(IMG?4.6:1.5)*Math.cos(lean),y:chy+(IMG?3.2:2.5)};
+ const fs={x:chx+(IMG?BW*.3:1.5)*Math.cos(lean),y:chy+(IMG?3.4:2.5)};
  const fhx=fs.x+Math.cos(ua)*l1+Math.cos(ua+ea)*l2,fhy=fs.y+Math.sin(ua)*l1+Math.sin(ua+ea)*l2;
  const HI=handInfo(k,gr),off=HI.off,tx=fhx+Math.cos(wa)*off-Math.sin(wa)*(off>0?1.5:0),ty=fhy+Math.sin(wa)*off+Math.cos(wa)*(off>0?1.5:0);
- const drawBack=()=>{if(!two)return;const dx=tx-bs.x,dy=ty-bs.y,dd=Math.hypot(dx,dy),st=Math.max(1,dd/(l1+l2-.3)),L1=l1*st,L2=l2*st,d=Math.min(dd,L1+L2-.05),base=Math.atan2(dy,dx),A=Math.acos(clamp((L1*L1+d*d-L2*L2)/(2*L1*d),-1,1)),a1=base+A,jx=bs.x+Math.cos(a1)*L1,jy=bs.y+Math.sin(a1)*L1,a2=Math.atan2(ty-jy,tx-jx)-a1;seg2(bs.x,bs.y,a1,L1,a2,L2,5.2,L,HA('arm'));HA('hand')?pimg(HA('hand'),tx,ty,HI.fist):ell(tx,ty,HI.fist*.6,HI.fist*.6,h.body)};
+ const drawBack=()=>{if(!two)return;const dx=tx-bs.x,dy=ty-bs.y,dd=Math.hypot(dx,dy),st=Math.max(1,dd/(l1+l2-.3)),L1=l1*st,L2=l2*st,d=Math.min(dd,L1+L2-.05),base=Math.atan2(dy,dx),A=Math.acos(clamp((L1*L1+d*d-L2*L2)/(2*L1*d),-1,1)),a1=base+A,jx=bs.x+Math.cos(a1)*L1,jy=bs.y+Math.sin(a1)*L1,a2=Math.atan2(ty-jy,tx-jx)-a1;BA=a1;seg2(bs.x,bs.y,a1,L1,a2,L2,5.2,L,HA('arm'));HA('hand')?pimg(HA('hand'),tx,ty,HI.fist):ell(tx,ty,HI.fist*.6,HI.fist*.6,h.body)};
  const drawArm=()=>{ctx.save();ctx.translate(fhx,fhy);ctx.rotate(wa);drawWeapon(k,gc,gr>=2,gr);ctx.restore();const hand=seg2(fs.x,fs.y,ua,l1,ea,l2,5.4,L,HA('arm'));HA('hand')?pimg(HA('hand'),hand.x,hand.y,HI.fist):ell(hand.x,hand.y,HI.fist*.6,HI.fist*.6,h.body);return hand};
- drawBack();drawTorso(h,hipx,hipy,lean);if(IMG&&HA('arm'))segImg(HA('arm'),bs.x,bs.y,Math.PI/2+.2,2.6,5.4);
+ drawBack();drawTorso(h,hipx,hipy,lean);if(IMG&&HA('arm'))segImg(HA('arm'),bs.x,bs.y-.6,two?Math.PI/2+.1:BA,two?2.4:3.2,BW*.3);
  let hand;if(up){hand=drawArm();drawHead(h,hx,hy,lean,up,fl)}else{drawHead(h,hx,hy,lean,up,fl);hand=drawArm()}
  ctx.restore();
  // weapon tip in world space -> slash trail
