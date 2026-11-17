@@ -205,7 +205,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 @keyframes cfade{to{opacity:0}}
 .qc.done{background:linear-gradient(#ffb43c,#e8862b)!important;box-shadow:0 0 0 3px #ffe066,0 0 16px #ffd23c}
 .qc.done .qb i{background:#7be36a}
-.qc.next{animation:qnext .45s ease-out}
+.qc .qget{display:none}.qc.done .qget{display:block;font-size:15px;padding:6px 10px 8px;border:2.5px solid #1c1830;border-radius:10px;background:linear-gradient(#7be36a,#3fae3a);color:#fff;-webkit-text-stroke:.6px #1c1830;box-shadow:0 3px 0 #1c1830;white-space:nowrap}.qc.done .qi{display:none}.qc.next{animation:qnext .45s ease-out}
 @keyframes qnext{0%{transform:translateX(120%);opacity:0}100%{transform:none;opacity:1}}
 .rfly{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;z-index:7;pointer-events:none;animation:rfly 1s cubic-bezier(.5,0,.6,1) both}
 .rfly :is(svg,img){width:100%;height:100%}
@@ -224,7 +224,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
     <div class="pill"><span data-ic="cry"></span><span id="cCry">0</span></div>
   </div>
   <div id="menu" class="hud ts">☰</div>
-  <div id="quests" class="hud ts"><div class="qc main" id="qc0"><div class="qtx"><div id="qt"></div><div class="qb"><i id="qfill"></i><span id="qs"></span></div></div><div class="qi" id="qi0"></div></div></div>
+  <div id="quests" class="hud ts"><div class="qc main" id="qc0"><div class="qtx"><div id="qt"></div><div class="qb"><i id="qfill"></i><span id="qs"></span></div></div><div class="qi" id="qi0"></div><div class="qget">받기</div></div></div>
   <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><div class="lbb" data-p="box" data-ic="chestb"></div></div>
   <div id="bagw" class="hud ts"><div id="bag"><div id="bagf"></div><span id="bagt"></span></div><div id="bagc"></div></div>
   <div id="toast" class="hud ts"></div>
@@ -891,7 +891,7 @@ function hud(){
  const bt=bagTotal();setT('bagt','가방 ('+fmt(bt)+'/'+fmt(ST.bag)+')');const bw=Math.round(clamp(bt/ST.bag,0,1)*100)+'%';if(cache.bw!==bw){cache.bw=bw;$('bagf').style.width=bw}const bc=bt>=ST.bag?'full':'';if(cache.bc!==bc){cache.bc=bc;$('bag').className=bc}
  let bh='';if(S.bag>=1)bh+='<span>'+IC.gold+fmt(S.bag)+'</span>';for(const k of['cry','gem','orb','rb','scr'])if(S.bi[k]>0)bh+='<span>'+IC[k]+S.bi[k]+'</span>';if(cache.bh!==bh){cache.bh=bh;$('bagc').innerHTML=bh}
  const q=Q[S.q];let qt,qs,qp=0,go=false;
- if(q&&S.qok){qt=q.t;qs='완료됨! 눌러서 보상 받기';qp=1;go=true}
+ if(q&&S.qok){qt=q.t;qs='임무 완료!';qp=1;go=true}
  else if(!q){qt='모든 임무 완료!';qs='챕터 2는 준비 중'}
  else if(q.type==='build'){qt=q.t;qs=fmt(S.bp[q.key])+'/'+q.cost+' · 금화를 들고 건물 터 위에 서 있기';qp=Math.min(1,S.bp[q.key]/q.cost)}
  else if(q.type==='lv'){qt=q.t;qs='Lv.'+S.lv+' / '+q.need;qp=S.lv/q.need}
