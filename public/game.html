@@ -342,12 +342,12 @@ function assetSlots(){const L=[],add=(g,n,d,sz)=>L.push({g,n,d,sz});
 /* ---------- data ---------- */
 const MS=2.4,WW=11600,WH=8400,CX=5800,CY=5070,BASE={x:CX,y:CY,sand:420,ring:300};
 const ZS=[
- {n:'초록 들판',req:1,c:'#a3dd72',rim:'#7fbf58',path:'#f0d79a',lk:1,m:['sprout','slime','mush','spider'],e:'king',boss:'golem',ch:'chest1',hub:[[0,0,470]],b:[[-420,380,280],[0,620,290],[430,390,280],[330,800,250],[-300,900,240]]},
- {n:'메마른 사막',req:8,c:'#f2d08a',rim:'#d1aa62',path:'#fbe6b4',lk:1,m:['cactus','scorp','mole','mole'],e:'mummy',boss:'skorp',ch:'chest2',b:[[-700,-110,300],[-1150,150,290],[-1130,-320,290],[-700,-600,270],[-1550,-120,250]]},
- {n:'보랏빛 숲',req:16,c:'#8f55ba',rim:'#6a3891',path:'#b083d6',lk:2,m:['toxic','bat','vine','vine'],e:'wraith',boss:'elder',ch:'chest3',b:[[0,-720,300],[-400,-980,280],[40,-1220,300],[440,-960,270],[0,-1660,250]]},
- {n:'서리 설원',req:24,c:'#c4e8f6',rim:'#8fc4dc',path:'#eefaff',lk:2,m:['bunny','sprite','yeti','yeti'],e:'knight',boss:'lord',ch:'chest4',b:[[720,-60,300],[1180,180,290],[1150,-290,300],[820,-680,270],[1590,-60,250]]},
- {n:'고대 유적',req:34,c:'#5fa877',rim:'#3f7f58',path:'#a5d6b4',lk:2,m:['dryad','sentry','archer','archer'],e:'ruink',boss:'queen',ch:'chest5',b:[[1150,-900,290],[1520,-720,270],[1560,-1160,280],[1130,-1330,270],[1950,-950,240]]},
- {n:'불타는 화산',req:44,c:'#7a4444',rim:'#4f2626',path:'#b0705a',lk:2,m:['lava','fbat','magma','magma'],e:'flamek',boss:'volc',ch:'chest6',b:[[-1050,-800,290],[-1450,-650,270],[-1500,-1100,280],[-1080,-1260,270],[-1900,-900,240]]}
+ {n:'초록 들판',req:1,c:'#a3dd72',rim:'#7fbf58',path:'#f0d79a',lk:1,m:['sprout','slime','mush','spider'],e:'king',boss:'golem',boss2:'mushk',ch:'chest1',hub:[[0,0,470]],b:[[-420,380,280],[0,620,290],[430,390,280],[330,800,250],[-300,900,240]]},
+ {n:'메마른 사막',req:8,c:'#f2d08a',rim:'#d1aa62',path:'#fbe6b4',lk:1,m:['cactus','scorp','mole','mole'],e:'mummy',boss:'skorp',boss2:'sandg',ch:'chest2',b:[[-700,-110,300],[-1150,150,290],[-1130,-320,290],[-700,-600,270],[-1550,-120,250]]},
+ {n:'보랏빛 숲',req:16,c:'#8f55ba',rim:'#6a3891',path:'#b083d6',lk:2,m:['toxic','bat','vine','vine'],e:'wraith',boss:'elder',boss2:'batk',ch:'chest3',b:[[0,-720,300],[-400,-980,280],[40,-1220,300],[440,-960,270],[0,-1660,250]]},
+ {n:'서리 설원',req:24,c:'#c4e8f6',rim:'#8fc4dc',path:'#eefaff',lk:2,m:['bunny','sprite','yeti','yeti'],e:'knight',boss:'lord',boss2:'iceg',ch:'chest4',b:[[720,-60,300],[1180,180,290],[1150,-290,300],[820,-680,270],[1590,-60,250]]},
+ {n:'고대 유적',req:34,c:'#5fa877',rim:'#3f7f58',path:'#a5d6b4',lk:2,m:['dryad','sentry','archer','archer'],e:'ruink',boss:'queen',boss2:'ancsp',ch:'chest5',b:[[1150,-900,290],[1520,-720,270],[1560,-1160,280],[1130,-1330,270],[1950,-950,240]]},
+ {n:'불타는 화산',req:44,c:'#7a4444',rim:'#4f2626',path:'#b0705a',lk:2,m:['lava','fbat','magma','magma'],e:'flamek',boss:'volc',boss2:'flamel',ch:'chest6',b:[[-1050,-800,290],[-1450,-650,270],[-1500,-1100,280],[-1080,-1260,270],[-1900,-900,240]]}
 ];
 const NZ=ZS.length,mkc=c=>({x:CX+c[0]*MS,y:CY+c[1]*MS,r:c[2]*MS});
 const ZB=ZS.map(z=>z.b.map(mkc)),ZA=ZS.map((z,i)=>ZB[i].concat((z.hub||[]).map(mkc)));
@@ -380,8 +380,15 @@ const MT0={
  flamek:M('화염 기사',63,220000,1700,120000,9000,29,72,'tall','#8a2a1e',Object.assign({c2:'#ffb13c'},EL(8,6))),volc:M('화산 군주',65,1500000,3200,600000,200000,52,55,'tall','#c8402f',Object.assign({c2:'#ffe066',crown:1},BO(30,24,24))),chest6:M('보물상자',57,120000,0,30000,30000,24,0,'chest','#e8b030',CH(18,18))
 };
 // 밸런스: 챕터1 클리어 약 1주일 목표 (지역이 깊을수록 더 단단하고 아프게, 보상은 줄임)
+Object.assign(MT0,{
+ mushk:M('거대 버섯왕',7,220,16,150,120,44,48,'mush','#d8402f',Object.assign({c2:'#fff1d6',crown:1},BO(5,10,5))),
+ sandg:M('모래 거인',14,3800,44,1500,900,46,48,'golem','#d1aa62',Object.assign({c2:'#8a6a3a'},BO(10,12,8))),
+ batk:M('그림자 박쥐왕',24,17000,120,7000,3500,44,70,'bat','#3a2a5a',Object.assign({c2:'#b07bff',crown:1},BO(15,14,12))),
+ iceg:M('얼음 골렘',43,78000,420,30000,12000,50,45,'golem','#bfe8fa',Object.assign({c2:'#6ab8dc'},BO(20,16,16))),
+ ancsp:M('고대 수호 거미',54,340000,1100,150000,50000,46,60,'spider','#5a7a5a',Object.assign({c2:'#ffe066',tail:1,crown:1},BO(25,20,20))),
+ flamel:M('불꽃 정령왕',64,1300000,3000,600000,200000,50,58,'tall','#ff7a2b',Object.assign({c2:'#ffe066',crown:1},BO(30,24,24)))});
 const MT=MT0;for(const k in MT){const d=MT[k],z=d.lv<10?0:d.lv<20?1:d.lv<30?2:d.lv<46?3:d.lv<56?4:5,big=d.boss?1.6:d.elite?1.3:1;d.gold=Math.max(1,Math.round(d.gold*.55));d.xp=Math.max(1,Math.round(d.xp*.5));if(d.chest){d.hp=Math.round(d.hp*[3,4,5,6,7,8][z]);continue}
- d.hp=Math.round(d.hp*[3.5,5,6.5,8,9.5,11][z]*big);d.atk=Math.round(d.atk*[2.2,2.6,3,3.4,3.8,4.2][z]*big);d.spd=Math.round(d.spd*1.2);d.resp=Math.round(d.resp*(d.boss?8:1))}
+ d.hp=Math.round(d.hp*[3.5,5,6.5,8,9.5,11][z]*big);d.atk=Math.round(d.atk*[2.2,2.6,3,3.4,3.8,4.2][z]*big);d.spd=Math.round(d.spd*1.2);d.resp=Math.round(d.resp*(d.boss?8:1));if(d.boss){for(const q of['gold','xp','gem','cry','orb','scr'])if(d[q])d[q]=Math.ceil(d[q]/2);if(!['golem','skorp','elder','lord','queen','volc'].includes(k))d.rb=0}}
 const WT={
  dagger:{n:'쌍검',rg:60,cd:.32,m:.5,arc:.8,hits:2,ds:'양손 번갈아 2연속 베기'},sword:{n:'검',rg:80,cd:.6,m:1,arc:1.3,ds:'앞쪽 부채꼴 베기'},mace:{n:'둔기',rg:74,cd:1.1,m:1.7,arc:3.14,stun:.45,ds:'360° 내려찍기 · 기절'},spear:{n:'창',rg:125,cd:.75,m:1.15,arc:.4,line:1,ds:'긴 일직선 관통 찌르기'},axe:{n:'도끼',rg:84,cd:.9,m:1.6,arc:1.9,kb:30,ds:'넓은 휘두르기 · 밀쳐내기'},
  bow:{n:'석궁',rg:170,cd:.85,m:1.2,shot:1,pierce:1,ds:'일직선 관통 화살'},gun:{n:'총',rg:140,cd:.5,m:.55,shot:1,pel:3,ds:'3발 산탄 사격'},staff:{n:'지팡이',rg:155,cd:1.1,m:1.4,shot:1,aoe:70,ds:'마법 구슬 폭발'}
@@ -431,7 +438,8 @@ const Q=[
 {t:'모루에서 무기 5개 만들기',type:'craft',need:5,rw:{cry:20,gold:30}},
 {t:'왕슬라임 3마리 처치',type:'kill',key:'king',need:3,rw:{gold:180,gem:15,orb:1}},
 {t:'Lv.7 달성',type:'lv',need:7,rw:{gem:15}},
-{t:'이끼 골렘 처치',type:'kill',key:'golem',need:1,rw:{gem:50,gold:500,orb:2}},
+{t:'거대 버섯왕 처치',type:'kill',key:'mushk',need:1,rw:{gem:25,gold:250,orb:1}},
+{t:'이끼 골렘 처치',type:'kill',key:'golem',need:1,rw:{gem:25,gold:250,orb:1}},
 {t:'Lv.8 달성 (메마른 사막 열림)',type:'lv',need:8,rw:{gem:30,orb:1}},
 {t:'선인장병 15마리 사냥',type:'kill',key:'cactus',need:15,rw:{gold:110,gem:4}},
 {t:'공격력 5번 강화',type:'up',key:'atk',need:5,rw:{gold:750}},
@@ -447,7 +455,8 @@ const Q=[
 {t:'모래두더지 60마리 사냥',type:'kill',key:'mole',need:60,rw:{gold:430}},
 {t:'금화 3,600개 입금하기',type:'dep',need:3600,rw:{gem:8}},
 {t:'Lv.14 달성',type:'lv',need:14,rw:{gem:25}},
-{t:'전갈왕 처치',type:'kill',key:'skorp',need:1,rw:{gem:140,gold:3000,orb:3,rb:1}},
+{t:'모래 거인 처치',type:'kill',key:'sandg',need:1,rw:{gem:70,gold:1500,orb:2}},
+{t:'전갈왕 처치',type:'kill',key:'skorp',need:1,rw:{gem:70,gold:1500,orb:2,rb:1}},
 {t:'Lv.16 달성 (보랏빛 숲 열림)',type:'lv',need:16,rw:{gem:40,orb:2}},
 {t:'독버섯 15마리 사냥',type:'kill',key:'toxic',need:15,rw:{gold:400,gem:5}},
 {t:'공격력 5번 강화',type:'up',key:'atk',need:5,rw:{gold:2800}},
@@ -464,7 +473,8 @@ const Q=[
 {t:'가시덩굴 60마리 사냥',type:'kill',key:'vine',need:60,rw:{gold:1600}},
 {t:'금화 13,000개 입금하기',type:'dep',need:13000,rw:{gem:11}},
 {t:'Lv.22 달성',type:'lv',need:22,rw:{gem:35}},
-{t:'타락 거목 처치',type:'kill',key:'elder',need:1,rw:{gem:200,gold:11000,orb:4,rb:1}},
+{t:'그림자 박쥐왕 처치',type:'kill',key:'batk',need:1,rw:{gem:100,gold:5500,orb:2}},
+{t:'타락 거목 처치',type:'kill',key:'elder',need:1,rw:{gem:100,gold:5500,orb:2,rb:1}},
 {t:'Lv.24 달성 (서리 설원 열림)',type:'lv',need:24,rw:{gem:50,orb:3}},
 {t:'눈토끼 15마리 사냥',type:'kill',key:'bunny',need:15,rw:{gold:1600,gem:6}},
 {t:'공격력 5번 강화',type:'up',key:'atk',need:5,rw:{gold:11000}},
@@ -482,7 +492,8 @@ const Q=[
 {t:'설인 60마리 사냥',type:'kill',key:'yeti',need:60,rw:{gold:6600}},
 {t:'금화 55,000개 입금하기',type:'dep',need:55000,rw:{gem:14}},
 {t:'Lv.32 달성',type:'lv',need:32,rw:{gem:45}},
-{t:'빙하 군주 처치',type:'kill',key:'lord',need:1,rw:{gem:260,gold:46000,orb:5,rb:1}},
+{t:'얼음 골렘 처치',type:'kill',key:'iceg',need:1,rw:{gem:130,gold:23000,orb:3}},
+{t:'빙하 군주 처치',type:'kill',key:'lord',need:1,rw:{gem:130,gold:23000,orb:3,rb:1}},
 {t:'Lv.34 달성 (고대 유적 열림)',type:'lv',need:34,rw:{gem:60,orb:4}},
 {t:'덩굴 정령 15마리 사냥',type:'kill',key:'dryad',need:15,rw:{gold:5900,gem:7}},
 {t:'공격력 5번 강화',type:'up',key:'atk',need:5,rw:{gold:41000}},
@@ -500,7 +511,8 @@ const Q=[
 {t:'숲 사냥꾼 60마리 사냥',type:'kill',key:'archer',need:60,rw:{gold:24000}},
 {t:'금화 200,000개 입금하기',type:'dep',need:200000,rw:{gem:17}},
 {t:'Lv.42 달성',type:'lv',need:42,rw:{gem:55}},
-{t:'숲의 여왕 처치',type:'kill',key:'queen',need:1,rw:{gem:320,gold:160000,orb:6,rb:1}},
+{t:'고대 수호 거미 처치',type:'kill',key:'ancsp',need:1,rw:{gem:160,gold:80000,orb:3}},
+{t:'숲의 여왕 처치',type:'kill',key:'queen',need:1,rw:{gem:160,gold:80000,orb:3,rb:1}},
 {t:'Lv.44 달성 (불타는 화산 열림)',type:'lv',need:44,rw:{gem:70,orb:5}},
 {t:'용암 슬라임 15마리 사냥',type:'kill',key:'lava',need:15,rw:{gold:18000,gem:8}},
 {t:'공격력 5번 강화',type:'up',key:'atk',need:5,rw:{gold:120000}},
@@ -518,7 +530,8 @@ const Q=[
 {t:'마그마 골렘 60마리 사냥',type:'kill',key:'magma',need:60,rw:{gold:71000}},
 {t:'금화 590,000개 입금하기',type:'dep',need:590000,rw:{gem:20}},
 {t:'Lv.52 달성',type:'lv',need:52,rw:{gem:65}},
-{t:'화산 군주 처치',type:'kill',key:'volc',need:1,rw:{gem:380,gold:500000,orb:7,rb:1}}
+{t:'불꽃 정령왕 처치',type:'kill',key:'flamel',need:1,rw:{gem:190,gold:250000,orb:4}},
+{t:'화산 군주 처치',type:'kill',key:'volc',need:1,rw:{gem:190,gold:250000,orb:4,rb:1}}
 ];
 const RWN={gold:'금화',gem:'보석',cry:'크리스탈',orb:'오브',rb:'무지개 오브',scr:'주문서'};
 
@@ -528,7 +541,7 @@ let S=fresh();
 const KEY='camp_save_v2';
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&typeof d==='object'&&d.up){S=Object.assign(fresh(),d);S.up=Object.assign(fresh().up,d.up);S.built=Object.assign(fresh().built,d.built);S.bi=Object.assign(fresh().bi,d.bi);S.slots=(Array.isArray(d.slots)?d.slots:[]).slice(0,6);while(S.slots.length<6)S.slots.push(null);S.slv=Array.isArray(d.slv)?d.slv:[1,1,1,1,1,1];S.bp=Object.assign(fresh().bp,d.bp);S.pity=d.pity||{};S.shards=d.shards||{};S.sq=Object.assign(fresh().sq,d.sq);S.bk=Array.isArray(d.bk)?d.bk:[0,0,0,0,0,0];for(const k in S.weapons)if(!WT[k.split('_')[0]])delete S.weapons[k];fixSlots();delete S.equip}}catch(e){}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.NET)NET.markSave()}
-load();if(!window.IS_ADMIN)S.admin=false;if(S.qv!==3){const ST0=[0, 25, 41, 58, 76, 94];let z=0;for(let i=0;i<6;i++)if(S.bk&&S.bk[i])z=i+1;S.q=ST0[Math.min(z,5)];if(z>=6)S.q=112;S.qp=0;S.qok=0;S.qv=3}
+load();if(!window.IS_ADMIN)S.admin=false;if(S.qv!==3){const ST0=[0, 25, 41, 58, 76, 94];let z=0;for(let i=0;i<6;i++)if(S.bk&&S.bk[i])z=i+1;S.q=ST0[Math.min(z,5)];if(z>=6)S.q=112;S.qp=0;S.qok=0;S.qv=3}if(S.qv===3){const INS=[24,40,57,75,93,111];let d=0;for(const p of INS)if(S.q>=p)d++;S.q+=d;S.qv=4}
 const ST={};
 function wq(k){const a=S.wq&&S.wq[k];return a&&a.length?Math.max(...a):1}
 function addW(k){S.weapons[k]=(S.weapons[k]||0)+1;S.wq=S.wq||{};(S.wq[k]=S.wq[k]||[]).push(Math.round(rnd(.8,1.2)*100)/100)}
@@ -594,7 +607,7 @@ ZB.forEach((b,i)=>{let n=0,tr=0;while(n<75&&tr++<7000){const q=rpt(b[Math.floor(
  const pl=sr()<.55;obs.push({x:q.x,y:q.y,r:pl?23:27,k:i*2+(pl?1:0),z:i,s:.85+sr()*.35});n++}});
 ZB.forEach((b,i)=>{const z=ZS[i];for(let ci=0;ci<4;ci++){let n=0,tr=0;while(n<(ci===3?22:27)&&tr++<4000){const q=rpt(b[ci],72);
   if(gz(i,q.x,q.y)<70||Math.hypot(q.x-CX,q.y-CY)<BASE.sand+110||Math.hypot(q.x-b[4].x,q.y-b[4].y)<b[4].r+40||!freeObs(q.x,q.y,52))continue;mk(z.m[ci],q.x,q.y,i);n++}}
- mk(z.e,b[3].x+26,b[3].y+26,i);mk(z.e,b[1].x-30,b[1].y+20,i);mk(z.boss,b[4].x,b[4].y,i,b[4].r);{let q,tr=0;do{q=rpt(b[2],90)}while(tr++<300&&(gz(i,q.x,q.y)<90||!freeObs(q.x,q.y,70)||nearPath(i,q.x,q.y,60)));mk(z.ch,q.x,q.y,i)}
+ mk(z.e,b[3].x+26,b[3].y+26,i);mk(z.e,b[1].x-30,b[1].y+20,i);mk(z.boss,b[4].x,b[4].y,i,b[4].r);mk(z.boss2,b[2].x,b[2].y,i,b[2].r*.75);{let q,tr=0;do{q=rpt(b[2],90)}while(tr++<300&&(gz(i,q.x,q.y)<90||!freeObs(q.x,q.y,70)||nearPath(i,q.x,q.y,60)));mk(z.ch,q.x,q.y,i)}
  let n=0,tr=0;while(n<240&&tr++<4500){const q=rpt(b[Math.floor(sr()*5)],30);if(gz(i,q.x,q.y)<30||Math.hypot(q.x-CX,q.y-CY)<BASE.sand+24||nearPath(i,q.x,q.y,58)||!freeObs(q.x,q.y,16))continue;deco.push({x:q.x,y:q.y,z:i,k:sr()<.6?0:1,s:.7+sr()*.5});n++}});
 function pushOut(e,rad){for(const o of obs){const dx=e.x-o.x,dy=e.y-o.y,d=Math.hypot(dx,dy),m=o.r+rad;if(d<m&&d>0){e.x=o.x+dx/d*m;e.y=o.y+dy/d*m}}}
 const BLD=[{k:'fire',n:'모닥불',cost:3,r:80,x:()=>BASE.x,y:()=>BASE.y},{k:'smith',n:'대장간',cost:70,r:75,need:'fire',x:()=>BASE.x+190,y:()=>BASE.y-90}];
