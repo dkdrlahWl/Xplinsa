@@ -1,0 +1,159 @@
+// XP 캠프 멀티 서버 — 외부 패키지 없이 Node만으로 동작
+// 정적 파일 + 회원가입/로그인/저장 API + 실시간 WebSocket(/ws)
+'use strict';
+const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
+const PORT = +process.env.PORT || 80;
+const PUB = path.join(__dirname, 'public');
+const DATA = path.join(__dirname, 'data');
+const DB_FILE = path.join(DATA, 'users.json');
+fs.mkdirSync(DATA, { recursive: true });
+
+/* ---------------- 저장소 ---------------- */
+let db = { users: {} };
+try { db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); if (!db.users) db.users = {}; } catch (e) {}
+let dirty = false;
+function markDirty() { dirty = true; }
+setInterval(flush, 3000);
+function flush() {
+  if (!dirty) return; dirty = false;
+  const tmp = DB_FILE + '.tmp';
+  fs.writeFile(tmp, JSON.stringify(db), err => { if (!err) fs.rename(tmp, DB_FILE, () => {}); });
+}
+process.on('SIGTERM', () => { if (dirty) fs.writeFileSync(DB_FILE, JSON.stringify(db)); process.exit(0); });
+process.on('SIGINT', () => { if (dirty) fs.writeFileSync(DB_FILE, JSON.stringify(db)); process.exit(0); });
+
+const hashPw = (pw, salt) => crypto.scryptSync(pw, salt, 32).toString('hex');
+const byToken = t => { if (!t) return null; for (const id in db.users) if (db.users[id].token === t) return db.users[id]; return null; };
+const nickTaken = n => Object.values(db.users).some(u => u.nick && u.nick.toLowerCase() === n.toLowerCase());
+
+/* ---------------- HTTP ---------------- */
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
+function send(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
+function body(req) {
+  return new Promise(ok => { let s = ''; req.on('data', c => { s += c; if (s.length > 4e6) req.destroy(); }); req.on('end', () => { try { ok(JSON.parse(s || '{}')); } catch (e) { ok({}); } }); });
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://x');
+  const p = url.pathname;
+  if (p.startsWith('/api/')) {
+    if (req.method !== 'POST') return send(res, 405, { err: 'POST만 가능' });
+    const b = await body(req);
+    if (p === '/api/signup') {
+      const id = String(b.id || '').trim().toLowerCase(), pw = String(b.pw || '');
+      if (!/^[a-z0-9_]{4,16}$/.test(id)) return send(res, 400, { err: '아이디는 영어 소문자·숫자 4~16자' });
+      if (pw.length < 4 || pw.length > 64) return send(res, 400, { err: '비밀번호는 4자 이상' });
+      if (db.users[id]) return send(res, 400, { err: '이미 있는 아이디예요' });
+      const salt = crypto.randomBytes(12).toString('hex'), token = crypto.randomBytes(24).toString('hex');
+      db.users[id] = { id, salt, hash: hashPw(pw, salt), nick: '', token, save: null, at: Date.now() };
+      markDirty(); return send(res, 200, { token, nick: '' });
+    }
+    if (p === '/api/login') {
+      const id = String(b.id || '').trim().toLowerCase(), u = db.users[id];
+      if (!u || hashPw(String(b.pw || ''), u.salt) !== u.hash) return send(res, 400, { err: '아이디 또는 비밀번호가 틀렸어요' });
+      u.token = crypto.randomBytes(24).toString('hex'); // 새 로그인 → 이전 토큰 무효
+      kickUser(u.id); markDirty();
+      return send(res, 200, { token: u.token, nick: u.nick });
+    }
+    const u = byToken(b.token);
+    if (!u) return send(res, 401, { err: '다른 곳에서 로그인되어 접속이 끊겼어요', kick: 1 });
+    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save });
+    if (p === '/api/nick') {
+      const n = String(b.nick || '').trim();
+      if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
+      if (u.nick !== n && nickTaken(n)) return send(res, 400, { err: '이미 쓰는 닉네임이에요' });
+      u.nick = n; markDirty(); return send(res, 200, { nick: n });
+    }
+    if (p === '/api/save') {
+      if (!b.save || typeof b.save !== 'object') return send(res, 400, { err: 'bad' });
+      u.save = b.save; markDirty(); return send(res, 200, { ok: 1 });
+    }
+    return send(res, 404, { err: 'no' });
+  }
+  // 정적 파일
+  let f = decodeURIComponent(p); if (f === '/') f = '/index.html';
+  const fp = path.normalize(path.join(PUB, f));
+  if (!fp.startsWith(PUB)) { res.writeHead(403); return res.end(); }
+  fs.readFile(fp, (err, data) => {
+    if (err) { res.writeHead(404); return res.end('not found'); }
+    const ext = path.extname(fp).toLowerCase();
+    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': ext === '.html' || ext === '.json' ? 'no-cache' : 'public, max-age=3600' });
+    res.end(data);
+  });
+});
+
+/* ---------------- WebSocket (직접 구현) ---------------- */
+const clients = new Map(); // id -> {sock, u, st}
+function wsSend(sock, obj) {
+  if (sock.destroyed) return;
+  const data = Buffer.from(JSON.stringify(obj));
+  let head;
+  if (data.length < 126) head = Buffer.from([0x81, data.length]);
+  else if (data.length < 65536) { head = Buffer.alloc(4); head[0] = 0x81; head[1] = 126; head.writeUInt16BE(data.length, 2); }
+  else { head = Buffer.alloc(10); head[0] = 0x81; head[1] = 127; head.writeBigUInt64BE(BigInt(data.length), 2); }
+  sock.write(Buffer.concat([head, data]));
+}
+function wsClose(sock) { try { sock.write(Buffer.from([0x88, 0])); } catch (e) {} sock.destroy(); }
+function kickUser(id) {
+  const c = clients.get(id); if (!c) return;
+  wsSend(c.sock, { t: 'kick' }); clients.delete(id); setTimeout(() => wsClose(c.sock), 50);
+  broadcast({ t: 'leave', id });
+}
+function broadcast(obj, except) { for (const [id, c] of clients) if (id !== except) wsSend(c.sock, obj); }
+
+server.on('upgrade', (req, sock) => {
+  const url = new URL(req.url, 'http://x');
+  const u = byToken(url.searchParams.get('token'));
+  const key = req.headers['sec-websocket-key'];
+  if (url.pathname !== '/ws' || !key) return sock.destroy();
+  const acc = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+  sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + acc + '\r\n\r\n');
+  sock.setNoDelay(true);
+  if (!u) { wsSend(sock, { t: 'kick' }); return setTimeout(() => wsClose(sock), 50); }
+  const old = clients.get(u.id);
+  if (old && old.sock !== sock) { wsSend(old.sock, { t: 'kick' }); setTimeout(() => wsClose(old.sock), 50); }
+  const c = { sock, u, st: null, alive: Date.now() };
+  clients.set(u.id, c);
+  wsSend(sock, { t: 'hi', id: u.id, all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
+  let buf = Buffer.alloc(0);
+  sock.on('data', chunk => {
+    buf = Buffer.concat([buf, chunk]);
+    while (buf.length >= 2) {
+      const op = buf[0] & 15, masked = buf[1] & 128; let len = buf[1] & 127, off = 2;
+      if (len === 126) { if (buf.length < 4) return; len = buf.readUInt16BE(2); off = 4; }
+      else if (len === 127) { if (buf.length < 10) return; len = Number(buf.readBigUInt64BE(2)); off = 10; }
+      if (len > 1e6) return sock.destroy();
+      const mk = masked ? buf.slice(off, off + 4) : null; if (masked) off += 4;
+      if (buf.length < off + len) return;
+      const pl = Buffer.from(buf.slice(off, off + len)); buf = buf.slice(off + len);
+      if (mk) for (let i = 0; i < pl.length; i++) pl[i] ^= mk[i & 3];
+      if (op === 8) return wsClose(sock);
+      if (op === 9) { sock.write(Buffer.concat([Buffer.from([0x8a, pl.length]), pl])); continue; }
+      if (op !== 1) continue;
+      let m; try { m = JSON.parse(pl.toString()); } catch (e) { continue; }
+      onMsg(c, m);
+    }
+  });
+  const bye = () => { if (clients.get(u.id) === c) { clients.delete(u.id); broadcast({ t: 'leave', id: u.id }); } };
+  sock.on('close', bye); sock.on('error', bye);
+});
+
+function onMsg(c, m) {
+  c.alive = Date.now();
+  if (m.t === 's') { // 내 상태
+    const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
+    c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), hp: n(m.hp), lv: m.lv | 0, dead: m.dead ? 1 : 0 };
+    c.dirty = true;
+  } else if (m.t === 'p') wsSend(c.sock, { t: 'p', k: m.k });
+}
+
+// 1초에 20번 묶어서 보냄
+setInterval(() => {
+  const ups = [];
+  for (const c of clients.values()) if (c.dirty && c.st) { c.dirty = false; ups.push({ id: c.u.id, n: c.u.nick, ...c.st }); }
+  if (ups.length) for (const c of clients.values()) { const l = ups.filter(o => o.id !== c.u.id); if (l.length) wsSend(c.sock, { t: 'u', l }); }
+  const now = Date.now();
+  for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
+}, 50);
+
+server.listen(PORT, () => console.log('XP 캠프 서버 실행 중: 포트 ' + PORT));

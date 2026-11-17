@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>XP 캠프</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:Jua,sans-serif;color:#fff;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 30%,#7cc860 0%,#4f9a43 55%,#2f6b33 100%);display:flex;align-items:center;justify-content:center}
+.bg{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.bg i{position:absolute;border-radius:50%;background:rgba(255,255,255,.08)}
+.fire{position:fixed;left:50%;bottom:7%;transform:translateX(-50%);width:120px;height:120px;filter:drop-shadow(0 0 30px #ffb340)}
+.card{position:relative;width:min(88vw,360px);background:#2b2546;border:4px solid #1c1830;border-radius:26px;padding:26px 22px 22px;box-shadow:0 10px 0 #1c1830,0 20px 40px rgba(0,0,0,.35)}
+h1{text-align:center;font-size:40px;letter-spacing:2px;color:#ffd23c;-webkit-text-stroke:2px #1c1830;text-shadow:0 4px 0 #1c1830;margin-top:-62px}
+.sub{text-align:center;color:#b9b2d8;font-size:15px;margin:6px 0 18px}
+.tabs{display:flex;background:#1c1830;border-radius:14px;padding:4px;margin-bottom:16px}
+.tabs b{flex:1;text-align:center;padding:9px 0;border-radius:11px;color:#8d86ad;font-weight:normal;font-size:17px;cursor:pointer}
+.tabs b.on{background:#ffd23c;color:#1c1830}
+label{display:block;font-size:14px;color:#cfc8ee;margin:10px 4px 5px}
+input{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:14px;border:3px solid #1c1830;background:#f6f3ff;color:#1c1830;outline:none}
+input:focus{border-color:#ffd23c}
+.btn{display:block;width:100%;margin-top:20px;font:inherit;font-size:22px;padding:13px 0;border:3px solid #1c1830;border-radius:16px;background:linear-gradient(#7be36a,#3fae3a);color:#fff;-webkit-text-stroke:1px #1c1830;box-shadow:0 5px 0 #1c1830;cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #1c1830}
+.btn:disabled{filter:grayscale(.7);opacity:.7}
+.err{min-height:20px;margin-top:12px;text-align:center;color:#ff8a8a;font-size:15px}
+.hint{font-size:12px;color:#8d86ad;margin:5px 4px 0}
+.hide{display:none}
+</style></head>
+<body>
+<div class="bg" id="bg"></div>
+<svg class="fire" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="34" ry="8" fill="#000" opacity=".25"/><rect x="22" y="76" width="56" height="10" rx="5" fill="#7a4a2a" stroke="#1c1830" stroke-width="3" transform="rotate(12 50 81)"/><rect x="22" y="76" width="56" height="10" rx="5" fill="#8d5a33" stroke="#1c1830" stroke-width="3" transform="rotate(-12 50 81)"/><path d="M50 18c10 16 24 26 24 44a24 24 0 0 1-48 0c0-12 8-18 12-28 4 8 6 12 10 12-2-10-2-18 2-28z" fill="#ff8a2a" stroke="#1c1830" stroke-width="3"/><path d="M50 46c6 8 12 12 12 20a12 12 0 0 1-24 0c0-6 6-10 12-20z" fill="#ffe14a"/></svg>
+
+<div class="card">
+ <h1>XP 캠프</h1>
+ <div class="sub">친구들과 함께 하는 캠프 생존</div>
+
+ <div id="auth">
+  <div class="tabs"><b id="tLogin" class="on">로그인</b><b id="tSign">회원가입</b></div>
+  <label>아이디</label><input id="id" autocomplete="username" maxlength="16" placeholder="영어 소문자·숫자 4~16자">
+  <label>비밀번호</label><input id="pw" type="password" autocomplete="current-password" maxlength="64" placeholder="4자 이상">
+  <div id="pw2w" class="hide"><label>비밀번호 확인</label><input id="pw2" type="password" autocomplete="new-password" maxlength="64"></div>
+  <button class="btn" id="go">로그인</button>
+ </div>
+
+ <div id="nickBox" class="hide">
+  <label>닉네임 정하기</label><input id="nick" maxlength="8" placeholder="한글·영어·숫자 2~8자">
+  <div class="hint">머리 위 체력바에 표시돼요. 다른 사람과 겹칠 수 없어요.</div>
+  <button class="btn" id="nickGo">시작하기</button>
+ </div>
+
+ <div class="err" id="err"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+for(let i=0;i<14;i++){const e=document.createElement('i'),s=40+Math.random()*120;e.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%`;$('bg').appendChild(e)}
+let mode='login';
+function setMode(m){mode=m;$('tLogin').className=m==='login'?'on':'';$('tSign').className=m==='sign'?'on':'';$('pw2w').className=m==='sign'?'':'hide';$('go').textContent=m==='login'?'로그인':'가입하기';$('pw').autocomplete=m==='login'?'current-password':'new-password';$('err').textContent=''}
+$('tLogin').onclick=()=>setMode('login');$('tSign').onclick=()=>setMode('sign');
+async function api(p,b){const r=await fetch('/api/'+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({err:'서버 오류'}));if(!r.ok)throw j;return j}
+function fail(e){$('err').textContent=(e&&e.err)||'서버에 연결할 수 없어요'}
+async function enter(token){
+ const me=await api('me',{token});
+ if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
+ localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);
+ if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
+ location.replace('game.html');
+}
+let tok=null;
+$('go').onclick=async()=>{
+ const id=$('id').value.trim().toLowerCase(),pw=$('pw').value;$('err').textContent='';
+ if(mode==='sign'&&pw!==$('pw2').value)return fail({err:'비밀번호가 서로 달라요'});
+ $('go').disabled=true;
+ try{const r=await api(mode==='login'?'login':'signup',{id,pw});tok=r.token;localStorage.setItem('xp_token',tok);await enter(tok)}catch(e){fail(e)}
+ $('go').disabled=false;
+};
+$('nickGo').onclick=async()=>{$('nickGo').disabled=true;try{await api('nick',{token:tok,nick:$('nick').value.trim()});await enter(tok)}catch(e){fail(e)}$('nickGo').disabled=false};
+for(const i of['id','pw','pw2'])$(i).addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
+$('nick').addEventListener('keydown',e=>{if(e.key==='Enter')$('nickGo').click()});
+// 이미 로그인돼 있으면 바로 입장
+(async()=>{const t=localStorage.getItem('xp_token');if(!t)return;tok=t;try{await enter(t)}catch(e){localStorage.removeItem('xp_token');if(e&&e.kick)fail({err:'다시 로그인해 주세요'})}})();
+</script>
+</body></html>
