@@ -1,4 +1,4 @@
-// XP 캠프 멀티 서버 — 외부 패키지 없이 Node만으로 동작
+// 링구 RPG 멀티 서버 — 외부 패키지 없이 Node만으로 동작
 // 정적 파일 + 회원가입/로그인/저장 API + 실시간 WebSocket(/ws)
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
@@ -57,7 +57,7 @@ const server = http.createServer(async (req, res) => {
     }
     const u = byToken(b.token);
     if (!u) return send(res, 401, { err: '다른 곳에서 로그인되어 접속이 끊겼어요', kick: 1 });
-    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save });
+    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus' });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
       if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
@@ -84,6 +84,10 @@ const server = http.createServer(async (req, res) => {
 
 /* ---------------- WebSocket (직접 구현) ---------------- */
 const clients = new Map(); // id -> {sock, u, st}
+// 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
+const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
+function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } return m; }
+function release(id) { for (const [i, m] of mons) if (m.own === id) { m.own = null; broadcast({ t: 'mo', i, o: null }); } }
 function wsSend(sock, obj) {
   if (sock.destroyed) return;
   const data = Buffer.from(JSON.stringify(obj));
@@ -97,7 +101,7 @@ function wsClose(sock) { try { sock.write(Buffer.from([0x88, 0])); } catch (e) {
 function kickUser(id) {
   const c = clients.get(id); if (!c) return;
   wsSend(c.sock, { t: 'kick' }); clients.delete(id); setTimeout(() => wsClose(c.sock), 50);
-  broadcast({ t: 'leave', id });
+  broadcast({ t: 'leave', id }); release(id);
 }
 function broadcast(obj, except) { for (const [id, c] of clients) if (id !== except) wsSend(c.sock, obj); }
 
@@ -114,7 +118,7 @@ server.on('upgrade', (req, sock) => {
   if (old && old.sock !== sock) { wsSend(old.sock, { t: 'kick' }); setTimeout(() => wsClose(old.sock), 50); }
   const c = { sock, u, st: null, alive: Date.now() };
   clients.set(u.id, c);
-  wsSend(sock, { t: 'hi', id: u.id, all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
+  wsSend(sock, { t: 'hi', id: u.id, ms: [...mons].map(([i, m]) => [i, m.hp, m.dead ? 1 : 0, m.own]), all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
   let buf = Buffer.alloc(0);
   sock.on('data', chunk => {
     buf = Buffer.concat([buf, chunk]);
@@ -134,7 +138,7 @@ server.on('upgrade', (req, sock) => {
       onMsg(c, m);
     }
   });
-  const bye = () => { if (clients.get(u.id) === c) { clients.delete(u.id); broadcast({ t: 'leave', id: u.id }); } };
+  const bye = () => { if (clients.get(u.id) === c) { clients.delete(u.id); broadcast({ t: 'leave', id: u.id }); release(u.id); } };
   sock.on('close', bye); sock.on('error', bye);
 });
 
@@ -144,7 +148,18 @@ function onMsg(c, m) {
     const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
     c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), hp: n(m.hp), lv: m.lv | 0, dead: m.dead ? 1 : 0 };
     c.dirty = true;
-  } else if (m.t === 'p') wsSend(c.sock, { t: 'p', k: m.k });
+    if (Array.isArray(m.mp)) { const mp = []; for (let k = 0; k + 2 < m.mp.length && k < 300; k += 3) { const g = mons.get(m.mp[k] | 0); if (g && g.own === c.u.id && !g.dead) mp.push(m.mp[k] | 0, n(m.mp[k + 1]), n(m.mp[k + 2])); } c.st.mp = mp; }
+  } else if (m.t === 'h') { // 몬스터 때림
+    const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || i < 0 || i > 5000) return;
+    const g = mon(i, mx, +m.rs); if (g.dead) return;
+    g.hp -= d; g.hit.add(c.u.id); g.last = Date.now();
+    if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit] }); g.hit.clear(); }
+    else broadcast({ t: 'mh', i, hp: g.hp });
+  } else if (m.t === 'c') { // 몬스터 주인 요청
+    const i = m.i | 0, g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs);
+    if (!g.dead && (!g.own || !clients.has(g.own))) { g.own = c.u.id; broadcast({ t: 'mo', i, o: g.own }); }
+  } else if (m.t === 'r') { const g = mons.get(m.i | 0); if (g && g.own === c.u.id) { g.own = null; broadcast({ t: 'mo', i: m.i | 0, o: null }); } }
+  else if (m.t === 'p') wsSend(c.sock, { t: 'p', k: m.k });
 }
 
 // 1초에 20번 묶어서 보냄
@@ -153,7 +168,11 @@ setInterval(() => {
   for (const c of clients.values()) if (c.dirty && c.st) { c.dirty = false; ups.push({ id: c.u.id, n: c.u.nick, ...c.st }); }
   if (ups.length) for (const c of clients.values()) { const l = ups.filter(o => o.id !== c.u.id); if (l.length) wsSend(c.sock, { t: 'u', l }); }
   const now = Date.now();
+  for (const [i, g] of mons) {
+    if (g.dead && now >= g.rt) { g.dead = false; g.hp = g.max; g.hit.clear(); broadcast({ t: 'mr', i }); }
+    else if (!g.dead && g.hp < g.max && !g.own && now - g.last > 8000) { g.hp = g.max; g.hit.clear(); broadcast({ t: 'mh', i, hp: g.hp }); }
+  }
   for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
 }, 50);
 
-server.listen(PORT, () => console.log('XP 캠프 서버 실행 중: 포트 ' + PORT));
+server.listen(PORT, () => console.log('링구 RPG 서버 실행 중: 포트 ' + PORT));
