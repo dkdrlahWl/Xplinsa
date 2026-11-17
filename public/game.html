@@ -793,6 +793,7 @@ function drawGround(x0,y0,x1,y1){
  for(let i=0;i<NZ;i++){zfill(i,lt(ZS[i].c,-.38),18,6)}
  blobs([BASEC],6,'#b39258',16);
  for(let i=0;i<NZ;i++){zfill(i,lt(ZS[i].c,.18),0,6);zfill(i,pat('tile_'+i)||ZS[i].c)}
+ featherZones(x0,y0,x1,y1);
  for(let i=0;i<NZ;i++){if(AI('tile_'+i))continue;const bb=ZBB[i];if(bb.x1<x0||bb.x0>x1||bb.y1<y0||bb.y0>y1)continue;ctx.save();ctx.clip(ZC[i].path);texture(i,Math.max(x0,bb.x0),Math.max(y0,bb.y0),Math.min(x1,bb.x1),Math.min(y1,bb.y1));ctx.restore()}
  ctx.lineCap='round';ctx.lineJoin='round';
  for(let i=0;i<NZ;i++){const b=ZB[i][4];ctx.fillStyle='rgba(60,30,30,.12)';ctx.beginPath();ctx.arc(b.x,b.y,b.r-8,0,TAU);ctx.fill();
@@ -800,7 +801,7 @@ function drawGround(x0,y0,x1,y1){
   ctx.setLineDash([26,18]);ctx.strokeStyle='rgba(224,85,74,.75)';ctx.lineWidth=5;ctx.beginPath();ctx.arc(b.x,b.y,b.r-30,0,TAU);ctx.stroke();ctx.setLineDash([])}
  ctx.lineCap='butt';
  drawWalls();
- blobs([BASEC],0,pat('tile_base')||'#f2d9a0');if(!AI('tile_base')){ctx.save();blobPath([BASEC]);ctx.clip();texture(1,BASE.x-BASEC.r,BASE.y-BASEC.r,BASE.x+BASEC.r,BASE.y+BASEC.r);ctx.restore()}
+ blobs([BASEC],0,pat('tile_base')||'#f2d9a0');featherBase();if(!AI('tile_base')){ctx.save();blobPath([BASEC]);ctx.clip();texture(1,BASE.x-BASEC.r,BASE.y-BASEC.r,BASE.x+BASEC.r,BASE.y+BASEC.r);ctx.restore()}
  ctx.setLineDash([30,22]);ctx.lineWidth=6;ctx.strokeStyle=S.built.fire?'#5fd06f':'#d9c491';ctx.beginPath();ctx.arc(BASE.x,BASE.y,BASE.ring,T*.15,T*.15+TAU);ctx.stroke();ctx.setLineDash([]);
  ctx.lineWidth=2.2;ctx.strokeStyle=OLC;
  for(const d of deco){if(d.x<x0-30||d.x>x1+30||d.y<y0-30||d.y>y1+30||false)continue;const z=d.z,x=d.x,y=d.y,q=d.s;
@@ -813,6 +814,11 @@ function drawGround(x0,y0,x1,y1){
  for(let i=0;i<NZ;i++){if(zoneOpen(i))continue;const c=ZB[i][0];label('스테이지 '+(i+1)+' · '+ZS[i].n,c.x,c.y-14,22,'#cfc9e8');label('Lv.'+ZS[i].req+' 달성 시 열림',c.x,c.y+14,18,'#ffe066')}
  for(const m of mons)if(m.d.boss&&m.dead){const t=Math.ceil(m.respT);label('보스 재생성',m.hx,m.hy-12,20,'#fff');label(Math.floor(t/60)+' : '+('0'+t%60).slice(-2),m.hx,m.hy+16,24,'#fff')}
 }
+// 지역끼리 맞닿은 경계를 부드럽게: 각 지역 무늬를 이웃 땅 쪽으로 점점 옅게 번지게
+let ZOTH=null;function featherZones(x0,y0,x1,y1){if(!ZOTH)ZOTH=ZC.map((_,i)=>{const p=new Path2D();ZC.forEach((c,j)=>{if(j!==i)p.addPath(c.path)});return p});
+ ctx.lineJoin='round';for(let i=0;i<NZ;i++){const bb=ZBB[i];if(bb.x1+80<x0||bb.x0-80>x1||bb.y1+80<y0||bb.y0-80>y1)continue;const fill=pat('tile_'+i)||ZS[i].c;ctx.save();ctx.clip(ZOTH[i]);ctx.strokeStyle=fill;
+  for(const[w,a]of[[130,.09],[112,.1],[94,.11],[76,.12],[58,.14],[40,.16],[22,.2]]){ctx.globalAlpha=a;ctx.lineWidth=w;ctx.stroke(ZC[i].path)}ctx.restore()}ctx.globalAlpha=1;ctx.lineWidth=2.2;ctx.strokeStyle=OLC}
+function featherBase(){const fill=pat('tile_base')||'#f2d9a0';ctx.save();ctx.strokeStyle=fill;for(const[w,a]of[[120,.14],[86,.22],[56,.32],[28,.45]]){ctx.globalAlpha=a;ctx.lineWidth=w;blobPath([BASEC]);ctx.stroke()}ctx.restore();ctx.globalAlpha=1;ctx.lineWidth=2.2;ctx.strokeStyle=OLC}
 function drawWalls(){for(let L=0;L<NZ;L++){if(zoneOpen(L))continue;ctx.save();ctx.clip(ZC[L].path);
   const st=(w,c,d)=>{ctx.lineWidth=w;ctx.strokeStyle=c;ctx.setLineDash(d||[]);for(let O=0;O<NZ;O++)if(zoneOpen(O))ctx.stroke(ZC[O].path);ctx.beginPath();ctx.arc(BASE.x,BASE.y,BASEC.r-14,0,TAU);ctx.stroke()};
   ctx.lineJoin='round';st(34,'#3a2c22');st(28,'#8a6a4a');st(20,'#b08a5e',[22,6]);st(6,'rgba(255,255,255,.18)',[22,6]);ctx.setLineDash([]);ctx.restore()}
@@ -894,7 +900,7 @@ function seg2(ax,ay,a1,l1,a2,l2,w,c,im){if(im){const jx=ax+Math.cos(a1)*l1,jy=ay
  ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(jx,jy);ctx.lineTo(ex,ey);ctx.strokeStyle='rgba(30,22,46,.72)';ctx.lineWidth=w+2.6;ctx.stroke();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();
  ctx.strokeStyle='rgba(255,255,255,.28)';ctx.lineWidth=w*.35;ctx.beginPath();ctx.moveTo(ax-1,ay-1);ctx.lineTo(jx-1,jy-1);ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2;return{x:ex,y:ey}}
 function armPose(w,p,A,mv,s){ // returns [upper, elbow, weaponAngle, lean]
- const aim=!!(w.pel||w.pierce),dual=w===WT.dagger,ru=aim?Math.PI/2-.95+(mv?.12*s:0):dual?Math.PI/2-.12+(mv?.35*s:0):Math.PI/2-.5+(mv?.18*s:0),rl=aim?-.45:dual?-.8:-1.35,IW=aim?-.08:dual?-1.0:-1.47;if(p<0)return[ru,rl,IW+(mv?.06*s:Math.sin(T*2.5)*.035),0];
+ const aim=!!(w.pel||w.pierce),dual=w===WT.dagger,ru=aim?Math.PI/2-.55+(mv?.12*s:0):dual?Math.PI/2-.12+(mv?.35*s:0):Math.PI/2-.5+(mv?.18*s:0),rl=aim?-1.05:dual?-.8:-1.35,IW=aim?-.08:dual?-1.0:-1.47;if(p<0)return[ru,rl,IW+(mv?.06*s:Math.sin(T*2.5)*.035),0];
  if(w.shot){const k=p<.3?eo(p/.3):1-eio((p-.3)/.7)*.0;const rec=p<.3?0:Math.sin(clamp((p-.3)/.25,0,1)*Math.PI)*.25;return[lerp(ru,A-.25,eo(p/.25))-rec,lerp(rl,.25,eo(p/.25)),A-rec*.6,.08]}
  if(WT[wType()]===WT.spear){const pu=A-.15;if(p<.3){const k=eio(p/.3);return[lerp(ru,pu,k),lerp(rl,-1.9,k),lerp(IW,A,k),-.1*k]}if(p<.55){const k=eo((p-.3)/.25);return[pu,lerp(-1.9,0,k),A,lerp(-.1,.25,k)]}const k=eio((p-.55)/.45);return[lerp(pu,ru,k),lerp(0,rl,k),lerp(A,IW,k),lerp(.25,0,k)]}
  const ar=w.arc||1.2,u0=A-1.5-ar*.55,u1=A+.55+ar*.25;
@@ -927,8 +933,8 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  const lg=(sg)=>{const sw=mv?.62*Math.sin(ph+(sg>0?0:Math.PI)):0,bend=mv?.18+.5*Math.max(0,Math.cos(ph+(sg>0?0:Math.PI))):.12;const ax=hipx+sg*3,a1=Math.PI/2-sw+(mv?0:-sg*.22),l1=IMG?8.5:7.5,l2=IMG?8:7.5,ex=ax+Math.cos(a1)*l1+Math.cos(a1+bend)*l2,ey=hipy+Math.sin(a1)*l1+Math.sin(a1+bend)*l2;(HA('foot')?pimg(HA('foot'),ex+2,ey-1,11):ell(ex+1.5,ey+.5,4.6,3.2,lt(L,-.2)));seg2(ax,hipy,a1,l1,bend,l2,6.5,L,HA('leg'))};
  lg(-1);lg(1);
  // back arm
- const two=k!=='dagger',BWI=HA('body'),BW=BWI?Math.min(22,22*BWI.width/BWI.height):10,bs={x:chx-(IMG?BW*.36:2)*Math.cos(lean),y:chy+(IMG?3.8:2.5)},l1=IMG?9.5:8.5,l2=IMG?9:8;
- let BA=Math.PI/2+.3;if(!two){const bu=Math.PI/2-(p>=0?.2+eio(p)*.9:-.38)-(mv?.2*s:0),bh=(BA=bu,seg2)(bs.x,bs.y,bu,IMG?9.5:8,-.55,IMG?9:7.5,5.2,L,HA('arm'));const ba=p>=0?-1.2+eio(p)*1.6:.2+(mv?.1*s:0);ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore();(HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.8):ell(bh.x,bh.y,3.6,3.6,h.body))}
+ const two=k!=='dagger'&&k!=='bow'&&k!=='gun',BWI=HA('body'),BW=BWI?Math.min(22,22*BWI.width/BWI.height):10,bs={x:chx-(IMG?BW*.36:2)*Math.cos(lean),y:chy+(IMG?3.8:2.5)},l1=IMG?9.5:8.5,l2=IMG?9:8;
+ let BA=Math.PI/2+.3;if(!two){const bu=Math.PI/2-(p>=0?.2+eio(p)*.9:-.38)-(mv?.2*s:0),bh=(BA=bu,seg2)(bs.x,bs.y,bu,IMG?9.5:8,-.55,IMG?9:7.5,5.2,L,HA('arm'));const ba=p>=0?-1.2+eio(p)*1.6:.2+(mv?.1*s:0);if(k==='dagger'){ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore()}(HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.8):ell(bh.x,bh.y,3.6,3.6,h.body))}
  const hx=chx+Math.sin(lean)*(IMG?11.5:11),hy=chy-Math.cos(lean)*(IMG?11.5:11);
  // front arm + weapon
  const fs={x:chx+(IMG?BW*.3:1.5)*Math.cos(lean),y:chy+(IMG?3.4:2.5)};
@@ -1168,7 +1174,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0110 (맵 확대·보스 2마리·새 이미지·팔 수정·몬스터 고르게)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0120 (경계 부드럽게·총/활 자세·바닥 이음새)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='soon'){toast('준비 중이에요');return}
  if(k==='up'){const u=UP[v],l=S.up[v];if(l>=u.max)return;const c=u.cost(l);if(!afford(c)){toast('재화가 부족해요');return}S.gold-=c.gold;if(c.orb)S.orb-=c.orb;if(c.rb)S.rb-=c.rb;S.up[v]++;const oh=ST.maxhp;calc();if(v==='hp')P.hp+=ST.maxhp-oh;qev('up',v,1);save()}
