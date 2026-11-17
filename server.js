@@ -74,11 +74,16 @@ const server = http.createServer(async (req, res) => {
   let f = decodeURIComponent(p); if (f === '/') f = '/index.html';
   const fp = path.normalize(path.join(PUB, f));
   if (!fp.startsWith(PUB)) { res.writeHead(403); return res.end(); }
-  fs.readFile(fp, (err, data) => {
-    if (err) { res.writeHead(404); return res.end('not found'); }
-    const ext = path.extname(fp).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': ext === '.html' || ext === '.json' || ext === '.js' ? 'no-cache' : 'public, max-age=3600' });
-    res.end(data);
+  fs.stat(fp, (e, st) => {
+    if (e || !st.isFile()) { res.writeHead(404); return res.end('not found'); }
+    const ext = path.extname(fp).toLowerCase(), tag = '"' + st.size.toString(36) + '-' + st.mtimeMs.toString(36) + '"';
+    // 항상 서버에 새 버전인지 물어봄 (안 바뀌었으면 304로 바로 끝 → 빠름)
+    if (req.headers['if-none-match'] === tag) { res.writeHead(304, { ETag: tag, 'Cache-Control': 'no-cache' }); return res.end(); }
+    fs.readFile(fp, (err, data) => {
+      if (err) { res.writeHead(404); return res.end('not found'); }
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache', ETag: tag });
+      res.end(data);
+    });
   });
 });
 
