@@ -6,11 +6,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:Jua,sans-serif;color:#fff;overflow:hidden}
-body{background:radial-gradient(ellipse at 50% 30%,#7cc860 0%,#4f9a43 55%,#2f6b33 100%);display:flex;align-items:center;justify-content:center}
+body{background:#4f9a43 url(assets/login_bg.webp) center/cover no-repeat;display:flex;align-items:center;justify-content:center}
 .bg{position:fixed;inset:0;pointer-events:none;overflow:hidden}
 .bg i{position:absolute;border-radius:50%;background:rgba(255,255,255,.08)}
 .fire{position:fixed;left:50%;bottom:7%;transform:translateX(-50%);width:120px;height:120px;filter:drop-shadow(0 0 30px #ffb340)}
-.card{position:relative;width:min(88vw,360px);background:#2b2546;border:4px solid #1c1830;border-radius:26px;padding:26px 22px 22px;box-shadow:0 10px 0 #1c1830,0 20px 40px rgba(0,0,0,.35)}
+.card{position:relative;width:min(88vw,360px);background:rgba(43,37,70,.86);backdrop-filter:blur(4px);margin-top:-18vh;border:4px solid #1c1830;border-radius:26px;padding:26px 22px 22px;box-shadow:0 10px 0 #1c1830,0 20px 40px rgba(0,0,0,.35)}
 h1{text-align:center;font-size:40px;letter-spacing:2px;color:#ffd23c;-webkit-text-stroke:2px #1c1830;text-shadow:0 4px 0 #1c1830;margin-top:-62px}
 .sub{text-align:center;color:#b9b2d8;font-size:15px;margin:6px 0 18px}
 .tabs{display:flex;background:#1c1830;border-radius:14px;padding:4px;margin-bottom:16px}
@@ -27,8 +27,8 @@ input:focus{border-color:#ffd23c}
 .hide{display:none}
 </style></head>
 <body>
-<div class="bg" id="bg"></div>
-<svg class="fire" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="34" ry="8" fill="#000" opacity=".25"/><rect x="22" y="76" width="56" height="10" rx="5" fill="#7a4a2a" stroke="#1c1830" stroke-width="3" transform="rotate(12 50 81)"/><rect x="22" y="76" width="56" height="10" rx="5" fill="#8d5a33" stroke="#1c1830" stroke-width="3" transform="rotate(-12 50 81)"/><path d="M50 18c10 16 24 26 24 44a24 24 0 0 1-48 0c0-12 8-18 12-28 4 8 6 12 10 12-2-10-2-18 2-28z" fill="#ff8a2a" stroke="#1c1830" stroke-width="3"/><path d="M50 46c6 8 12 12 12 20a12 12 0 0 1-24 0c0-6 6-10 12-20z" fill="#ffe14a"/></svg>
+<div class="bg" id="bg" style="display:none"></div>
+<svg class="fire" style="display:none" viewBox="0 0 100 100"><ellipse cx="50" cy="88" rx="34" ry="8" fill="#000" opacity=".25"/><rect x="22" y="76" width="56" height="10" rx="5" fill="#7a4a2a" stroke="#1c1830" stroke-width="3" transform="rotate(12 50 81)"/><rect x="22" y="76" width="56" height="10" rx="5" fill="#8d5a33" stroke="#1c1830" stroke-width="3" transform="rotate(-12 50 81)"/><path d="M50 18c10 16 24 26 24 44a24 24 0 0 1-48 0c0-12 8-18 12-28 4 8 6 12 10 12-2-10-2-18 2-28z" fill="#ff8a2a" stroke="#1c1830" stroke-width="3"/><path d="M50 46c6 8 12 12 12 20a12 12 0 0 1-24 0c0-6 6-10 12-20z" fill="#ffe14a"/></svg>
 
 <div class="card">
  <h1>링구 RPG</h1>
