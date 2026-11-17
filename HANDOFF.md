@@ -15,9 +15,8 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 
 ## 서버
 - AWS Lightsail 서울, 고정 IP `52.78.199.85`, 포트 80, systemd 서비스 `xplinsa`, 설치 위치 `/opt/xplinsa`
-- 업데이트: GitHub `main`에 올린 뒤 SSH에서
-  `curl -fsSL https://raw.githubusercontent.com/dkdrlahWl/Xplinsa/main/setup.sh | sudo bash`
-- 접속 중인 폰은 30초 안에 자동 새로고침됨
+- **자동 배포**: 서버가 1분마다 GitHub `main`을 확인해서 바뀌면 자동으로 받아서 재시작함. `main`에 커밋만 하면 끝.
+- 접속 중인 폰은 30초 안에 자동 새로고침됨 (진행 상황 저장 후)
 
 ## game.html 주요 부분
 - `HERO` 영웅 13명, `WT` 무기 8종, `GR` 등급 5개, `MT` 몬스터(보스 지역당 2마리), `Q` 임무 118개
@@ -29,4 +28,4 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 ## 수정 후 꼭 할 것
 1. 메뉴의 버전 문구(`버전 1118-xxxx`) 올리기
 2. `net.js`를 고쳤으면 game.html의 `net.js?v=숫자`도 올리기
-3. GitHub에 올리고 서버에서 위 업데이트 명령 실행
+3. `main` 브랜치에 커밋 (1~2분 안에 서버·폰에 자동 반영)

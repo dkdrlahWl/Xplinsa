@@ -23,6 +23,18 @@ Environment=PORT=80
 [Install]
 WantedBy=multi-user.target
 S
+# 자동 업데이트: 1분마다 GitHub main 확인, 바뀌었으면 받아서 재시작
+cat > /opt/xplinsa-update.sh <<'U'
+#!/bin/bash
+cd /opt/xplinsa || exit 0
+git fetch -q --depth 1 origin main || exit 0
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+  git reset -q --hard origin/main && systemctl restart xplinsa
+fi
+U
+chmod +x /opt/xplinsa-update.sh
+echo '* * * * * root /opt/xplinsa-update.sh >/dev/null 2>&1' > /etc/cron.d/xplinsa-update
+chmod 644 /etc/cron.d/xplinsa-update
 systemctl daemon-reload
 systemctl enable xplinsa >/dev/null 2>&1
 systemctl restart xplinsa
