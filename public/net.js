@@ -72,7 +72,10 @@ function markSave(){saveDirty=true}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
 window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});
 
-window.NET={on,hit,remote,me:()=>ME,tick,draw,list,markSave,nick:NICK};
+async function logout(){kicked=true;try{ws&&ws.close()}catch(e){}
+ try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S})})}catch(e){}
+ for(const k of['xp_token','xp_admin','xp_nick','camp_save_v2'])localStorage.removeItem(k);location.replace('index.html')}
+window.NET={logout,on,hit,remote,me:()=>ME,tick,draw,list,markSave,nick:NICK};
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});

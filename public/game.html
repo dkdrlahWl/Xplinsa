@@ -246,7 +246,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=5"></script>
+<script src="net.js?v=6"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -837,11 +837,27 @@ function drawSmith(){const x=BASE.x+190,y=BASE.y-90;{const im=AI('bld_smith');if
 function drawChest(){const x=BASE.x-190,y=BASE.y-70;{const im=AI('bld_chest');if(im){const w=86,h=w*im.height/im.width;shadow(x,y+14,40);ctx.drawImage(im,x-w/2,y+18-h,w,h);return}}shadow(x,y+14,40);frr('#8a5a34',x-32,y-14,64,30,6);frr('#b07a44',x-34,y-34,68,22,8);ell(x,y-12,6,6,'#ffc93c')}
 
 const TWO={sword:-6.2,axe:-6.2,mace:-6.2,spear:-7,staff:-7,bow:8,gun:8};const GRIP={dagger:.2,sword:.22,mace:.22,spear:.3,axe:.24,bow:.16,gun:.13,staff:.3};const GY=new WeakMap();
+const GI=new WeakMap();
+function wLen(k){return((WL[k]||40)+8)*(PV?1.05:1)*(k==='dagger'?1.1:k==='bow'||k==='gun'?1.2:1.38)}
+function gripInfo(im,k){let r=GI.get(im);if(r)return r;r={gx:GRIP[k]||.14,gy:.5,th:.12,bx:null};
+ try{const c=document.createElement('canvas'),W=im.width,H=im.height;c.width=W;c.height=H;const g=c.getContext('2d');g.drawImage(im,0,0);const d=g.getImageData(0,0,W,H).data;
+  const col=x=>{let a=-1,b=-1;for(let y=0;y<H;y++)if(d[(y*W+x)*4+3]>120){if(a<0)a=y;b=y}return a<0?null:{a,b,t:b-a+1}};
+  const N=120,P=[];for(let i=0;i<N;i++)P.push(col(Math.min(W-1,Math.round(i/N*W))));
+  if(k==='bow'||k==='gun'){const x=Math.round(r.gx*N),p=P[x]||P[Math.round(N*.2)];if(p){r.gy=(p.a+p.b)/2/H;r.th=p.t/H}}
+  else{const i0=Math.round(N*.06),i1=Math.round(N*(k==='spear'||k==='staff'?.75:.6));let mn=1e9;for(let i=i0;i<i1;i++)if(P[i])mn=Math.min(mn,P[i].t);
+   const ok=i=>P[i]&&P[i].t<=mn*1.3;let best=[0,0],cur=-1;for(let i=i0;i<=i1;i++){if(i<i1&&ok(i)){if(cur<0)cur=i}else if(cur>=0){if(i-cur>best[1]-best[0])best=[cur,i];cur=-1}}
+   const hs=best[0]/N,he=best[1]/N,L=wLen(k),fw=Math.max(7,mn/H*(L*H/W)*1.4)/L;
+   // 앞손: 손잡이 위쪽(날밑/머리 바로 아래), 뒷손: 그 아래
+   let fx=k==='spear'||k==='staff'?hs+(he-hs)*.42:he-fw*.6;fx=Math.max(hs+fw*.5,fx);r.gx=fx;r.bx=Math.max(hs+fw*.3,fx-fw*.95);
+   const p=P[Math.round(fx*N)];if(p){r.gy=(p.a+p.b)/2/H;r.th=p.t/H}}
+ }catch(e){}GI.set(im,r);return r}
+function handInfo(k,gr){const im=AI('wpn_'+k+'_'+gr)||AI('wpn_'+k);if(!im||k==='dagger')return{fist:6.4,off:TWO[k]||-7};const gi=gripInfo(im,k),L=wLen(k),h=L*im.height/im.width,fist=clamp(gi.th*h*1.4,6.6,8.6);
+ return{fist,off:(k==='bow'||k==='gun')?TWO[k]:(gi.bx-gi.gx)*L}}
 function gripY(im,gx){let m=GY.get(im);if(!m){m={};GY.set(im,m)}if(m[gx]!==undefined)return m[gx];let r=.5;try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.drawImage(im,0,0);const x=Math.round(im.width*gx),d=g.getImageData(x,0,1,im.height).data;let a=0,b=0;for(let y=0;y<im.height;y++){const al=d[y*4+3];if(al>120){a+=y;b++}}if(b)r=a/b/im.height}catch(e){}m[gx]=r;return r}
 function blade(x0,x1,w,tip,c){const g=ctx.createLinearGradient(0,-w,0,w);g.addColorStop(0,'#ffffff');g.addColorStop(.45,c);g.addColorStop(1,lt(c,-.35));ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x0,-w);ctx.lineTo(x1,-w*.8);ctx.lineTo(x1+tip,0);ctx.lineTo(x1,w*.8);ctx.lineTo(x0,w);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x0+2,-w*.25);ctx.lineTo(x1+tip*.4,-w*.1);ctx.stroke();ctx.strokeStyle=OLC;ctx.lineWidth=2}
 function handle(x0,x1,h){const g=ctx.createLinearGradient(0,-h,0,h);g.addColorStop(0,'#b07a4a');g.addColorStop(1,'#5e3a1e');ctx.fillStyle=g;rr(x0,-h,x1-x0,h*2,h);ctx.fill();ctx.stroke()}
 function drawWeapon(k,gc,glow,gi){ // pointing +x from the hand
- {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const L=((WL[k]||40)+8)*(PV?1.05:1)*(k==='dagger'?1.1:k==='bow'||k==='gun'?1.2:1.38),h=L*im.height/im.width,gx=GRIP[k]||.14,gy=gripY(im,gx);if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
+ {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const L=((WL[k]||40)+8)*(PV?1.05:1)*(k==='dagger'?1.1:k==='bow'||k==='gun'?1.2:1.38),h=L*im.height/im.width,GIi=gripInfo(im,k),gx=GIi.gx,gy=GIi.gy;if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
  ctx.lineWidth=2;ctx.strokeStyle=OLC;const metal=gc==='#c3cad6'?'#d6dde8':lt(gc,.25);
  if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}
  if(k==='sword'||k==='dagger'){const L=k==='sword'?34:20;handle(-6,4,2.6);ell(-7,0,3.2,3.2,'#ffd23c');blade(7,L,4.4,9,metal);frr('#ffd23c',3,-8.5,5,17,2.5)}
@@ -899,9 +915,9 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  // front arm + weapon
  const fs={x:chx+1.5*Math.cos(lean),y:chy+2.5};
  const fhx=fs.x+Math.cos(ua)*l1+Math.cos(ua+ea)*l2,fhy=fs.y+Math.sin(ua)*l1+Math.sin(ua+ea)*l2;
- const off=TWO[k]||-7,tx=fhx+Math.cos(wa)*off-Math.sin(wa)*(off>0?1.5:0),ty=fhy+Math.sin(wa)*off+Math.cos(wa)*(off>0?1.5:0);
- const drawBack=()=>{if(!two)return;const dx=tx-bs.x,dy=ty-bs.y,dd=Math.hypot(dx,dy),st=Math.max(1,dd/(l1+l2-.3)),L1=l1*st,L2=l2*st,d=Math.min(dd,L1+L2-.05),base=Math.atan2(dy,dx),A=Math.acos(clamp((L1*L1+d*d-L2*L2)/(2*L1*d),-1,1)),a1=base+A,jx=bs.x+Math.cos(a1)*L1,jy=bs.y+Math.sin(a1)*L1,a2=Math.atan2(ty-jy,tx-jx)-a1;seg2(bs.x,bs.y,a1,L1,a2,L2,5.2,L,HA('arm'))};
- const drawArm=()=>{const hand=seg2(fs.x,fs.y,ua,l1,ea,l2,5.4,L,HA('arm'));ctx.save();ctx.translate(hand.x,hand.y);ctx.rotate(wa);drawWeapon(k,gc,gr>=2,gr);ctx.restore();(HA('hand')?pimg(HA('hand'),hand.x,hand.y,6.4):ell(hand.x,hand.y,3.9,3.9,h.body));if(two)(HA('hand')?pimg(HA('hand'),tx,ty,6.2):ell(tx,ty,3.8,3.8,h.body));return hand};
+ const HI=handInfo(k,gr),off=HI.off,tx=fhx+Math.cos(wa)*off-Math.sin(wa)*(off>0?1.5:0),ty=fhy+Math.sin(wa)*off+Math.cos(wa)*(off>0?1.5:0);
+ const drawBack=()=>{if(!two)return;const dx=tx-bs.x,dy=ty-bs.y,dd=Math.hypot(dx,dy),st=Math.max(1,dd/(l1+l2-.3)),L1=l1*st,L2=l2*st,d=Math.min(dd,L1+L2-.05),base=Math.atan2(dy,dx),A=Math.acos(clamp((L1*L1+d*d-L2*L2)/(2*L1*d),-1,1)),a1=base+A,jx=bs.x+Math.cos(a1)*L1,jy=bs.y+Math.sin(a1)*L1,a2=Math.atan2(ty-jy,tx-jx)-a1;seg2(bs.x,bs.y,a1,L1,a2,L2,5.2,L,HA('arm'));HA('hand')?pimg(HA('hand'),tx,ty,HI.fist):ell(tx,ty,HI.fist*.6,HI.fist*.6,h.body)};
+ const drawArm=()=>{ctx.save();ctx.translate(fhx,fhy);ctx.rotate(wa);drawWeapon(k,gc,gr>=2,gr);ctx.restore();const hand=seg2(fs.x,fs.y,ua,l1,ea,l2,5.4,L,HA('arm'));HA('hand')?pimg(HA('hand'),hand.x,hand.y,HI.fist):ell(hand.x,hand.y,HI.fist*.6,HI.fist*.6,h.body);return hand};
  let hand;if(up){drawBack();hand=drawArm();drawHead(h,hx,hy,lean,up,fl)}else{drawHead(h,hx,hy,lean,up,fl);drawBack();hand=drawArm()}
  ctx.restore();
  // weapon tip in world space -> slash trail
@@ -1133,7 +1149,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='soon'){toast('준비 중이에요');return}
  if(k==='up'){const u=UP[v],l=S.up[v];if(l>=u.max)return;const c=u.cost(l);if(!afford(c)){toast('재화가 부족해요');return}S.gold-=c.gold;if(c.orb)S.orb-=c.orb;if(c.rb)S.rb-=c.rb;S.up[v]++;const oh=ST.maxhp;calc();if(v==='hp')P.hp+=ST.maxhp-oh;qev('up',v,1);save()}
@@ -1149,7 +1165,7 @@ function act(a){const[k,v]=a.split(':');if(k==='adm'&&!window.IS_ADMIN)return;
  else if(k==='msel'){mergeSel=v}
  else if(k==='domerge'){if(!mergeSel)return;const nk=merge1(mergeSel);if(!nk){toast('같은 무기가 3개 있어야 해요');return}fixSlots();autoFill();calc();save();const was=mergeSel;mergeSel=S.weapons[was]>=3?was:nk;draw();const f=$('fres');if(f){f.innerHTML=wIcon(nk);f.className='fbox top gb'+nk.split('_')[1]+' fglow'}const lg=$('mlog');if(lg)lg.innerHTML=`<b style="color:${GR[+nk.split('_')[1]].c}">${wName(nk)}</b> 획득!`;return}
  else if(k==='goassets'){if(!window.IS_ADMIN)return;panel='assets'}
- else if(k==='goadmin'){if(!window.IS_ADMIN)return;panel='admin'}else if(k==='cn'){S.cn=+v;save()}
+ else if(k==='goadmin'){if(!window.IS_ADMIN)return;panel='admin'}else if(k==='logout'){if(window.NET)NET.logout();return}else if(k==='cn'){S.cn=+v;save()}
  else if(k==='adm'){const[c,x]=v.split(',');
   if(c==='inf'){S.admin=!S.admin;if(!S.admin)for(const k2 of ADM_KEYS)S[k2]=Math.min(S[k2],100000);adminTick();toast(S.admin?'재화 무한 켜짐':'재화 무한 꺼짐')}
   else if(c==='all'){giveAll();toast('모든 무기(등급별 3개씩)·영웅 지급')}
