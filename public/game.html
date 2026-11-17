@@ -246,7 +246,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=7"></script>
+<script src="net.js?v=9"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -388,7 +388,7 @@ Object.assign(MT0,{
  ancsp:M('고대 수호 거미',54,340000,1100,150000,50000,46,60,'spider','#5a7a5a',Object.assign({c2:'#ffe066',tail:1,crown:1},BO(25,20,20))),
  flamel:M('불꽃 정령왕',64,1300000,3000,600000,200000,50,58,'tall','#ff7a2b',Object.assign({c2:'#ffe066',crown:1},BO(30,24,24)))});
 const MT=MT0;for(const k in MT){const d=MT[k],z=d.lv<10?0:d.lv<20?1:d.lv<30?2:d.lv<46?3:d.lv<56?4:5,big=d.boss?1.6:d.elite?1.3:1;d.gold=Math.max(1,Math.round(d.gold*.55));d.xp=Math.max(1,Math.round(d.xp*.5));if(d.chest){d.hp=Math.round(d.hp*[3,4,5,6,7,8][z]);continue}
- d.hp=Math.round(d.hp*[3.5,5,6.5,8,9.5,11][z]*big);d.atk=Math.round(d.atk*[2.2,2.6,3,3.4,3.8,4.2][z]*big);d.spd=Math.round(d.spd*1.2);d.resp=Math.round(d.resp*(d.boss?8:1));if(d.boss){for(const q of['gold','xp','gem','cry','orb','scr'])if(d[q])d[q]=Math.ceil(d[q]/2);if(!['golem','skorp','elder','lord','queen','volc'].includes(k))d.rb=0}}
+ d.hp=Math.round(d.hp*[3.5,5,6.5,8,9.5,11][z]*big);d.atk=Math.round(d.atk*[2.2,2.6,3,3.4,3.8,4.2][z]*big);d.spd=Math.round(d.spd*1.2);d.resp=Math.round(d.resp*(d.boss?4:1));if(d.boss){for(const q of['gold','xp','gem','cry','orb','scr'])if(d[q])d[q]=Math.ceil(d[q]/2);if(!['golem','skorp','elder','lord','queen','volc'].includes(k))d.rb=0}}
 const WT={
  dagger:{n:'쌍검',rg:60,cd:.32,m:.5,arc:.8,hits:2,ds:'양손 번갈아 2연속 베기'},sword:{n:'검',rg:80,cd:.6,m:1,arc:1.3,ds:'앞쪽 부채꼴 베기'},mace:{n:'둔기',rg:74,cd:1.1,m:1.7,arc:3.14,stun:.45,ds:'360° 내려찍기 · 기절'},spear:{n:'창',rg:125,cd:.75,m:1.15,arc:.4,line:1,ds:'긴 일직선 관통 찌르기'},axe:{n:'도끼',rg:84,cd:.9,m:1.6,arc:1.9,kb:30,ds:'넓은 휘두르기 · 밀쳐내기'},
  bow:{n:'석궁',rg:170,cd:.85,m:1.2,shot:1,pierce:1,ds:'일직선 관통 화살'},gun:{n:'총',rg:140,cd:.5,m:.55,shot:1,pel:3,ds:'3발 산탄 사격'},staff:{n:'지팡이',rg:155,cd:1.1,m:1.4,shot:1,aoe:70,ds:'마법 구슬 폭발'}
@@ -546,7 +546,9 @@ const ST={};
 function wq(k){const a=S.wq&&S.wq[k];return a&&a.length?Math.max(...a):1}
 function addW(k){S.weapons[k]=(S.weapons[k]||0)+1;S.wq=S.wq||{};(S.wq[k]=S.wq[k]||[]).push(Math.round(rnd(.8,1.2)*100)/100)}
 function remW(k,n){S.weapons[k]-=n;const a=(S.wq&&S.wq[k])||[];a.sort((x,y)=>x-y);a.splice(0,n);if(S.weapons[k]<=0){delete S.weapons[k];if(S.wq)delete S.wq[k]}}
-function wAtk(k,lv){return Math.round(GR[+k.split('_')[1]].b*wq(k)*(1+.1*((lv||1)-1))*10)/10}
+function wqN(k,n){const a=((S.wq&&S.wq[k])||[]).slice().sort((x,y)=>y-x);return a.length?a[Math.min(n,a.length-1)]:1}
+function slotQ(i){const k=S.slots[i];let n=0;for(let j=0;j<i;j++)if(S.slots[j]===k)n++;return wqN(k,n)}
+function wAtk(k,lv,q){return Math.round(GR[+k.split('_')[1]].b*(q||wq(k))*(1+.1*((lv||1)-1))*10)/10}
 function fmt1(n){return n<100?''+Math.round(n*10)/10:fmt(n)}
 const SLOT_LV=[1,10,25,40,55,70],SLOT_MAX=70,GMAX=[30,40,45,50,70];
 function effLv(i){const k=S.slots[i];return k?Math.min(S.slv[i],GMAX[+k.split('_')[1]]):S.slv[i]}
@@ -574,7 +576,7 @@ const HERO=[
  {k:'dragon',n:'용기사',g:3,d:'공격력 +10% · 체력 +8%',body:'#c8402f',limb:'#6a1a1a',fx:{atk:.1,hp:.08}}];
 const HNEED=[10,20,30,50];function hneed(h){return HNEED[h.g]}
 function heroOf(){return HERO.find(h=>h.k===S.hero)||HERO[0]}
-function calc(){const u=S.up;ST.atk=UP.atk.val(u.atk)+S.slots.reduce((a,k,i)=>a+(k?wAtk(k,effLv(i)):0),0);ST.maxhp=UP.hp.val(u.hp);ST.bag=UP.bag.val(u.bag);ST.regen=UP.regen.val(u.regen);ST.crit=u.crit*.02;ST.spd=190*(50+u.spd)/50;ST.aspd=1+.033*u.aspd;ST.dbl=.035*u.dbl;const hf=heroOf().fx;ST.maxhp=Math.round(ST.maxhp*(1+(hf.hp||0)));ST.atk*=1+(hf.atk||0);ST.crit+=hf.crit||0;ST.bag=Math.round(ST.bag*(1+(hf.bag||0)));ST.regen*=1+(hf.regen||0);ST.aspd+=hf.aspd||0;ST.spd*=1+(hf.spd||0);
+function calc(){const u=S.up;ST.atk=UP.atk.val(u.atk)+S.slots.reduce((a,k,i)=>a+(k?wAtk(k,effLv(i),slotQ(i)):0),0);ST.maxhp=UP.hp.val(u.hp);ST.bag=UP.bag.val(u.bag);ST.regen=UP.regen.val(u.regen);ST.crit=u.crit*.02;ST.spd=190*(50+u.spd)/50;ST.aspd=1+.033*u.aspd;ST.dbl=.035*u.dbl;const hf=heroOf().fx;ST.maxhp=Math.round(ST.maxhp*(1+(hf.hp||0)));ST.atk*=1+(hf.atk||0);ST.crit+=hf.crit||0;ST.bag=Math.round(ST.bag*(1+(hf.bag||0)));ST.regen*=1+(hf.regen||0);ST.aspd+=hf.aspd||0;ST.spd*=1+(hf.spd||0);
  let ba=0,bl=0,bh=0;S.slots.forEach((k,i)=>{if(!k)return;const l=effLv(i);if(l>=10)ba+=1;if(l>=20)bl+=2;if(l>=30)bh+=2});ST.atk=Math.round(ST.atk*(1+ba/100));ST.maxhp=Math.round(ST.maxhp*(1+bh/100));ST.ls=bl/100;ST.pow=Math.round(ST.atk*12+ST.maxhp*.8)}
 function bagTotal(){return S.bag+S.bi.cry+S.bi.gem+S.bi.orb+S.bi.rb+S.bi.scr}
 calc();
@@ -667,8 +669,8 @@ function useSkill(t){const tg=nearest(t==='bow'||t==='staff'||t==='gun'?260:t===
  case'gun':for(let i=0;i<10;i++)later(i*.1,()=>bolt(rnd(0,TAU),640,.38,Math.round(A*1.7),'sbullet',false));break;
  case'staff':{const mx=tg.x,my=tg.y;fxs.push({met:1,x:mx,y:my,t:.6});later(.6,()=>{areaHit(mx,my,130,A*5);IF('fx_boom',{x:mx,y:my-30,t:.6,s0:120,s1:290})||fxs.push({x:mx,y:my,t:.5,r:130,c:'#ff8a2b'},{x:mx,y:my,t:.35,r:80,c:'#ffe066'})})}}
  return true}
-function resolveHit(){const h=P.pend;P.pend=null;let w=h.w;const sx=P.tipX||P.x,sy=P.tipY||P.y-20;if(h.emp){w=Object.assign({},w,{rg:w.rg*(w.line?1.5:1.2),arc:Math.min(3.14,(w.arc||1.2)*(w===WT.axe?3:1.3)),hits:w.hits?3:0,pel:w.pel?5:0,aoe:w.aoe?w.aoe*1.5:0});h.d=Math.round(h.d*1.4);fxs.push({x:P.x,y:P.y-14,t:.4,r:w.shot?50:w.rg,c:'#ffd23c'});num(P.x,P.y-96,SP[wType()],'#ffe066',false);if(w.pierce){for(const da of[-.2,.2]){const a0=Math.atan2(h.m.y-h.m.d.r*.6-sy,h.m.x-sx)+da;bolt(a0,760,w.rg*1.15/760,h.d,'bow',true,sx,sy)}}}
- if(w.shot){if(w.pierce||w.pel){const n=w.pel||1,a0=Math.atan2(h.m.y-h.m.d.r*.6-sy,h.m.x-sx);for(let i=0;i<n;i++){const a=a0+(n>1?(i-(n-1)/2)*.22:0),sp=w.pel?620:760;shots.push({x:sx,y:sy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,a,life:w.rg*1.15/sp,d:h.d,crit:h.crit,k:wType(),hit:[],pierce:!!w.pierce})}}
+function resolveHit(){const h=P.pend;P.pend=null;let w=h.w;const tipOk=P.tipX&&Math.hypot(P.tipX-P.x,P.tipY-P.y)<110,sx=tipOk?P.tipX:P.x+Math.cos(P.dir)*14,sy=tipOk?P.tipY:P.y-22;if(h.emp){w=Object.assign({},w,{rg:w.rg*(w.line?1.5:1.2),arc:Math.min(3.14,(w.arc||1.2)*(w===WT.axe?3:1.3)),hits:w.hits?3:0,pel:w.pel?5:0,aoe:w.aoe?w.aoe*1.5:0});h.d=Math.round(h.d*1.4);fxs.push({x:P.x,y:P.y-14,t:.4,r:w.shot?50:w.rg,c:'#ffd23c'});num(P.x,P.y-96,SP[wType()],'#ffe066',false);if(w.pierce){for(const da of[-.2,.2]){const a0=Math.atan2(h.m.y-h.m.d.r*.6-sy,h.m.x-sx)+da;bolt(a0,760,w.rg*1.15/760,h.d,'bow',true,sx,sy)}}}
+ if(w.shot){if(w.pierce||w.pel){const n=w.pel||1,a0=Math.atan2(h.m.y-h.m.d.r*.6-sy,h.m.x-sx);for(let i=0;i<n;i++){const a=a0+(n>1?(i-(n-1)/2)*.22:0),sp=w.pel?620:760;shots.push({x:sx,y:sy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,a,life:w.rg*1.45/sp,d:h.d,crit:h.crit,k:wType(),hit:[],pierce:!!w.pierce})}}
   else if(!h.m.dead)shots.push({x:sx,y:sy,tg:h.m,d:h.d,crit:h.crit,aoe:w.aoe||0,k:wType()})}
  else{swingHits(w,h.crit,h.d);if(w.hits>1)P.s2={w,crit:h.crit,d:h.d,t:.1}}}
 function levelCheck(){let up=false;const l0=S.lv;while(S.xp>=need(S.lv)){S.xp-=need(S.lv);S.lv++;up=true;S.gold+=20*S.lv;if(S.lv%5===0){S.gem+=10;S.gold+=360}}
@@ -738,7 +740,7 @@ function update(dt){T+=dt;lockT-=dt;if(banner.t>0)banner.t-=dt;
   if(!d.boss){pushOut(m,d.r*.6);if(!inZ(m.z,m.x,m.y,8)){m.x=px;m.y=py}}
  }
  // shots
- for(let i=shots.length-1;i>=0;i--){const s=shots[i];if(s.vx!==undefined){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;let gone=s.life<=0;for(const o of mons){if(gone)break;if(o.dead||s.hit.includes(o)||!zoneOpen(o.z))continue;if(Math.hypot(o.x-s.x,o.y-o.d.r*.6-s.y)<o.d.r+8){s.hit.push(o);dmg(o,s.d,s.crit);if(!s.pierce)gone=true}}if(gone)shots.splice(i,1);continue}const m=s.tg;if(m.dead){shots.splice(i,1);continue}const dx=m.x-s.x,dy=m.y-m.d.r-s.y,l=Math.hypot(dx,dy),st=560*dt;if(l<=st+m.d.r*.6){applyHit(m,s.d,s.crit,s.aoe);shots.splice(i,1)}else{s.x+=dx/l*st;s.y+=dy/l*st;s.a=Math.atan2(dy,dx)}}
+ for(let i=shots.length-1;i>=0;i--){const s=shots[i];if(s.vx!==undefined){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;let gone=s.life<=0;for(const o of mons){if(gone)break;if(o.dead||s.hit.includes(o)||!zoneOpen(o.z))continue;if(Math.hypot(o.x-s.x,o.y-o.d.r*.6-s.y)<o.d.r+14){s.hit.push(o);dmg(o,s.d,s.crit);if(!s.pierce)gone=true}}if(gone)shots.splice(i,1);continue}const m=s.tg;if(m.dead){shots.splice(i,1);continue}const dx=m.x-s.x,dy=m.y-m.d.r-s.y,l=Math.hypot(dx,dy),st=560*dt;if(l<=st+m.d.r*.6){applyHit(m,s.d,s.crit,s.aoe);shots.splice(i,1)}else{s.x+=dx/l*st;s.y+=dy/l*st;s.a=Math.atan2(dy,dx)}}
  // drops
  const full=bagTotal()>=ST.bag;
  for(let i=drops.length-1;i>=0;i--){const o=drops[i];o.t+=dt;
@@ -952,7 +954,7 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
  // 가만히 있을 때(XP Hero 자세): 손을 몸 앞에 먼저 정하고 팔은 거기에 맞춤
  //  근접 양손: 배 앞에서 두 주먹을 포개고 칼날은 위로 / 활·총: 가슴 앞에서 두 손으로 앞을 겨눔
  if(p<0&&k!=='dagger'){const rng=k==='bow'||k==='gun',sw2=mv?Math.sin(ph)*.8:Math.sin(T*2.5)*.3;
-  const gx=hipx+(IMG?BW:10)*(rng?.12:.5)+Math.sin(lean)*8,gy=(rng?chy+5.5:hipy-7.5)+sw2;
+  const gx=hipx+(IMG?BW:10)*(rng?.12:.5)+Math.sin(lean)*8,gy=(rng?chy+8.5:hipy-7.5)+sw2;
   const ik=IK(fs.x,fs.y,gx,gy,l1,l2);ua=ik[0];ea=ik[1];fhx=gx;fhy=gy;wa=rng?-.06+sw2*.02:-1.42+sw2*.03}
  const HI=handInfo(k,gr),off=HI.off,tx=fhx+Math.cos(wa)*off-Math.sin(wa)*(off>0?1.5:0),ty=fhy+Math.sin(wa)*off+Math.cos(wa)*(off>0?1.5:0);
  const drawBack=()=>{if(!two)return;const dx=tx-bs.x,dy=ty-bs.y,dd=Math.hypot(dx,dy),st=Math.max(1,dd/(l1+l2-.3)),L1=l1*st,L2=l2*st,d=Math.min(dd,L1+L2-.05),base=Math.atan2(dy,dx),A=Math.acos(clamp((L1*L1+d*d-L2*L2)/(2*L1*d),-1,1)),a1=base+A,jx=bs.x+Math.cos(a1)*L1,jy=bs.y+Math.sin(a1)*L1,a2=Math.atan2(ty-jy,tx-jx)-a1;BA=a1;seg2(bs.x,bs.y,a1,L1,a2,L2,5.2,L,HA('arm'))};
@@ -1145,11 +1147,11 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
    top+=`<div class="eqs ${k?'gb'+g:''}${swapKey?' sw':''}" style="${side};top:${t}px" data-a="slot:${i}">${i===0?'<span class="tag ts">MAIN</span>':''}${k?`<span class="lv ts">Lv.${effLv(i)}</span>${wIcon(k)}`:'<span style="color:#6b5a3e;text-shadow:none;font-size:24px">+</span>'}${canUp?`<span class="arr">${IC.up}</span>`:''}</div>`});
   const hu=AURL['hero_'+S.hero+'_head'];
   top+=`<div class="eqhero"><div data-a="heroes" title="영웅">${hu?`<img src="${hu}">`:'영웅'}</div><div>?</div><div>?</div></div></div>`;
-  const cards=[];for(const k of Object.keys(S.weapons)){const c=S.weapons[k];const eqi=[];S.slots.forEach((x,i)=>{if(x===k)eqi.push(i)});for(let j=0;j<c;j++)cards.push({k,si:j<eqi.length?eqi[j]:-1})}
+  const cards=[];for(const k of Object.keys(S.weapons)){const c=S.weapons[k];const eqi=[];S.slots.forEach((x,i)=>{if(x===k)eqi.push(i)});for(let j=0;j<c;j++)cards.push({k,si:j<eqi.length?eqi[j]:-1,q:wqN(k,j)})}
   cards.sort((a,b)=>((b.si>=0)-(a.si>=0))||(+b.k.split('_')[1]-+a.k.split('_')[1])||wAtk(b.k)-wAtk(a.k));
   B.innerHTML=top+`<div class="eqbar"><button class="sbtn" data-a="auto">자동 장착</button><h3 class="ts">무기</h3><button class="sbtn blue" data-a="gomerge">합성</button></div>
   ${swapKey?`<div class="note" style="color:#ffe066">위에서 바꿀 슬롯을 누르세요 <button class="sbtn" data-a="swapx">취소</button></div>`:''}
-  <div class="wgrid">${cards.map(c=>{const g=+c.k.split('_')[1];return `<div class="wc gb${g}" data-a="wp:${c.k}|${c.si}"><span class="lv ts">Lv.${c.si>=0?effLv(c.si):1}</span>${wIcon(c.k)}${c.si>=0?'<span class="eqd ts">장착됨</span>':''}</div>`}).join('')}</div>`}
+  <div class="wgrid">${cards.map(c=>{const g=+c.k.split('_')[1];return `<div class="wc gb${g}" data-a="wp:${c.k}|${c.si}"><span class="lv ts">Lv.${c.si>=0?effLv(c.si):1}</span>${wIcon(c.k)}<span class="wq ts" style="position:absolute;right:4px;bottom:${c.si>=0?22:3}px;font-size:12px;color:${c.q>=1.1?'#7be36a':c.q<.9?'#ff8a7a':'#fff'}">${Math.round(c.q*100)}%</span>${c.si>=0?'<span class="eqd ts">장착됨</span>':''}</div>`}).join('')}</div>`}
  else if(panel==='admin'){$('mtitle').textContent='관리자 모드';cur(['gem','gold','cry']);const b=(a,t,c)=>`<button class="btn ${c||''}" data-a="adm:${a}" style="min-width:0;flex:1;font-size:15px;padding:8px 4px 11px">${t}</button>`,r=(...x)=>`<div style="display:flex;gap:6px;margin-bottom:8px">${x.join('')}</div>`;
   B.innerHTML=`<div class="note">테스트용이에요. 저장된 진행에 바로 반영돼요.</div>
   ${r(b('inf',S.admin?'재화 무한 끄기':'재화 무한 켜기',S.admin?'no':'eq'),b('all','모든 무기·영웅 지급'))}
@@ -1189,7 +1191,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0140 (XP Hero 자세: 두 손으로 몸 앞에서 쥠)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML=(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0200 (자동 업데이트·무기 개별 능력치·보스 알림)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='soon'){toast('준비 중이에요');return}
  if(k==='up'){const u=UP[v],l=S.up[v];if(l>=u.max)return;const c=u.cost(l);if(!afford(c)){toast('재화가 부족해요');return}S.gold-=c.gold;if(c.orb)S.orb-=c.orb;if(c.rb)S.rb-=c.rb;S.up[v]++;const oh=ST.maxhp;calc();if(v==='hp')P.hp+=ST.maxhp-oh;qev('up',v,1);save()}

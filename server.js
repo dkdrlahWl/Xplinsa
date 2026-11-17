@@ -36,6 +36,10 @@ function body(req) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
+  if (p === '/version') { // 게임 파일이 바뀌면 값이 바뀜 → 접속 중인 폰이 알아서 새로고침
+    let v = 0; for (const f of ['game.html', 'net.js', 'index.html']) { try { v = Math.max(v, fs.statSync(path.join(PUB, f)).mtimeMs); } catch (e) {} }
+    res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return res.end(String(Math.round(v)));
+  }
   if (p.startsWith('/api/')) {
     if (req.method !== 'POST') return send(res, 405, { err: 'POST만 가능' });
     const b = await body(req);

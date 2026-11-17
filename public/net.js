@@ -21,7 +21,7 @@ function connect(){if(kicked)return;
   else if(m.t==='mh'){const g=mons[m.i];if(g&&!g.dead)g.hp=Math.max(1,m.hp)}
   else if(m.t==='mo'){const g=mons[m.i];if(g){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
   else if(m.t==='mk'){const g=mons[m.i];if(g&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
-  else if(m.t==='mr'){const g=mons[m.i];if(g){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3}}
+  else if(m.t==='mr'){const g=mons[m.i];if(g){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
   else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[o.mp[k]];if(g&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
  ws.onclose=()=>{others.clear();ME=null;for(const g of mons)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
@@ -52,7 +52,7 @@ function tick(dt){if(kicked)return;
  saveT-=dt;if(saveDirty&&saveT<=0)pushSave()}
 
 // 다른 플레이어 그리기: 내 캐릭터 그리는 함수를 그대로 빌려 씀 (스킬·이펙트·보조무기 없음)
-const KEYS=['x','y','dir','moving','walk','swingT','sw','dead','hitT','trail','scarf','flS'];
+const KEYS=['x','y','dir','moving','walk','swingT','sw','dead','hitT','trail','scarf','flS','tipX','tipY'];
 function draw(r){if(r.dead)return;const sv={};for(const k of KEYS)sv[k]=P[k];const s0=S.slots[0],hero=S.hero,lv=S.lv;
  P.x=r.x;P.y=r.y;P.dir=r.d;P.moving=r.moving;P.walk=r.walk;P.swingT=r.swingT;P.sw=r.sw;P.dead=false;P.hitT=0;P.trail=r.trail;P.scarf=r.scarf;P.flS=r.flS;
  if(r.w&&WT[r.w.split('_')[0]]&&GR[+r.w.split('_')[1]])S.slots[0]=r.w;if(r.h&&HERO.some(h=>h.k===r.h))S.hero=r.h;S.lv=r.lv||1;
@@ -75,6 +75,10 @@ window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});
 async function logout(){kicked=true;try{ws&&ws.close()}catch(e){}
  try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S})})}catch(e){}
  for(const k of['xp_token','xp_admin','xp_nick','camp_save_v2'])localStorage.removeItem(k);location.replace('index.html')}
+// 새 버전 감시: 서버가 업데이트되면 저장 후 자동 새로고침
+let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{cache:'no-store'})).text();if(VER===null)VER=v;else if(v!==VER&&!kicked){VER=v;try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S})})}catch(e){}
+  const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
+chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chkVer()});
 window.NET={logout,on,hit,remote,me:()=>ME,tick,draw,list,markSave,nick:NICK};
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
