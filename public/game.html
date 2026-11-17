@@ -316,6 +316,11 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 @keyframes promotion-flash{0%,100%{opacity:0}40%{opacity:1}}
 @keyframes promotion-rays{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.promotion-rays{animation:none}.promotion-new,.promotion-old,.promotion-content *{animation-duration:.01s;animation-delay:0s}.promotion-old{display:none}.promotion-flash{display:none}}
+/* Claimable rewards stay visible on menu entries and tabs. */
+.reward-alert{position:relative;overflow:visible!important}
+.reward-alert::after{content:'!';position:absolute;right:-4px;top:-5px;width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #fff4dc;font:bold 13px/1 sans-serif;box-shadow:0 2px 4px #0006;pointer-events:none;z-index:5}
+.task-ready,.activity-rewards>button.task-ready{background:linear-gradient(#9be845,#43a522)!important;color:#fff!important;border-color:#b6f16b!important;box-shadow:inset 0 -3px 0 #267719;text-shadow:0 1px 2px #34651c}
+.activity-total{margin:8px 0 14px;padding:10px 12px;background:#211c38;border-radius:10px;color:#fff4dc}.activity-total>div:first-child{display:flex;justify-content:space-between;font-size:12px}.activity-total .feature-progress{height:13px;margin-top:8px}.activity-total .feature-progress i{background:linear-gradient(#a7ed62,#46b43b);transition:width .25s}
 </style>
 </head>
 <body>
@@ -727,11 +732,25 @@ function collectionDetail(){
  const claimed=collectionState().claimed[bookTab+':'+item.id]||0,goal=COLLECT_STEPS[claimed],reward=2*(claimed+1),ready=goal&&item.count>=goal;
  return '<div class="collection-detail"><img src="'+(AURL[item.img]||'assets/'+item.img+'.webp')+'" alt=""><h3>'+item.name+'</h3><p>'+item.detail+'</p><p>누적 '+(bookTab==='weapon'?'획득':'처치')+' '+item.count+'회</p><div class="feature-progress"><i style="width:'+Math.min(100,goal?item.count/goal*100:100)+'%"></i></div><p>'+(goal?'다음 목표 '+goal+'회 · 보석 '+reward+'개':'모든 도감 보상 수령 완료')+'</p><button class="growth-button" data-a="collectclaim" '+(ready?'':'disabled')+'>'+(ready?'보석 '+reward+'개 받기':goal?'목표 달성 시 수령':'완료')+'</button><button class="btn eq" data-a="collection" style="width:100%;margin-top:8px">도감 목록</button></div>';
 }
+function activityPoints(task){return TASKS.filter(t=>task.claimed[t.id]).reduce((a,t)=>a+t.points,0)}
+function activityClaimable(weekly=false){
+ const task=taskState(weekly),scale=weekly?7:1;
+ return TASKS.some(t=>!task.claimed[t.id]&&(task.progress[t.key||t.id]||0)>=(t.id==='login'?1:t.need*scale))||[20,40,60,80,100].some(n=>activityPoints(task)>=n&&!task.rewards[n]);
+}
+let rewardNoticeAt=0;
+function refreshRewardNotices(force=false){
+ const now=performance.now();if(!force&&now<rewardNoticeAt)return;rewardNoticeAt=now+500;
+ const book=collectAllRewards().count>0,daily=activityClaimable(),weekly=activityClaimable(true);
+ $('menu').classList.toggle('reward-alert',book||daily||weekly);
+ document.querySelectorAll('[data-a="collection"],[data-a="tasks:daily"],[data-a="tasks:weekly"],[data-a="tasktab:daily"],[data-a="tasktab:weekly"]').forEach(el=>{
+  const action=el.dataset.a;el.classList.toggle('reward-alert',action==='collection'?book:action.endsWith('weekly')?weekly:daily);
+ });
+}
 function tasksPanel(){
  const weekly=taskTab==='weekly',task=taskState(weekly),scale=weekly?7:1;
- const points=TASKS.filter(t=>task.claimed[t.id]).reduce((a,t)=>a+t.points,0);
- return '<div class="feature-head">'+featureImage('missions')+'<div><b>'+(weekly?'주간':'일일')+' 활동 '+points+' / 100</b><small>'+(weekly?'매주 월요일':'매일')+' 한국 시간 00시 초기화</small></div></div><div class="activity-rewards">'+[20,40,60,80,100].map(n=>'<button data-a="activity:'+n+'" '+(points<n||task.rewards[n]?'disabled':'')+'>'+featureImage('chest')+'<span>'+n+'</span><small>'+(task.rewards[n]?'수령 완료':'보석 '+(weekly?n:n/4))+'</small></button>').join('')+'</div>'+TASKS.map(t=>{const goal=t.id==='login'?(weekly?1:1):t.need*scale,progress=task.progress[t.key||t.id]||0,done=task.claimed[t.id],ready=progress>=goal;
- return '<div class="feature-row">'+featureImage('missions')+'<div><b>'+t.name.replace(String(t.need),String(goal))+'</b><small>'+Math.min(goal,progress)+' / '+goal+' · 활동 점수 '+t.points+'</small><div class="feature-progress"><i style="width:'+Math.min(100,progress/goal*100)+'%"></i></div></div><button class="sbtn" data-a="taskclaim:'+t.id+'" '+(!ready||done?'disabled':'')+'>'+(done?'완료':'획득')+'</button></div>'}).join('');
+ const points=activityPoints(task);
+ return '<div class="feature-head">'+featureImage('missions')+'<div><b>'+(weekly?'주간':'일일')+' 활동 '+points+' / 100</b><small>'+(weekly?'매주 월요일':'매일')+' 한국 시간 00시 초기화</small></div></div><div class="activity-total"><div><b>활동도</b><span>'+points+' / 100</span></div><div class="feature-progress" role="progressbar" aria-label="활동도" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+points+'"><i style="width:'+Math.min(100,points)+'%"></i></div></div><div class="activity-rewards">'+[20,40,60,80,100].map(n=>'<button class="'+(points>=n&&!task.rewards[n]?'task-ready':'')+'" data-a="activity:'+n+'" '+(points<n||task.rewards[n]?'disabled':'')+'>'+featureImage('chest')+'<span>'+n+'</span><small>'+(task.rewards[n]?'수령 완료':'보석 '+(weekly?n:n/4))+'</small></button>').join('')+'</div>'+TASKS.map(t=>{const goal=t.id==='login'?(weekly?1:1):t.need*scale,progress=task.progress[t.key||t.id]||0,done=task.claimed[t.id],ready=progress>=goal;
+ return '<div class="feature-row">'+featureImage('missions')+'<div><b>'+t.name.replace(String(t.need),String(goal))+'</b><small>'+Math.min(goal,progress)+' / '+goal+' · 활동 점수 '+t.points+'</small><div class="feature-progress"><i style="width:'+Math.min(100,progress/goal*100)+'%"></i></div></div><button class="sbtn '+(ready&&!done?'task-ready':'')+'" data-a="taskclaim:'+t.id+'" '+(!ready||done?'disabled':'')+'>'+(done?'수령 완료':ready?'받기':'진행 중')+'</button></div>'}).join('');
 }
 function stageClear(i){return !!(S.stageClears||{})[i]}
 function stageRewards(){
@@ -1434,6 +1453,7 @@ const g=mons.find(m=>m.d.boss&&!m.dead&&(m.agg||m.hp<m.d.hp));if(g){bar(cw/2+20,
 const cache={};function setT(id,v){if(cache[id]!==v){cache[id]=v;$(id).textContent=v}}
 function afford(c){return S.gold>=c.gold&&(!c.orb||S.orb>=c.orb)&&(!c.rb||S.rb>=c.rb)&&(!c.scr||S.scr>=c.scr)}
 function hud(){
+ refreshRewardNotices();
  setT('lvn',S.lv);setT('xptxt',(Math.floor(clamp(S.xp/need(S.lv),0,1)*1000)/10).toFixed(1)+'%');const w=Math.round(clamp(S.xp/need(S.lv),0,1)*100)+'%';if(cache.xw!==w){cache.xw=w;$('xpfill').style.width=w}
  setT('cGold',fmt(S.gold));setT('cGem',fmt(S.gem));setT('cCry',fmt(S.cry));
  const bt=bagTotal();setT('bagt','가방 ('+fmt(bt)+'/'+fmt(ST.bag)+')');const bw=Math.round(clamp(bt/ST.bag,0,1)*100)+'%';if(cache.bw!==bw){cache.bw=bw;$('bagf').style.width=bw}const bc=bt>=ST.bag?'full':'';if(cache.bc!==bc){cache.bc=bc;$('bag').className=bc}
@@ -1547,7 +1567,7 @@ function open(p){
  if(p==='smith'){const count=smithBatch(),cost=count*5;if(S.cry<cost){toast(count+'개 제작에 크리스탈 '+cost+'개가 필요해요');return}act('craft:'+count);craftFx();return}
  panel=p;$('modal').className='open';draw()}
 function close(){closePop();swapKey=null;mergeSel=null;panel=null;lastGot=[];resetArm=false;$('modal').className=''}
-function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
+function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'),F=$('mfoot');F.innerHTML='';
  if(panel==='collection'||panel==='collectionDetail'){$('mtitle').textContent='도감';cur(['gem']);B.innerHTML=panel==='collection'?collectionPanel():collectionDetail();F.innerHTML=collectionClaimButton()+'<div class="tabs">'+['weapon','monster'].map(k=>'<button class="tab '+(bookTab===k?'on':'')+'" data-a="booktab:'+k+'">'+(k==='weapon'?'무기':'몬스터')+'</button>').join('')+'</div>'}
  else if(panel==='tasks'){$('mtitle').textContent=taskTab==='weekly'?'주간 임무':'일일 임무';cur(['gem']);B.innerHTML=tasksPanel();F.innerHTML='<div class="tabs"><button class="tab" data-a="goatt">출석</button><button class="tab '+(taskTab==='daily'?'on':'')+'" data-a="tasktab:daily">일일</button><button class="tab '+(taskTab==='weekly'?'on':'')+'" data-a="tasktab:weekly">주간</button></div>'}
  else if(panel==='exchange'){$('mtitle').textContent='상점 · 교환';cur(['gem']);B.innerHTML=exchangePanel();F.innerHTML=shopTabs(true)}
@@ -1619,7 +1639,7 @@ function draw(){const B=$('mbody'),F=$('mfoot');F.innerHTML='';
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일·주간</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0344 (도감 모두 받기·승급 연출)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0410 (활동도 게이지·보상 알림)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(featureAct(k,v))return;if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='goatt'){panel='att'}else if(k==='goshop'){panel='shop'}
  else if(k==='soon'){toast('준비 중이에요');return}
