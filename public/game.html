@@ -246,7 +246,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=4"></script>
+<script src="net.js?v=5"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -747,7 +747,7 @@ function drawSmith(){const x=BASE.x+190,y=BASE.y-90;{const im=AI('bld_smith');if
  ctx.beginPath();ctx.moveTo(x-34,y-30);ctx.lineTo(x+22,y-30);ctx.lineTo(x+40,y-22);ctx.lineTo(x+22,y-14);ctx.lineTo(x+10,y-14);ctx.lineTo(x+10,y-6);ctx.lineTo(x-14,y-6);ctx.lineTo(x-14,y-14);ctx.lineTo(x-34,y-18);ctx.closePath();ctx.fillStyle='#9aa3b8';ctx.fill();ctx.stroke();label('대장간',x,y-40,15,'#fff')}
 function drawChest(){const x=BASE.x-190,y=BASE.y-70;{const im=AI('bld_chest');if(im){const w=86,h=w*im.height/im.width;shadow(x,y+14,40);ctx.drawImage(im,x-w/2,y+18-h,w,h);return}}shadow(x,y+14,40);frr('#8a5a34',x-32,y-14,64,30,6);frr('#b07a44',x-34,y-34,68,22,8);ell(x,y-12,6,6,'#ffc93c')}
 
-const TWO={sword:-7,axe:-8.5,mace:-8.5,spear:-12,staff:-12,bow:8,gun:8};const GRIP={dagger:.13,sword:.11,mace:.22,spear:.3,axe:.24,bow:.16,gun:.13,staff:.3};const GY=new WeakMap();
+const TWO={sword:-6.2,axe:-6.2,mace:-6.2,spear:-7,staff:-7,bow:8,gun:8};const GRIP={dagger:.2,sword:.22,mace:.22,spear:.3,axe:.24,bow:.16,gun:.13,staff:.3};const GY=new WeakMap();
 function gripY(im,gx){let m=GY.get(im);if(!m){m={};GY.set(im,m)}if(m[gx]!==undefined)return m[gx];let r=.5;try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.drawImage(im,0,0);const x=Math.round(im.width*gx),d=g.getImageData(x,0,1,im.height).data;let a=0,b=0;for(let y=0;y<im.height;y++){const al=d[y*4+3];if(al>120){a+=y;b++}}if(b)r=a/b/im.height}catch(e){}m[gx]=r;return r}
 function blade(x0,x1,w,tip,c){const g=ctx.createLinearGradient(0,-w,0,w);g.addColorStop(0,'#ffffff');g.addColorStop(.45,c);g.addColorStop(1,lt(c,-.35));ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x0,-w);ctx.lineTo(x1,-w*.8);ctx.lineTo(x1+tip,0);ctx.lineTo(x1,w*.8);ctx.lineTo(x0,w);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x0+2,-w*.25);ctx.lineTo(x1+tip*.4,-w*.1);ctx.stroke();ctx.strokeStyle=OLC;ctx.lineWidth=2}
 function handle(x0,x1,h){const g=ctx.createLinearGradient(0,-h,0,h);g.addColorStop(0,'#b07a4a');g.addColorStop(1,'#5e3a1e');ctx.fillStyle=g;rr(x0,-h,x1-x0,h*2,h);ctx.fill();ctx.stroke()}
@@ -770,7 +770,7 @@ function seg2(ax,ay,a1,l1,a2,l2,w,c,im){if(im){const jx=ax+Math.cos(a1)*l1,jy=ay
  ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(jx,jy);ctx.lineTo(ex,ey);ctx.strokeStyle='rgba(30,22,46,.72)';ctx.lineWidth=w+2.6;ctx.stroke();ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();
  ctx.strokeStyle='rgba(255,255,255,.28)';ctx.lineWidth=w*.35;ctx.beginPath();ctx.moveTo(ax-1,ay-1);ctx.lineTo(jx-1,jy-1);ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2;return{x:ex,y:ey}}
 function armPose(w,p,A,mv,s){ // returns [upper, elbow, weaponAngle, lean]
- const aim=!!(w.pel||w.pierce),dual=w===WT.dagger,ru=aim?Math.PI/2-.95+(mv?.12*s:0):dual?Math.PI/2-.12+(mv?.35*s:0):Math.PI/2-.95+(mv?.18*s:0),rl=aim?-.45:dual?-.8:-1.0,IW=aim?-.08:dual?-1.0:-.82;if(p<0)return[ru,rl,IW+(mv?.06*s:Math.sin(T*2.5)*.035),0];
+ const aim=!!(w.pel||w.pierce),dual=w===WT.dagger,ru=aim?Math.PI/2-.95+(mv?.12*s:0):dual?Math.PI/2-.12+(mv?.35*s:0):Math.PI/2-.5+(mv?.18*s:0),rl=aim?-.45:dual?-.8:-1.35,IW=aim?-.08:dual?-1.0:-1.47;if(p<0)return[ru,rl,IW+(mv?.06*s:Math.sin(T*2.5)*.035),0];
  if(w.shot){const k=p<.3?eo(p/.3):1-eio((p-.3)/.7)*.0;const rec=p<.3?0:Math.sin(clamp((p-.3)/.25,0,1)*Math.PI)*.25;return[lerp(ru,A-.25,eo(p/.25))-rec,lerp(rl,.25,eo(p/.25)),A-rec*.6,.08]}
  if(WT[wType()]===WT.spear){const pu=A-.15;if(p<.3){const k=eio(p/.3);return[lerp(ru,pu,k),lerp(rl,-1.9,k),lerp(IW,A,k),-.1*k]}if(p<.55){const k=eo((p-.3)/.25);return[pu,lerp(-1.9,0,k),A,lerp(-.1,.25,k)]}const k=eio((p-.55)/.45);return[lerp(pu,ru,k),lerp(0,rl,k),lerp(A,IW,k),lerp(.25,0,k)]}
  const ar=w.arc||1.2,u0=A-1.5-ar*.55,u1=A+.55+ar*.25;

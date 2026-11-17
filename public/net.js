@@ -74,4 +74,6 @@ window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});
 
 window.NET={on,hit,remote,me:()=>ME,tick,draw,list,markSave,nick:NICK};
 connect();
+// 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
+fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});
 })();
