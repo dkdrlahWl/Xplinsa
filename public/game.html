@@ -1975,9 +1975,9 @@ function mkSpare(){return Object.keys(S.weapons).filter(k=>S.weapons[k]-eqCount(
 function mkRow(l,btn){const g=+l.key.split('_')[1];return `<div class="row"><div class="ric gb${g}" style="border-radius:10px">${wIcon(l.key)}</div><div class="rin"><h4 style="color:${GR[g].c}">${wName(l.key)}</h4><p>능력치 ${Math.round(l.q*100)}% · ${l.nick}</p><div class="v mkp">${IC[l.cur]} ${fmt(l.price)}</div></div>${btn}</div>`}
 function marketPanel(){
  const head='<div class="feature-head">'+featureImage('market')+'<div><b>거래소</b><small>남는 무기를 금화·보석으로 사고팔아요 · 판매 수수료 10%<br>판매 대금은 다음 접속 때 자동으로 받아요</small></div></div>';
- if(MK.tab==='buy'){const L=MK.list.filter(l=>l.seller!==MK.me&&(MK.grade<0||+l.key.split('_')[1]===MK.grade));
+ if(MK.tab==='buy'){const L=MK.list.filter(l=>MK.grade<0||+l.key.split('_')[1]===MK.grade);
   return head+'<div class="tabs" style="flex-wrap:wrap;gap:4px">'+[[-1,'전체']].concat(GR.map((g,i)=>[i,g.n])).map(([i,n])=>'<button class="tab '+(MK.grade===i?'on':'')+'" data-a="mkg:'+i+'" style="flex:0 0 auto;padding:4px 10px;font-size:13px">'+n+'</button>').join('')+'</div>'+
-  (L.length?L.map(l=>mkRow(l,`<button class="btn ${S[l.cur]>=l.price?'':'no'}" data-a="mkbuy:${l.id}">구매</button>`)).join(''):'<div class="note">올라온 무기가 없어요</div>')}
+  (L.length?L.map(l=>mkRow(l,l.seller===MK.me?`<button class="btn no" data-a="mkt:mine">내 물건</button>`:`<button class="btn ${S[l.cur]>=l.price?'':'no'}" data-a="mkbuy:${l.id}">구매</button>`)).join(''):'<div class="note">올라온 무기가 없어요</div>')}
  if(MK.tab==='mine'){const L=MK.list.filter(l=>l.seller===MK.me);return head+(L.length?L.map(l=>mkRow(l,`<button class="btn no" data-a="mkcancel:${l.id}">내리기</button>`)).join(''):'<div class="note">등록한 무기가 없어요 (최대 10개)</div>')}
  const sp=mkSpare(),k=MK.sel&&sp.includes(MK.sel)?MK.sel:null;let form='';
  if(k){const g=+k.split('_')[1],q=Math.min(...S.wq[k]);form=`<div class="mkform"><div class="mkh"><div class="ric gb${g}">${wIcon(k)}</div><div><b style="color:${GR[g].c}">${wName(k)}</b><small>능력치 ${Math.round(q*100)}% · 가장 낮은 것부터 팔려요</small></div></div>
