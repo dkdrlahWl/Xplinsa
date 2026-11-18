@@ -43,7 +43,7 @@ function tick(dt){if(kicked)return;
   const mp=[];for(const g of sharedBosses){if(g.dead)continue;
    if(g.agg&&!g.own&&(g.claimT||0)<=0){g.claimT=.5;ws.send(JSON.stringify({t:'c',i:Gi(g.i),mx:g.d.hp,rs:g.d.resp}))}
    if(g.own===ME){if(!g.agg){g.own=null;ws.send(JSON.stringify({t:'r',i:Gi(g.i)}))}else mp.push(Gi(g.i),Math.round(g.x),Math.round(g.y))}}
-  ws.send(JSON.stringify({t:'s',ch:MYCH(),mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:S.slots[0],h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,rank:promotionRank(),dead:P.dead}))}
+  ws.send(JSON.stringify({t:'s',ch:MYCH(),mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:mainW(),h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,rank:promotionRank(),dead:P.dead}))}
  const rt=performance.now()-DELAY;
  for(const r of others.values()){const b=r.buf;let x=r.x,y=r.y,d=r.d;
   if(b.length){let i=b.length-1;while(i>0&&b[i-1].t>rt)i--;

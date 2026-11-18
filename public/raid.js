@@ -17,7 +17,7 @@ window.RAID = (() => {
     localPosition = null; sentX = sentY = 0; bossT = null;
     arena = { width: W, height: H, player: { ...P, atkCd: 0, swingT: 0, pend: null, s2: null, sk: [0, 0, 0, 0, 0, 0], sub: {}, extraT: 0, trail: [], scarf: [] }, enemies: [], shots: [], nums: [], fxs: [], timers: [], hit(e, d) { pendDmg += d } };
   }
-  function loadout(ready) { calc(); NET.raid('loadout', { ready, hero: S.hero, weapon: S.slots[0], attack: ST.atk, hp: ST.maxhp, speed: ST.spd, leech: ST.ls, pow: ST.pow }); }
+  function loadout(ready) { calc(); NET.raid('loadout', { ready, hero: S.hero, weapon: mainW(), attack: ST.atk, hp: ST.maxhp, speed: ST.spd, leech: ST.ls, pow: ST.pow }); }
   function showRooms() {
     const list = $('raid-rooms'); if (!list) return; list.replaceChildren();
     if (!rooms.length) { const p = document.createElement('p'); p.textContent = '대기 중인 방이 없어요.'; list.appendChild(p); return; }

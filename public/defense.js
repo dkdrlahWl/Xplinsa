@@ -29,7 +29,7 @@ window.DEFENSE = (() => {
 
   function loadout(ready) {
     NET.defense('loadout', {
-      ready, hero: S.hero, weapon: S.slots[0], attack: ST.atk, hp: ST.maxhp, speed: ST.spd,
+      ready, hero: S.hero, weapon: mainW(), attack: ST.atk, hp: ST.maxhp, speed: ST.spd,
       leech: ST.ls
     });
   }

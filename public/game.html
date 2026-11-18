@@ -384,7 +384,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=17"></script>
+<script src="net.js?v=18"></script>
 <script src="reward-fx.js?v=1"></script>
 <script>
 'use strict';
@@ -1030,11 +1030,15 @@ const SLOT_LV=[1,10,25,40,55,70],SLOT_MAX=110,GMAX=[30,40,45,50,70,90,110];
 function effLv(i){const k=S.slots[i];return k?Math.min(S.slv[i],GMAX[+k.split('_')[1]]):S.slv[i]}
 function capLv(i){const k=S.slots[i];return k?GMAX[+k.split('_')[1]]:SLOT_MAX}
 const LVB=[[10,'공격','atk',1],[20,'흡혈','ls',2],[30,'체력','hp',2],[40,'스킬 피해','skill',5],[50,'공격','atk',3],[60,'체력','hp',3],[70,'스킬 피해','skill',10],[90,'공격','atk',5],[110,'스킬 피해','skill',15]];function slotCount(){let n=0;for(const l of SLOT_LV)if(S.lv>=l)n++;return n}
-function wType(){return S.slots[0].split('_')[0]}
+// 메인 슬롯이 비면 첫 번째로 장착된 무기로 공격 (아무것도 없으면 낡은 검)
+function mainW(){return S.slots[0]||S.slots.find(Boolean)||'sword_0'}
+function wType(){return mainW().split('_')[0]}
 function eqCount(k){let n=0;for(const x of S.slots)if(x===k)n++;return n}
 function freeBest(){return Object.keys(S.weapons).filter(k=>S.weapons[k]>eqCount(k)).sort((a,b)=>wAtk(b)-wAtk(a))[0]}
-function autoFill(){const n=slotCount();for(let i=0;i<6;i++){if(i>=n){S.slots[i]=null;continue}if(!S.slots[i]){const c=freeBest();if(c)S.slots[i]=c}}if(!S.slots[0])S.slots[0]='sword_0'}
-function fixSlots(){for(let i=0;i<6;i++){const k=S.slots[i];if(k&&(!S.weapons[k]||eqCount(k)>S.weapons[k]))S.slots[i]=null}if(!S.slots[0]){S.slots[0]=freeBest()||null;if(!S.slots[0]){S.weapons.sword_0=(S.weapons.sword_0||0)+1;S.slots[0]='sword_0'}}}
+// 빈 슬롯 자동 채우기: 내가 직접 해제한 슬롯(S.manual)은 건드리지 않음
+// 자동 장착 없음: 잠긴 슬롯만 비움 (장착은 항상 직접 슬롯을 골라서)
+function autoFill(){const n=slotCount();for(let i=n;i<6;i++)S.slots[i]=null;}
+function fixSlots(){for(let i=0;i<6;i++){const k=S.slots[i];if(k&&(!S.weapons[k]||eqCount(k)>S.weapons[k]))S.slots[i]=null}if(!Object.keys(S.weapons).length){S.weapons.sword_0=1;S.wq=S.wq||{};S.wq.sword_0=[1]}if(!S.slots.some(Boolean)&&S.weapons.sword_0&&!S.manual0)S.slots[0]='sword_0'}
 function slotCost(l){return{scr:2*l-1,gold:33*l}}
 const HERO=[
  {k:'adv',n:'모험가',g:0,d:'기본 영웅',body:'#ffcf3a',limb:'#eeb220',fx:{}},
@@ -1576,7 +1580,7 @@ function drawTorso(h,hipx,hipy,lean){ctx.save();ctx.translate(hipx,hipy);ctx.rot
  else{frr(h.body,-9,-17,18,19,8);ctx.fillStyle='rgba(180,110,10,.35)';ctx.fillRect(-8.5,-5,17,2.5)}
  ctx.restore()}
 function pimg(im,x,y,w){const h=w*im.height/im.width;ctx.drawImage(im,x-w/2,y-h/2,w,h)}
-function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),gr=+S.slots[0].split('_')[1],gc=GR[gr].c,w=WT[k],h=heroOf(),HA=q=>AI('hero_'+h.k+'_'+q);
+function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),gr=+mainW().split('_')[1],gc=GR[gr].c,w=WT[k],h=heroOf(),HA=q=>AI('hero_'+h.k+'_'+q);
  if(!PV&&!window.REM){ctx.lineWidth=2;ctx.strokeStyle='rgba(255,255,255,.45)';ctx.beginPath();ctx.ellipse(x,y-8,w.rg,w.rg*.94,0,0,TAU);ctx.stroke();ctx.strokeStyle=OLC}
  shadow(x,y,17);
  const fl=Math.cos(P.dir)>=0?1:-1;if(!PV&&!window.REM){P.flS=(P.flS??fl)+(fl-(P.flS??fl))*.18;for(let i=1;i<6;i++){const key=S.slots[i];if(!key)continue;const o=subPos(i),[t,g]=key.split('_');ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.scale(.72,.72);drawWeapon(t,GR[+g].c,true,+g);ctx.restore()}}
@@ -1826,7 +1830,7 @@ function craftFx(){const el=$('cfx'),g=$('game').getBoundingClientRect(),wb=docu
 const ADM_KEYS=['gold','gem','cry','orb','rb','scr'];
 function adminTick(){if(!S.admin)return;for(const k of ADM_KEYS)if(S[k]<9e8)S[k]=9.99e8}
 function giveAll(){for(const t of Object.keys(WT))for(let g=0;g<5;g++){const k=t+'_'+g;while((S.weapons[k]||0)<3)addW(k)}for(const h of HERO)S.heroes[h.k]=1;autoFill();calc();save()}
-let panel=null,resetArm=false,selSlot=0,lastGot=[],swapKey=null,mergeSel=null,popK=null,popSi=-1;
+let swapFrom=-1;let panel=null,resetArm=false,selSlot=0,lastGot=[],swapKey=null,mergeSel=null,popK=null,popSi=-1;
 function openPop(k,si){popK=k;popSi=si;renderPop()}
 function closePop(){popK=null;$('pop').className=''}
 function renderPop(){const k=popK;if(!k){closePop();return}const[t,gs]=k.split('_'),g=+gs,w=WT[t],si=popSi,lv=si>=0?effLv(si):1,cap=GMAX[g],eq=si>=0,c=eq?slotCost(S.slv[si]):null,canUp=eq&&lv<cap;
@@ -1837,7 +1841,7 @@ function renderPop(){const k=popK;if(!k){closePop();return}const[t,gs]=k.split('
  <div class="psec"><h5>— 스킬 —</h5><div class="pskill"><span style="font-size:24px">${g>=4?'⚡':'🔒'}</span><span><b>${(g>=5?SK5:SK)[t].n}</b> (${(g>=5?SK5:SK)[t].cd}초마다)<br>${(g>=5?SK5:SK)[t].d}${g>=4?'':'<br><i style="color:#9a8a70">전설 등급이 되면 사용</i>'}</span></div><div class="pskill" style="margin-top:6px"><span style="font-size:24px">✦</span><span><b>평타 3번째</b>: ${SP[t]} (피해 1.4배)</span></div></div>
  <div class="psec"><h5>— 레벨 달성 능력 해금 —</h5><div class="pbonus">${LVB.filter(b=>b[0]<=cap).map(b=>growthRow(b[2]==='hp'?'heart':b[2]==='skill'?'skill':'sword',b[1]+' +'+b[3]+'%','Lv.'+b[0],lv>=b[0])).join('')}</div></div>
  </div><div class="pop-actions">${eq?`<div class="pcost"><span>${IC.scr}${fmt(S.scr)}/${c.scr}</span><span>${IC.gold}${fmt(S.gold)}/${fmt(c.gold)}</span></div>`:'<div style="height:10px"></div>'}
- <div class="pbtns">${eq?(si>0?'<button class="btn eq" data-pa="unequip">장착 해제</button>':''):'<button class="btn eq" data-pa="equip">장착</button>'}${eq?`<button class="btn ${canUp&&afford(c)?'':'no'}" data-pa="up">${canUp?'⬆ 강화':'최대 레벨'}</button>`:'<button class="btn no" data-pa="noup">⬆ 강화</button>'}</div></div></div>`;
+ <div class="pbtns">${eq?'<button class="btn eq" data-pa="unequip">장착 해제</button><button class="btn eq" data-pa="move">위치 이동</button>':'<button class="btn eq" data-pa="equip">장착</button>'}${eq?`<button class="btn ${canUp&&afford(c)?'':'no'}" data-pa="up">${canUp?'⬆ 강화':'최대 레벨'}</button>`:'<button class="btn no" data-pa="noup">⬆ 강화</button>'}</div></div></div>`;
  $('pop').className='open'}
 const MAP_POINTS=[[50,81],[22,65],[48,27],[76,66],[81,32],[17,32]],MAP2=[[28,51],[38,80],[56,52],[35,24],[85,54],[64,22]];
 function worldMap(ch){ch=ch||CHAP;const cur=ch===CHAP,zs=ch===1?ZS1:ZS2;
@@ -1953,7 +1957,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   const cards=[];for(const k of Object.keys(S.weapons)){const c=S.weapons[k];const eqi=[];S.slots.forEach((x,i)=>{if(x===k)eqi.push(i)});for(let j=0;j<c;j++)cards.push({k,si:j<eqi.length?eqi[j]:-1,q:wqN(k,j)})}
   cards.sort((a,b)=>((b.si>=0)-(a.si>=0))||(+b.k.split('_')[1]-+a.k.split('_')[1])||wAtk(b.k)-wAtk(a.k));
   B.innerHTML=top+`<div class="eqbar"><button class="sbtn" data-a="auto">자동 장착</button><h3 class="ts">무기</h3><button class="sbtn blue" data-a="gomerge">합성</button></div>
-  ${swapKey?`<div class="note" style="color:#ffe066">위에서 바꿀 슬롯을 누르세요 <button class="sbtn" data-a="swapx">취소</button></div>`:''}
+  ${swapKey?`<div class="note" style="color:#ffe066">위에서 ${swapFrom>=0?'옮길':'장착할'} 슬롯을 누르세요 <button class="sbtn" data-a="swapx">취소</button></div>`:''}
   <div class="wgrid">${cards.map(c=>{const g=+c.k.split('_')[1];return `<div class="wc gb${g}" data-a="wp:${c.k}|${c.si}"><span class="lv ts">Lv.${c.si>=0?effLv(c.si):1}</span>${wIcon(c.k)}<span class="wq ts" style="position:absolute;right:4px;bottom:${c.si>=0?22:3}px;font-size:12px;color:${c.q>=1.1?'#7be36a':c.q<.9?'#ff8a7a':'#fff'}">${Math.round(c.q*100)}%</span>${c.si>=0?'<span class="eqd ts">장착됨</span>':''}</div>`}).join('')}</div>`}
  else if(panel==='admin'){$('mtitle').textContent='관리자 모드';cur(['gem','gold','cry']);const b=(a,t,c)=>`<button class="btn ${c||''}" data-a="adm:${a}" style="min-width:0;flex:1;font-size:15px;padding:8px 4px 11px">${t}</button>`,r=(...x)=>`<div style="display:flex;gap:6px;margin-bottom:8px">${x.join('')}</div>`;
   B.innerHTML=`<div class="note">테스트용이에요. 저장된 진행에 바로 반영돼요.</div>
@@ -2011,7 +2015,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
    B.innerHTML=`<div style="position:relative;text-align:center;margin:2px 0 8px">${U('rank_banner')?`<div class="ts" style="${bg('rank_banner')}padding:10px 0 18px;font-size:20px;color:#fff">${t==='pow'?'전투력 랭킹':'도전의 탑 랭킹'}</div>`:''}</div><div class="feature-head ts" style="${bg('rank_row')}${U('rank_row')?'padding:10px 18px;color:#fff;':''}">${featureImage('rank')}<div><b style="color:#ffe066">${U('rank_banner')?'내 순위':(t==='pow'?'전투력 랭킹':'도전의 탑 랭킹')}</b><small style="color:#fff">${L.my?L.my.rank+'위 · '+fv(L.my.v):'아직 기록이 없어요'}</small></div></div>`+(L.list.length?L.list.map((r,i)=>row(r,i,r.me)).join(''):'<div class="note">아직 기록이 없어요</div>')}}
  else if(panel==='market'){$('mtitle').textContent='거래소';cur(['gem','gold']);B.innerHTML=marketPanel();F.innerHTML='<div class="tabs">'+[['buy','구매'],['sell','판매'],['mine','내 등록']].map(([k,n])=>'<button class="tab '+(MK.tab===k?'on':'')+'" data-a="mkt:'+k+'">'+n+'</button>').join('')+'</div>'}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-2220 (밀린 소리 수정)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-2245 (장착 직접 선택)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  if(k==='nickset'){const n=(document.getElementById('nickin')||{}).value?.trim()||'';fetch('/api/nick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),nick:n})}).then(r=>r.json().then(j=>[r.ok,j])).then(([ok,j])=>{if(!ok){toast(j.err||'변경 실패');return}localStorage.setItem('xp_nick',j.nick);if(window.NET)NET.nick=j.nick;toast('닉네임이 '+j.nick+'(으)로 바뀌었어요');draw()}).catch(()=>toast('서버에 연결할 수 없어요'));return}
  if(k==='challengeTower'){window.TOWER?.open();return}
@@ -2024,9 +2028,9 @@ function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  else if(k==='sel'){selSlot=+v}
  else if(k==='buy'){const[id,n]=v.split('|');buyBox(id,+n);return}
  else if(k==='wp'){const[kk,si]=v.split('|');openPop(kk,+si);return}
- else if(k==='slot'){const i=+v;if(swapKey){if(S.weapons[swapKey]>eqCount(swapKey)||S.slots[i]===swapKey){S.slots[i]=swapKey;calc();save();toast(wName(swapKey)+' 장착')}swapKey=null}else if(S.slots[i])openPop(S.slots[i],i);else toast('아래에서 무기를 눌러 장착하세요')}
+ else if(k==='slot'){const i=+v;if(swapKey){if(i>=slotCount()){toast('Lv.'+SLOT_LV[i]+'에 열리는 슬롯이에요');return}if(swapFrom>=0){const t=S.slots[i];S.slots[i]=S.slots[swapFrom];S.slots[swapFrom]=t;toast('위치를 옮겼어요')}else if(S.weapons[swapKey]>eqCount(swapKey)){S.slots[i]=swapKey;toast(wName(swapKey)+' 장착')}else toast('남는 무기가 없어요');if(i===0)S.manual0=0;calc();save();swapKey=null;swapFrom=-1}else if(S.slots[i])openPop(S.slots[i],i);else toast('아래에서 무기를 눌러 장착하세요')}
  else if(k==='slk'){toast('Lv.'+SLOT_LV[+v]+'에 열려요');return}
- else if(k==='swapx'){swapKey=null}
+ else if(k==='swapx'){swapKey=null;swapFrom=-1}
 
  else if(k==='hdetail'){if(!HERO.some(h=>h.k===v))return;heroFocus=v;heroTab='level';panel='heroDetail'}
  else if(k==='htab'){if(!['level','star'].includes(v))return;heroTab=v;panel='heroDetail'}
@@ -2095,8 +2099,9 @@ $('gacha').addEventListener('click',e=>{if(!GA)return;const b=e.target.closest('
 $('pop').addEventListener('click',e=>{const b=e.target.closest('[data-pa]');if(!b){if(e.target.id==='pop')closePop();return}const a=b.dataset.pa,si=popSi,k=popK;
  if(a==='x'){closePop();return}
  if(a==='noup'){toast('장착한 슬롯에서 강화할 수 있어요');return}
- if(a==='equip'){const n=slotCount();let i=-1;for(let j=0;j<n;j++)if(!S.slots[j]){i=j;break}if(i>=0){S.slots[i]=k;calc();save();closePop();toast(wName(k)+' 장착');draw();return}swapKey=k;closePop();draw();toast('바꿀 슬롯을 누르세요');return}
- if(a==='unequip'){if(si>0){S.slots[si]=null;calc();save()}closePop();draw();return}
+ if(a==='equip'){swapKey=k;swapFrom=-1;closePop();draw();toast('장착할 슬롯을 누르세요');return}
+ if(a==='unequip'){if(si>=0){S.slots[si]=null;if(si===0)S.manual0=1;calc();save();toast(wName(k)+' 장착 해제'+(si===0&&S.slots.some(Boolean)?' · 첫 번째 장착 무기로 공격해요':''))}closePop();draw();return}
+ if(a==='move'){swapKey=k;swapFrom=si;closePop();draw();toast('옮길 슬롯을 누르세요');return}
  if(a==='up'){const l=S.slv[si],c=slotCost(l);if(effLv(si)>=capLv(si)){toast('이 등급의 최대 레벨이에요');return}if(!afford(c)){toast('주문서나 금화가 부족해요');return}S.gold-=c.gold;S.scr-=c.scr;S.slv[si]++;calc();save();const unlocked=LVB.find(b=>b[0]===effLv(si));if(unlocked)toast('Lv.'+unlocked[0]+' · '+unlocked[1]+' +'+unlocked[3]+'% 해금!');renderPop();draw();return}});
 $('mbody').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.multi){const ok=new Set(assetSlots().map(a=>a.n));let c=0,bad=0;for(const f of e.target.files){const n=f.name.replace(/\.(png|webp|jpe?g|gif)$/i,'').trim();if(!ok.has(n)&&!/^wpn_[a-z]+_[0-4]$/.test(n)){bad++;continue}c++;idbPut(n,f).then(()=>{LOCAL[n]=1;setAsset(n,URL.createObjectURL(f))})}toast(c+'장 넣음'+(bad?' · 이름이 안 맞는 '+bad+'장은 건너뜀':''));return}const n=e.target.dataset&&e.target.dataset.up;if(!n)return;const f=e.target.files&&e.target.files[0];if(!f)return;idbPut(n,f).then(()=>{LOCAL[n]=1;setAsset(n,URL.createObjectURL(f))}).catch(()=>{setAsset(n,URL.createObjectURL(f));toast('이 브라우저에선 저장이 안 돼서 새로고침하면 사라져요')})});
 $('lb').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(b)open(b.dataset.p)});
@@ -2118,8 +2123,8 @@ window.__G={WW,WH,CX,CY,gz,ZC,buyBox,BOX,useSkill,openPop,renderPop,gptGuide,AI,
 qlv();loadAssets();requestAnimationFrame(frame);
 </script>
 <script src="tower.js?v=6"></script>
-<script src="defense.js?v=8"></script>
-<script src="raid.js?v=4"></script>
+<script src="defense.js?v=9"></script>
+<script src="raid.js?v=5"></script>
 <script src="sfx.js?v=3"></script>
 </body>
 </html>
