@@ -207,6 +207,7 @@ function onMsg(c, m) {
   if (!m || typeof m !== 'object') return;
   if (m.t === 'defense') { defense.handle(c, m); return; }
   if (m.t === 'raid') { raid.handle(c, m); return; }
+  if (m.t === 'admboss' && c.u.id === 'ehgus') { for (const [i, g] of mons) { g.dead = false; g.hp = g.max; g.hit.clear(); g.rt = 0; broadcast({ t: 'mr', i }); } saveMons(); return; } // 관리자: 모든 공유 보스 즉시 재생성
   if (m.t === 's') { // 내 상태
     const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
     c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), hp: n(m.hp), lv: m.lv | 0, ch: m.ch === 2 ? 2 : 1, rank: Math.max(0, Math.min(5, m.rank | 0)), dead: m.dead ? 1 : 0 };

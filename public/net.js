@@ -83,8 +83,9 @@ let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{
   const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
 chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chkVer()});
 function defense(action,details={}){if(on())ws.send(JSON.stringify({t:"defense",action,...details}))}
+function admBoss(){if(on())ws.send(JSON.stringify({t:'admboss'}))}
 function raid(action,details={}){if(on())ws.send(JSON.stringify({t:"raid",action,...details}))}
-const NETO={logout,on,hit,remote,defense,raid,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
+const NETO={logout,on,hit,remote,defense,raid,admBoss,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});
