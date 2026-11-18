@@ -10,7 +10,7 @@ window.RAID = (() => {
   let visible = false, mode = 'lobby', run = null, arena = null, boss = null, pointer = null, selBoss = 0, selLv = 1, floorPat = null, floorKey = '';
   const btn = (a, label, dis = false) => '<button type="button" data-raid="' + a + '"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
   const topGold = () => MT[ZS[topZone()].m[0]].gold;
-  const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>';
+  const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>' + (window.PET ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알</span>' : '');
   const bossImg = b => { const k = 'mon_raid' + b, al = ALIAS[k]; return AURL[k] ? '<img src="' + AURL[k] + '" alt="">' : al && AURL[al[0]] ? '<img src="' + AURL[al[0]] + '" style="filter:hue-rotate(' + al[1] + 'deg)" alt="">' : '' };
   function st() { const day = calendarKey(); const r = S.raid || (S.raid = { day, wins: 0, best: [0, 0, 0, 0] }); if (r.day !== day) { r.day = day; r.wins = 0; } if (!Array.isArray(r.best)) r.best = [0, 0, 0, 0]; return r; }
   const left = () => Math.max(0, DAILY - st().wins);
