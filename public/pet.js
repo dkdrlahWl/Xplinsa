@@ -45,7 +45,21 @@ window.PET = (() => {
   const AN = { bite: '달려들어 물기', shot: '원거리 공격', chain: '연쇄 번개', nova: '주변 충격파', aura: '냉기 오라(적 느려짐)', breath: '화염 브레스', bolt: '번개 낙하' };
   const HATCH = { field: [35, 35, 20, 8, 2], elite: [55, 30, 12, 3, 0], raid: [0, 30, 45, 20, 5] };
 
-  function st() { S.pets = S.pets || {}; if (!Array.isArray(S.petEggs)) S.petEggs = [0, 0, 0, 0, 0]; return S.pets }
+  function st() { S.pets = S.pets || {}; if (!Array.isArray(S.petEggs)) S.petEggs = [0, 0, 0, 0, 0]; S.incN = S.incN || 2; if (!Array.isArray(S.inc)) S.inc = []; while (S.inc.length < S.incN) S.inc.push(null); return S.pets }
+  // ---------- 알 가방 · 부화기 ----------
+  const EGG_CAP = 40, INC_MIN = [10, 30, 90, 240, 480], INC_COST = [0, 0, 300, 800], INC_MAX = 4, OVER_GEM = [2, 4, 8, 15, 30];
+  const bagN = () => { st(); return S.petEggs.reduce((a, v) => a + v, 0) };
+  const room = n => bagN() + n <= EGG_CAP;
+  function addEgg(g) { if (!room(1)) { S.gem += OVER_GEM[g]; toast('알 가방이 가득 차서 보석 +' + OVER_GEM[g] + '으로 바꿨어요'); return false } S.petEggs[g]++; return true }
+  const incLeft = i => { const o = S.inc[i]; return o ? Math.max(0, o.t0 + o.d - Date.now()) : 0 };
+  const incReady = i => !!S.inc[i] && incLeft(i) <= 0;
+  const fastCost = i => Math.max(1, Math.ceil(incLeft(i) / 60000 / 3));
+  function tfmt(ms) { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sc = t % 60; return h ? h + '시간 ' + m + '분' : m ? m + '분 ' + sc + '초' : sc + '초' }
+  const mfmt = m => (m >= 60 ? Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + m % 60 + '분' : '') : m + '분');
+  function incPut(g) { st(); if (!(S.petEggs[g] > 0)) return toast('그 등급 알이 없어요'); const i = S.inc.findIndex(o => !o); if (i < 0) return toast('부화기 자리가 없어요'); S.petEggs[g]--; S.inc[i] = { g, t0: Date.now(), d: INC_MIN[g] * 60000 }; save(); window.SFX && SFX.play('merge', { v: .5 }); toast(GN[g] + ' 알을 넣었어요 · ' + mfmt(INC_MIN[g]) + ' 뒤 부화') }
+  function incFast(i) { if (!S.inc[i] || incReady(i)) return; const c = fastCost(i); if (S.gem < c) return toast('보석이 부족해요 (보석 ' + c + ')'); S.gem -= c; S.inc[i].t0 = Date.now() - S.inc[i].d; save(); window.SFX && SFX.play('gem', { v: .5 }) }
+  function incHatch(i) { if (!incReady(i)) return; const g = S.inc[i].g; S.inc[i] = null; const res = [rollOf(g)]; calc(); save(); close(); startGacha('egg' + g, 1, res) }
+  function incBuy() { st(); if (S.incN >= INC_MAX) return; const c = INC_COST[S.incN]; if (S.gem < c) return toast('보석이 부족해요 (보석 ' + c + ')'); S.gem -= c; S.incN++; st(); save(); toast('부화기 자리 ' + S.incN + '칸!') }
   const own = k => st()[k];
   const lvOf = k => (own(k) || {}).lv || 1, starOf = k => (own(k) || {}).st || 1;
   const mult = k => (1 + .015 * (lvOf(k) - 1)) * (1 + .15 * (starOf(k) - 1));
@@ -101,9 +115,9 @@ window.PET = (() => {
     const bx = BOX.pet; let g = pickGrade(bx.odds);
     for (const [pg, pn] of bx.pity) { const key = 'pet_' + pg; S.pity[key] = (S.pity[key] || 0) + 1; if (g < pg && S.pity[key] >= pn) g = pg }
     for (const [pg] of bx.pity) if (g >= pg) S.pity['pet_' + pg] = 0;
-    return rollOf(g);
+    addEgg(g); return { egg: 1, g };
   }
-  function egg(src, x, y) { st(); const g = pickGrade(HATCH[src]); S.petEggs[g]++; if (x != null) num(x, y, GN[g] + ' 펫 알 획득!', GC[g], true); else toast(GN[g] + ' 펫 알 획득!'); window.SFX && SFX.play('gem', { v: .6 }); return g }
+  function egg(src, x, y) { st(); const g = pickGrade(HATCH[src]); if (!addEgg(g)) return g; if (x != null) num(x, y, GN[g] + ' 펫 알 획득!', GC[g], true); else toast(GN[g] + ' 펫 알 획득!'); window.SFX && SFX.play('gem', { v: .6 }); return g }
   function onKill(m) { // 필드 몬스터 처치 시 알 드롭
     if (combatArena) return; const d = m.d, c2 = (typeof CHAP !== 'undefined' && CHAP === 2) ? 1.5 : 1;
     if (d.boss && !d.world && Math.random() < .025 * c2) egg('field', m.x, m.y - d.r * 2 - 50);
@@ -160,8 +174,36 @@ window.PET = (() => {
   }
 
   // ---------- 매 프레임 ----------
+  // 기지의 부화기 (그림 bld_incubator 있으면 사용)
+  const IX = () => BASE.x - 215, IY = () => BASE.y + 105;
+  let incIn = 0, incTick = 0;
+  function incWorld(dt) {
+    const d = Math.hypot(P.x - IX(), P.y - IY());
+    if (d < 52 && !incIn && !panel && !P.dead) { incIn = 1; open('pets') } else if (d > 95) incIn = 0;
+    incTick -= dt; if (incTick > 0) return; incTick = .5;
+    for (let i = 0; i < S.inc.length; i++) { const o = S.inc[i]; if (o && !o.nt && incReady(i)) { o.nt = 1; toast(GN[o.g] + ' 알이 부화할 준비가 됐어요! 펫 화면에서 부화하세요'); window.SFX && SFX.play('levelup', { v: .4 }) } }
+    if (panel === 'pets') { let redo = false; document.querySelectorAll('.incT').forEach(e => { const i = +e.dataset.i, l = incLeft(i); if (l <= 0) redo = true; e.textContent = tfmt(l) }); document.querySelectorAll('.incBar i').forEach(e => { const i = +e.dataset.i, o = S.inc[i]; if (o) e.style.width = Math.round((1 - incLeft(i) / o.d) * 100) + '%' }); if (redo) draw() }
+  }
+  function drawInc() {
+    const x = IX(), y = IY(), im = AI('bld_incubator');
+    shadow(x, y + 6, 58);
+    if (im) { const w = 130, h = w * im.height / im.width; ctx.drawImage(im, x - w / 2, y + 14 - h, w, h) }
+    else { ell(x, y - 2, 60, 24, '#8d8a9c'); ell(x, y - 10, 56, 21, '#b7b3c6'); ctx.save(); ctx.lineWidth = 3; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; ctx.strokeStyle = i % 2 ? '#c9953f' : '#e8bf62'; ctx.beginPath(); ctx.ellipse(x, y - 16, 46 + (i % 3) * 3, 17 + (i % 3), 0, a, a + .7); ctx.stroke() } ctx.restore(); ell(x, y - 16, 38, 13, '#7a5226', 1) }
+    const n = S.incN, gap = 24;
+    for (let i = 0; i < n; i++) { const o = S.inc[i], ex = x + (i - (n - 1) / 2) * gap, ey = y - 18;
+      if (!o) { ctx.globalAlpha = .35; ell(ex, ey, 8, 5, '#1c1830', 1); ctx.globalAlpha = 1; continue }
+      const rd = incReady(i), e = AI('pet_egg' + o.g) || null, bob = rd ? Math.abs(Math.sin(T * 7 + i)) * 6 : Math.sin(T * 2 + i) * 1, rot = rd ? Math.sin(T * 14 + i) * .18 : 0;
+      ctx.save(); ctx.translate(ex, ey - bob); ctx.rotate(rot); const w = 22, h = 28; if (e) ctx.drawImage(e, -w / 2, -h, w, h); else ell(0, -h / 2, w / 2, h / 2, GC[o.g]); ctx.restore();
+      if (rd && Math.random() < .08) fxs.push({ x: ex + rnd(-10, 10), y: ey - 20, t: .4, r: 8, c: GC[o.g], up: 1 }) }
+    const anyR = S.inc.some((o, i) => incReady(i)), live = []; S.inc.forEach((o, i) => { if (o && !incReady(i)) live.push(incLeft(i)) });
+    label('부화기', x, y - 62, 16, '#fff');
+    if (anyR) { ctx.globalAlpha = .75 + Math.sin(T * 6) * .25; label('부화 가능!', x, y - 80, 18, '#7dff8a'); ctx.globalAlpha = 1 }
+    else if (live.length) label(tfmt(Math.min(...live)), x, y - 80, 15, '#ffe066');
+    else if (bagN()) label('알을 넣어주세요', x, y - 80, 14, '#cfc8ee');
+  }
   function update(dt) {
     st(); const p = eq();
+    if (!combatArena) incWorld(dt);
     if (p && p.k !== lastK) { F.init = 0; lastK = p.k }
     if (p) {
       const away = combatArena || window.RAID?.visible || window.DEFENSE?.visible || window.TOWER?.visible;
@@ -191,6 +233,7 @@ window.PET = (() => {
   }
   function addDraw(list, x0, y0, x1, y1) {
     const p = eq(); if (p && F.init && !P.dead) list.push({ y: F.y, f: () => drawPet(F, p) });
+    if (IX() > x0 - 120 && IX() < x1 + 120 && IY() > y0 - 120 && IY() < y1 + 120) list.push({ y: IY(), f: drawInc });
     for (const f of REM.values()) if (f.x > x0 - 80 && f.x < x1 + 80 && f.y > y0 - 80 && f.y < y1 + 120) { const q = BY[f.k]; list.push({ y: f.y, f: () => drawPet(f, q) }) }
   }
   function drawFx() {
@@ -214,14 +257,27 @@ window.PET = (() => {
   function stars(n, mx) { let s = ''; for (let i = 0; i < mx; i++) s += '<span style="color:' + (i < n ? '#ffd23c' : '#4a4466') + '">★</span>'; return s }
   function passTxt(p, m) { return Object.keys(p.pa).map(k => k === 'revive' ? '쓰러지면 체력 50%로 부활 (3분마다)' : PN[k] + ' +' + Math.round(p.pa[k] * m * 1000) / 10 + '%').join(' · ') }
   function atkTxt(p) { const a = p.at; return AN[a.k] + (a.hits ? ' ' + a.hits + '연타' : '') + (a.n ? ' (' + a.n + '명)' : '') + (a.aoe ? ' · 폭발' : '') + (a.pierce ? ' · 관통' : '') + (a.heal ? ' · 체력 회복' : '') + ' · ' + a.cd.toFixed(1) + '초' }
-  function panel() {
+  function incHTML() {
+    st(); const free = S.inc.some(o => !o);
+    let h = '<div class="incW"><div class="incH"><b>🥚 부화기</b><span>알 가방 ' + bagN() + '/' + EGG_CAP + '</span></div><div class="incS">';
+    for (let i = 0; i < INC_MAX; i++) {
+      if (i >= S.incN) { h += i === S.incN ? '<div class="incSl lock" data-a="pincbuy"><b>🔒</b><span>칸 열기</span><i>' + IC.gem + INC_COST[i] + '</i></div>' : '<div class="incSl lock dim"><b>🔒</b></div>'; continue }
+      const o = S.inc[i];
+      if (!o) { h += '<div class="incSl empty"><b>빈 자리</b><span>' + (bagN() ? '아래 알을 눌러 넣기' : '알이 없어요') + '</span></div>'; continue }
+      const rd = incReady(i), k = 1 - incLeft(i) / o.d;
+      h += '<div class="incSl' + (rd ? ' ready' : '') + '" style="border-color:' + GC[o.g] + '"><img src="' + eggURL(o.g) + '" alt=""><b style="color:' + GC[o.g] + '">' + GN[o.g] + '</b>' +
+        (rd ? '<button class="btn" data-a="pinchatch:' + i + '">부화!</button>' : '<span class="incT" data-i="' + i + '">' + tfmt(incLeft(i)) + '</span><div class="incBar"><i data-i="' + i + '" style="width:' + Math.round(k * 100) + '%"></i></div><button class="btn eq" data-a="pincfast:' + i + '">즉시 ' + IC.gem + fastCost(i) + '</button>') + '</div>';
+    }
+    h += '</div><div class="petEggs">' + S.petEggs.map((n, g) => '<div class="petEgg ' + (n ? '' : 'none') + '" ' + (n ? 'data-a="pegg:' + g + '"' : '') + '><img src="' + eggURL(g) + '" alt=""><b style="color:' + GC[g] + '">' + GN[g] + '</b><span>' + n + '개 · ' + mfmt(INC_MIN[g]) + '</span>' + (n && free ? '<i>넣기</i>' : '') + '</div>').join('') + '</div>';
+    return h + '<div class="note" style="margin-top:4px">기지 왼쪽 아래 <b>부화기</b> 위에 서도 이 화면이 열려요. 부화 시간: 일반 10분 · 희귀 30분 · 레어 1시간 30분 · 에픽 4시간 · 전설 8시간 (게임을 꺼도 흘러가요)</div></div>';
+  }
+  function panelHTML() {
     st(); const fk = focus && BY[focus] ? focus : (eq() ? S.pet : PETS.find(p => own(p.k))?.k || PETS[0].k), p = BY[fk], o = own(fk), m = mult(fk), on = S.pet === fk;
     const ownN = PETS.filter(q => own(q.k)).length, eggs = S.petEggs;
-    let h = '<div class="petTop" style="border-color:' + GC[p.g] + '"><div class="petPic ' + (o ? '' : 'lock') + '" style="background:radial-gradient(circle at 50% 60%,' + GC[p.g] + '55,transparent 70%)"><img src="' + url(fk) + '" alt=""></div><div class="petInfo"><b style="color:' + GC[p.g] + '">' + GN[p.g] + '</b><h3>' + p.n + '</h3>' + (o ? '<div>Lv.' + o.lv + ' / ' + MAXLV + ' · ' + stars(o.st, MAXST) + '</div>' : '<div style="color:#9a94c0">미보유 · 펫 알에서 나와요</div>') +
+    let h = incHTML() + '<div class="petTop" style="border-color:' + GC[p.g] + '"><div class="petPic ' + (o ? '' : 'lock') + '" style="background:radial-gradient(circle at 50% 60%,' + GC[p.g] + '55,transparent 70%)"><img src="' + url(fk) + '" alt=""></div><div class="petInfo"><b style="color:' + GC[p.g] + '">' + GN[p.g] + '</b><h3>' + p.n + '</h3>' + (o ? '<div>Lv.' + o.lv + ' / ' + MAXLV + ' · ' + stars(o.st, MAXST) + '</div>' : '<div style="color:#9a94c0">미보유 · 펫 알에서 나와요</div>') +
       '<div class="petAb">' + passTxt(p, o ? m : 1) + '</div><div class="petAb2">' + atkTxt(p) + '</div></div></div>';
     if (o) { const c = cost(fk), mx = o.lv >= MAXLV; h += '<div class="petBtns">' + (on ? '<button class="btn no" data-a="punequip">장착 해제</button>' : '<button class="btn" data-a="pequip:' + fk + '">장착</button>') + '<button class="btn eq" data-a="plv:' + fk + '" ' + (mx ? 'disabled' : '') + '>' + (mx ? '최대 레벨' : '레벨업 · ' + IC.gold + fmt(c)) + '</button></div>' }
     h += '<div class="note">같은 펫이 또 나오면 별이 올라가요 (최대 5성, 이후엔 보석). 보유 효과: 펫 ' + ownN + '/30 · 공격력 +' + (Math.round(ownBonus() * 1000) / 10) + '%</div>';
-    h += '<div class="petEggs">' + eggs.map((n, g) => '<div class="petEgg ' + (n ? '' : 'none') + '" ' + (n ? 'data-a="pegg:' + g + '"' : '') + '><img src="' + eggURL(g) + '" alt=""><b style="color:' + GC[g] + '">' + GN[g] + '</b><span>' + n + '개</span>' + (n ? '<i>부화</i>' : '') + '</div>').join('') + '</div>';
     h += '<div class="petGrid">' + PETS.map(q => { const qo = own(q.k); return '<div class="petCell' + (q.k === fk ? ' sel' : '') + (qo ? '' : ' lock') + '" data-a="pfocus:' + q.k + '" style="border-color:' + GC[q.g] + '"><img src="' + url(q.k) + '" alt="">' + (S.pet === q.k ? '<i class="pon">장착</i>' : '') + '<b>' + q.n + '</b><span>' + (qo ? 'Lv.' + qo.lv + ' ' + '★' + qo.st : GN[q.g]) + '</span></div>' }).join('') + '</div>';
     h += '<div class="note">펫 알은 상점 <b>펫 알 상자</b>, 필드 보스(2.5%), 보스 레이드 하루 첫 클리어 보상으로 얻어요.</div><button class="btn eq" data-a="back" style="width:100%;margin-top:6px">장비로 돌아가기</button>';
     return h;
@@ -232,16 +288,20 @@ window.PET = (() => {
     if (k === 'pequip') { if (own(v)) { S.pet = v; F.init = 0; calc(); save(); toast(BY[v].n + ' 장착!'); window.SFX && SFX.play('merge', { v: .5 }) } panel_('pets'); return true }
     if (k === 'punequip') { S.pet = null; calc(); save(); panel_('pets'); return true }
     if (k === 'plv') { const o = own(v); if (!o || o.lv >= MAXLV) return true; const c = cost(v); if (S.gold < c) { toast('금화가 부족해요'); return true } S.gold -= c; o.lv++; calc(); save(); window.SFX && SFX.play('upgrade', { v: .5 }); F.pop = .25; panel_('pets'); return true }
-    if (k === 'pegg') { const g = +v, n = Math.min(10, S.petEggs[g] || 0); if (n > 0) { closeModal(); buyBox('egg' + g, n) } return true }
+    if (k === 'pegg') { incPut(+v); panel_('pets'); return true }
+    if (k === 'pincfast') { incFast(+v); panel_('pets'); return true }
+    if (k === 'pinchatch') { incHatch(+v); return true }
+    if (k === 'pincbuy') { incBuy(); panel_('pets'); return true }
     return false;
   }
   function panel_(p) { panel = p; draw() }
   function closeModal() { close() }
-  function hatch(id, n) { const g = +id.slice(3); n = Math.min(n, S.petEggs[g] || 0); if (n <= 0) { toast('부화할 알이 없어요'); return null } S.petEggs[g] -= n; const res = []; for (let i = 0; i < n; i++) res.push(rollOf(g)); calc(); save(); return res }
+  function hatch() { toast('알은 부화기에 넣어서 부화해요'); return null }
   function card(r, big) { const p = r.p, tag = r.nw ? '<i class="gnew">NEW</i>' : r.up ? '<i class="gnew" style="background:#ffb020">★' + r.up + '</i>' : r.gem ? '<i class="gnew" style="background:#5ab4ff">보석+' + r.gem + '</i>' : '';
     return '<div class="gc gcb gb' + r.g + (r.g >= 3 ? ' hi' + r.g : '') + (big ? ' big' : '') + '" data-g="' + r.g + '"><img src="' + url(p.k) + '" style="transform:none;width:78%;height:62%;margin-top:4px"><span class="gg ts">' + GN[r.g] + '</span><span class="gn ts">' + p.n + '</span>' + tag + '</div>' }
-  function admin() { st(); for (const p of PETS) st()[p.k] = { lv: MAXLV, st: MAXST }; S.petEggs = [10, 10, 10, 10, 10]; if (!S.pet) S.pet = 'dragon'; calc(); save() }
-  function eggDot() { st(); return S.petEggs.some(n => n > 0) }
-  return { PETS, BY, GN, apply, b, dr, revive, update, addDraw, drawFx, onKill, egg, rollBox, hatch, card, panel, act, admin, url, eggURL, eggDot, img, get F() { return F } };
+  function eggCard(r, big) { return '<div class="gc gcb gb' + r.g + (r.g >= 3 ? ' hi' + r.g : '') + (big ? ' big' : '') + '" data-g="' + r.g + '"><img src="' + eggURL(r.g) + '" style="transform:none;width:70%;height:62%;margin-top:4px"><span class="gg ts">' + GN[r.g] + '</span><span class="gn ts">펫 알</span></div>' }
+  function admin() { st(); for (const p of PETS) st()[p.k] = { lv: MAXLV, st: MAXST }; S.petEggs = [8, 8, 8, 8, 8]; if (!S.pet) S.pet = 'dragon'; calc(); save() }
+  function eggDot() { st(); return S.inc.some((o, i) => o && incReady(i)) || (S.inc.some(o => !o) && bagN() > 0) }
+  return { PETS, BY, GN, room, bagN, EGG_CAP, eggCard, apply, b, dr, revive, update, addDraw, drawFx, onKill, egg, rollBox, hatch, card, panel: panelHTML, act, admin, url, eggURL, eggDot, img, get F() { return F } };
 })();
 calc();
