@@ -4,8 +4,8 @@ const WIDTH = 1920, HEIGHT = 2560, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
 const HEAL_RADIUS = 34, DAILY_LIMIT = 10;
 const dayKey = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 const REWARDS = Array.from({ length: 5 }, (_, i) => ({
-  first: { gold: 3000 * (i + 1), scr: 2 * (i + 1) },
-  repeat: { gold: 600 * (i + 1), scr: Math.ceil((i + 1) / 2) }
+  first: { gold: 6000 * (i + 1), scr: 3 },
+  repeat: { gold: 1200 * (i + 1), scr: 3 }
 }));
 const ENTRIES = {
   north: [CENTER_X, 60], east: [WIDTH - 54, CENTER_Y],
