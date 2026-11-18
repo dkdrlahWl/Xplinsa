@@ -58,7 +58,7 @@ window.PET = (() => {
   const mfmt = m => (m >= 60 ? Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + m % 60 + '분' : '') : m + '분');
   function incPut(g) { st(); if (!(S.petEggs[g] > 0)) return toast('그 등급 알이 없어요'); const i = S.inc.findIndex(o => !o); if (i < 0) return toast('부화기 자리가 없어요'); S.petEggs[g]--; S.inc[i] = { g, t0: Date.now(), d: INC_MIN[g] * 60000 }; save(); window.SFX && SFX.play('merge', { v: .5 }); toast(GN[g] + ' 알을 넣었어요 · ' + mfmt(INC_MIN[g]) + ' 뒤 부화') }
   function incFast(i) { if (!S.inc[i] || incReady(i)) return; const c = fastCost(i); if (S.gem < c) return toast('보석이 부족해요 (보석 ' + c + ')'); S.gem -= c; S.inc[i].t0 = Date.now() - S.inc[i].d; save(); window.SFX && SFX.play('gem', { v: .5 }) }
-  function incHatch(i) { if (!incReady(i)) return; const g = S.inc[i].g; S.inc[i] = null; const res = [rollOf(g)]; calc(); save(); close(); startGacha('egg' + g, 1, res) }
+  function incHatch(i) { if (!incReady(i)) return; const g = S.inc[i].g; S.inc[i] = null; const res = [rollOf(g)]; calc(); save(); const ret = panel; close(); startGacha('egg' + g, 1, res); if (GA) GA.ret = ret || 'pets' }
   function incBuy() { st(); if (S.incN >= INC_MAX) return; const c = INC_COST[S.incN]; if (S.gem < c) return toast('보석이 부족해요 (보석 ' + c + ')'); S.gem -= c; S.incN++; st(); save(); toast('부화기 자리 ' + S.incN + '칸!') }
   const own = k => st()[k];
   const lvOf = k => (own(k) || {}).lv || 1, starOf = k => (own(k) || {}).st || 1;
@@ -112,7 +112,7 @@ window.PET = (() => {
   function pickGrade(odds) { let r = Math.random() * odds.reduce((a, v) => a + v, 0), g = 0; while (g < 4 && r >= odds[g]) { r -= odds[g]; g++ } return g }
   function rollOf(g) { const pool = PETS.filter(p => p.g === g), p = pool[Math.floor(Math.random() * pool.length)]; return { p, g, ...give(p.k) } }
   function rollBox() { // 상점 펫 알 상자 (천장 포함)
-    const bx = BOX.pet; let g = pickGrade(bx.odds);
+    const bx = BOX.pet; S.pity = S.pity || {}; let g = pickGrade(bx.odds);
     for (const [pg, pn] of bx.pity) { const key = 'pet_' + pg; S.pity[key] = (S.pity[key] || 0) + 1; if (g < pg && S.pity[key] >= pn) g = pg }
     for (const [pg] of bx.pity) if (g >= pg) S.pity['pet_' + pg] = 0;
     addEgg(g); return { egg: 1, g };
