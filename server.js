@@ -104,6 +104,8 @@ function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, 
 const MONS_FILE = path.join(DATA, 'mons.json');
 try { for (const [i, g] of Object.entries(JSON.parse(fs.readFileSync(MONS_FILE, 'utf8')))) if (SHARED_BOSSES.has(+i) && g.rt > Date.now()) mons.set(+i, { hp: 0, max: g.max, dead: true, hit: new Set(), own: null, last: 0, resp: g.resp, rt: g.rt }); } catch (e) {}
 function saveMons() { const o = {}; for (const [i, g] of mons) if (g.dead && g.rt > Date.now() && g.resp >= 60) o[i] = { max: g.max, resp: g.resp, rt: g.rt }; fs.writeFile(MONS_FILE, JSON.stringify(o), () => {}); }
+// 월드 보스: 매일 12시·18시·22시(한국 시간)에 등장
+function nextWorld() { const now = Date.now(), H = [12, 18, 22]; for (let d = 0; d < 2; d++) for (const h of H) { const k = new Date(now + 9 * 3600e3); k.setUTCHours(h, 0, 0, 0); const t = k.getTime() - 9 * 3600e3 + d * 86400e3; if (t > now + 60e3) return t; } return now + 6 * 3600e3; }
 function release(id) { for (const [i, m] of mons) if (m.own === id) { m.own = null; broadcast({ t: 'mo', i, o: null }); } }
 function wsSend(sock, obj) {
   if (sock.destroyed) return;
@@ -172,7 +174,7 @@ function onMsg(c, m) {
     const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || !SHARED_BOSSES.has(i)) return;
     const g = mon(i, mx, +m.rs); if (g.dead) return;
     g.hp -= d; g.hit.add(c.u.id); g.last = Date.now();
-    if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: g.resp }); saveMons(); g.hit.clear(); }
+    if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = m.w ? nextWorld() : Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: Math.round((g.rt - Date.now()) / 1000) }); saveMons(); g.hit.clear(); }
     else broadcast({ t: 'mh', i, hp: g.hp });
   } else if (m.t === 'c') { // 몬스터 주인 요청
     const i = m.i | 0; if (!SHARED_BOSSES.has(i)) return;

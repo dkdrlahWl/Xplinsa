@@ -60,7 +60,7 @@ function draw(r){if(r.dead)return;const sv={};for(const k of KEYS)sv[k]=P[k];con
  window.REM=r;try{drawPlayer()}catch(e){}window.REM=null;
  for(const k of KEYS)P[k]=sv[k];S.slots[0]=s0;S.hero=hero;S.lv=lv}
 function on(){return !!(ws&&ws.readyState===1&&ME)}
-function hit(m,d){if(m.d.boss&&on())ws.send(JSON.stringify({t:'h',i:m.i,d,mx:m.d.hp,rs:m.d.resp}))}
+function hit(m,d){if(m.d.boss&&on())ws.send(JSON.stringify({t:'h',i:m.i,d,mx:m.d.hp,rs:m.d.resp,w:m.d.world?1:0}))}
 // 다른 사람이 쫓고 있는 몬스터: 받은 위치로 부드럽게 이동만
 function remote(m,dt){if(!m.d.boss||!on()||!m.own||m.own===ME)return false;m.ph+=dt*6;if(m.rx!==undefined){const k=Math.min(1,dt*10);m.x+=(m.rx-m.x)*k;m.y+=(m.ry-m.y)*k}m.agg=false;return true}
 function list(){return others.values()}
