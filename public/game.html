@@ -803,8 +803,8 @@ function stageRewards(){
 function exchangeOffers(){
  const gold=Math.max(1,Math.floor(ST.bag))*3;
  const goldPayout=multiplier=>Math.max(1,Math.floor(gold*multiplier/4));
- return [['gold',goldPayout(1),0],['gold',goldPayout(5),20],['gold',goldPayout(27),100],
-  ['orb',1,0],['orb',5,20],['orb',27,100],['rb',1,0],['rb',2,20],['rb',13,100]];
+ return [['gold',goldPayout(1),0],['gold',goldPayout(5),40],['gold',goldPayout(27),200],
+  ['orb',1,0],['orb',5,40],['orb',27,200],['rb',1,0],['rb',2,40],['rb',13,200]];
 }
 const VIP_PRICE=3000,VIP_DURATION=30*24*3600e3;
 function vipActive(){return Number(S.vipUntil||0)>Date.now()}
