@@ -15,7 +15,7 @@ function connect(){if(kicked)return;
  ws.onopen=()=>{if(retry>0){P.x=BASE.x;P.y=BASE.y+120}retry=0}; // 재접속 → 캠프파이어
  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
   if(m.t==='kick')return kick();
-  if(['defenseState','defenseError','defenseInfo'].includes(m.t)){window.DEFENSE?.receive(m);return}
+  if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
    for(const g of sharedBosses){g.own=null;if(g.dead){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy}}
    for(const[i,hp,dead,own,left]of m.ms){const g=mons[i];if(!g?.d.boss)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}

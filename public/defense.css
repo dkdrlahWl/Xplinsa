@@ -11,9 +11,6 @@
 .defense-card li{display:flex;justify-content:space-between;gap:8px;background:#171f326c;border-radius:8px;padding:9px}
 .defense-card li b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .defense-card li span{white-space:nowrap;color:#b8ebad}
-.defense-join{display:flex;gap:8px}
-.defense-join input{width:100%;min-width:0;border:1px solid #94ad86;border-radius:8px;padding:8px;font:inherit;background:#151b2d;color:#fff}
-.defense-join button{flex:none}
 #defense-error{min-height:1em;color:#ffc989}
 #defense-canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 .defense-hud{position:absolute;inset:0 0 auto;pointer-events:none}
@@ -22,5 +19,6 @@
 .defense-camp-hp progress{width:100%;height:9px;accent-color:#89db60}
 #defense-notice{position:absolute;bottom:7%;left:8%;right:8%;text-align:center;pointer-events:none;font-size:21px;text-shadow:0 2px 3px #131b28}
 #defense-notice.defense-result{bottom:35%;background:#232943f5;border:2px solid #96b381;border-radius:14px;padding:18px;display:grid;gap:9px;pointer-events:auto}
-.defense-entry{background:linear-gradient(#547b46,#283f37);color:#fff7cb;font:inherit;font-size:11px;cursor:pointer}
 #defense-stage-select{border:1px solid #94ad86;border-radius:8px;padding:9px;background:#1d2637;color:#fff;font:inherit}
+
+#defense-screen.defense-lobby{overflow-y:auto}.defense-lobby .defense-card{margin-top:5vh;margin-bottom:16px}#defense-rooms{max-height:36vh;overflow-y:auto}#defense-rooms li{align-items:center}#defense-rooms li b{flex:1;text-align:left}#defense-rooms li button{flex:none}

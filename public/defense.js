@@ -10,7 +10,7 @@ window.DEFENSE = (() => {
   const arrows = { north: [360, 63, '↓'], east: [658, 480, '←'], south: [360, 901, '↑'], west: [62, 480, '→'] };
   const positions = new Map();
   const swings = new Map();
-  let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0;
+  let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0, rooms = [];
 
   const button = (action, label, disabled = false) =>
     '<button type="button" data-defense="' + action + '" ' + (disabled ? 'disabled' : '') + '>' + label + '</button>';
@@ -24,6 +24,33 @@ window.DEFENSE = (() => {
     });
   }
 
+  function showRooms() {
+    const list = $('defense-rooms');
+    if (!list) return;
+    list.replaceChildren();
+    if (!rooms.length) {
+      const empty = document.createElement('p');
+      empty.textContent = '대기 중인 방이 없어요.';
+      list.appendChild(empty);
+      return;
+    }
+    for (const room of rooms) {
+      const row = document.createElement('li');
+      const label = document.createElement('b');
+      label.textContent = room.stage + '단계 · ' + room.host + '의 방';
+      const count = document.createElement('span');
+      count.textContent = room.count + '/4';
+      const join = document.createElement('button');
+      join.type = 'button';
+      join.dataset.defense = 'join';
+      join.dataset.room = room.code;
+      join.disabled = room.count >= 4;
+      join.textContent = join.disabled ? '만석' : '입장';
+      row.append(label, count, join);
+      list.appendChild(row);
+    }
+  }
+
   function screen() {
     root.className = state && state.phase !== 'lobby' ? 'defense-arena' : 'defense-lobby';
     if (!state) {
@@ -31,17 +58,18 @@ window.DEFENSE = (() => {
         '<div class="defense-card"><h2>모닥불을 지켜라</h2><p>최대 4명 · 5단계</p>' +
         '<label for="defense-stage-select">방 만들 단계</label><select id="defense-stage-select">'+
         [1,2,3,4,5].map(stage=>'<option value="'+stage+'" '+(stage>best+1?'disabled':stage===Math.min(5,best+1)?'selected':'')+'>'+stage+'단계'+(stage>best+1?' · 잠김':stage<=best?' · 클리어':'')+'</option>').join('')+
-        '</select>'+button('create', '방 만들기') + '<div class="defense-join"><input id="defense-code" aria-label="방 코드" inputmode="numeric" maxlength="6" placeholder="방 코드 6자리">' +
-        button('join', '입장') + '</div><p id="defense-error" role="status"></p></div>';
+        '</select>'+button('create', '방 만들기') +
+        '<h3>대기 중인 방</h3><ul id="defense-rooms"></ul><p id="defense-error" role="status"></p></div>';
+      showRooms();
       return;
     }
     if (state.phase === 'lobby') {
       const host = state.host === NET.me(), me = state.players.find(p => p.id === NET.me());
       const names = state.players.map((p, i) => '<li><b id="defense-member-' + i + '"></b><span>' +
         (p.id === state.host ? '방장' : p.ready ? '준비 완료' : '대기 중') + '</span></li>').join('');
-      root.innerHTML = '<header>방 코드 ' + state.code + button('exit', '나가기') + '</header>' +
+      root.innerHTML = '<header>캠프 방어전 대기실' + button('exit', '나가기') + '</header>' +
         '<div class="defense-card"><h2>'+state.stage+'단계 · 대기실 ' + state.players.length + '/4</h2><ul>' + names +
-        '</ul><p>친구에게 방 코드를 알려주세요.</p>' +
+        '</ul>' +
         (host ? button('start', '시작', !statsSent || state.players.some(p => p.id !== state.host && !p.ready)) :
           button('ready', me?.ready ? '준비 취소' : '준비 완료')) + '<p id="defense-error" role="status"></p></div>';
       state.players.forEach((p, i) => { $('defense-member-' + i).textContent = p.nick || '모험가'; });
@@ -91,8 +119,13 @@ window.DEFENSE = (() => {
   function receive(message) {
     if (!visible) return;
     if (message.t === 'defenseInfo') {
-      best = message.best;
+      best = message.best; rooms = message.rooms || [];
       if (!state) screen();
+      return;
+    }
+    if (message.t === 'defenseRooms') {
+      rooms = message.rooms;
+      if (!state) showRooms();
       return;
     }
     if (message.t === 'defenseError') {
@@ -111,7 +144,7 @@ window.DEFENSE = (() => {
     if (!window.NET?.on()) { toast('서버에 연결된 후 입장할 수 있어요'); return; }
     if (P.dead) { toast('부활한 뒤 입장할 수 있어요'); return; }
     close();
-    visible = true; root.hidden = false; statsSent = false; state = null;
+    visible = true; root.hidden = false; statsSent = false; state = null; rooms = [];
     joy.on = false; joy.x = joy.y = 0;
     P.moving = false; P.recall = null;
     for (const boss of sharedBosses) boss.agg = false;
@@ -132,7 +165,7 @@ window.DEFENSE = (() => {
     const action = clicked.dataset.defense;
     if (action === 'exit') return exit();
     if (action === 'create') return NET.defense('create', { stage: Number($('defense-stage-select').value) });
-    if (action === 'join') return NET.defense('join', { code: $('defense-code').value.trim() });
+    if (action === 'join') return NET.defense('join', { code: clicked.dataset.room });
     if (action === 'start') return NET.defense('start');
     if (action === 'ready') return loadout(!state.players.find(p => p.id === NET.me())?.ready);
     if (action === 'claim' && state?.phase === 'cleared' && S.defenseClaim !== calendarKey()) {
@@ -243,6 +276,6 @@ window.DEFENSE = (() => {
   }
 
   return { get visible() { return visible; }, open, receive, tick, disconnect() {
-    if (visible) { state = null; statsSent = false; pointer = null; screen(); $('defense-error').textContent = '연결이 끊겨 방에서 나왔어요.'; }
+    if (visible) { state = null; statsSent = false; pointer = null; rooms = []; screen(); $('defense-error').textContent = '연결이 끊겨 방에서 나왔어요.'; }
   } };
 })();

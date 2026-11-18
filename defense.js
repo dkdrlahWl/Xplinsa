@@ -17,7 +17,23 @@ const WAVES = [
 
 module.exports = function createDefense(clients, send, markDirty) {
   const rooms = new Map(), memberships = new Map();
+  const watchers = new Set();
   let sequence = 0;
+
+  function roomList() {
+    return [...rooms.values()].filter(room => room.phase === 'lobby').map(room => ({
+      code: room.code, stage: room.stage, count: room.players.size,
+      host: room.players.get(room.host)?.nick || '모험가'
+    }));
+  }
+
+  function publishRooms() {
+    const packet = { t: 'defenseRooms', rooms: roomList() };
+    for (const id of watchers) {
+      const client = clients.get(id);
+      if (client && !memberships.has(id)) send(client.sock, packet);
+    }
+  }
   const clamp = (value, low, high) => Math.min(high, Math.max(low, Number(value) || 0));
 
   function sendRoom(room) {
@@ -41,13 +57,15 @@ module.exports = function createDefense(clients, send, markDirty) {
   }
 
   function leave(id) {
+    watchers.delete(id);
     const room = memberships.get(id);
     if (!room) return;
     memberships.delete(id);
     room.players.delete(id);
-    if (!room.players.size) { rooms.delete(room.code); return; }
+    if (!room.players.size) { rooms.delete(room.code); publishRooms(); return; }
     if (room.host === id) room.host = room.players.keys().next().value;
     sendRoom(room);
+    publishRooms();
   }
 
   function join(client, room) {
@@ -56,6 +74,7 @@ module.exports = function createDefense(clients, send, markDirty) {
       hp: 1, maxHp: 1, dir: 0, moving: false, swing: 0, dx: 0, dy: 0, attackIn: 0, inputAge: 0, revive: 0 });
     memberships.set(id, room);
     sendRoom(room);
+    publishRooms();
   }
 
   function startWave(room) {
@@ -77,7 +96,8 @@ module.exports = function createDefense(clients, send, markDirty) {
     const error = text => send(client.sock, { t: 'defenseError', text });
     switch (message.action) {
       case 'info':
-        send(client.sock, { t: 'defenseInfo', best: client.u.defenseBest || 0 });
+        watchers.add(id);
+        send(client.sock, { t: 'defenseInfo', best: client.u.defenseBest || 0, rooms: roomList() });
         return;
       case 'create': {
         if (room) { sendRoom(room); return; }
@@ -131,6 +151,7 @@ module.exports = function createDefense(clients, send, markDirty) {
           p.hp = p.maxHp;
         }
         sendRoom(room);
+        publishRooms();
       }
     } else if (message.action === 'move' && (room.phase === 'battle' || room.phase === 'prepare')) {
       const dx = clamp(message.x, -1, 1), dy = clamp(message.y, -1, 1);
