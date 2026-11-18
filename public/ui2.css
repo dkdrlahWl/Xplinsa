@@ -1,0 +1,25 @@
+/* UI kit v2 — 9-slice 금테 버튼/탭/패널 */
+:root{--ui2-btn:url(assets/ui2_green.webp)}
+.btn,.sbtn,.sbtn2,.growth-button,.feature-shortcuts button,.rbtn,.dbtn{border-style:solid!important;border-width:13px 17px!important;border-color:transparent;border-image:url(assets/ui2_green.webp) 46 64 46 64 fill/13px 17px/0 stretch!important;background:none!important;box-shadow:none!important;border-radius:0!important;color:#fff!important;text-shadow:0 2px 0 #0009,0 0 3px #0006}
+.btn{padding:0 2px!important;min-height:52px;justify-content:center}
+.btn.eq,.sbtn.yel,.sbtn2.yel{border-image-source:url(assets/ui2_yellow.webp)!important}
+.btn.org,.sbtn.org{border-image-source:url(assets/ui2_orange.webp)!important}
+.btn.no,.sbtn,.btn:disabled,.sbtn2:disabled{border-image-source:url(assets/ui2_gray.webp)!important}
+.btn.no{color:#ffd1c8!important}
+.sbtn.blue,.sbtn2.blue{border-image-source:url(assets/ui2_blue.webp)!important}
+.btn.red,.sbtn.red{border-image-source:url(assets/ui2_red.webp)!important}
+.sbtn{padding:0 4px!important;border-width:10px 13px!important;border-image-width:10px 13px!important;min-height:38px}
+.sbtn2{padding:0 2px!important;min-height:50px}
+.sbtn2.grn{border-image-source:url(assets/ui2_green.webp)!important}
+.feature-shortcuts button{border-width:9px 10px!important;border-image-width:9px 10px!important;padding:0!important;min-height:38px;white-space:nowrap;font-size:12px!important}
+.tab{border-style:solid!important;border-width:16px 15px 10px!important;border-image:url(assets/ui2_tab_off.webp) 60 56 40 56 fill/16px 15px 10px/0 stretch!important;background:none!important;box-shadow:none!important;border-radius:0!important;padding:2px 0 4px!important;color:#b9b4d6!important}
+.tab.on{border-image-source:url(assets/ui2_tab_on.webp)!important;color:#ffe9a8!important;text-shadow:0 2px 0 #000a}
+#mx{background:url(assets/ui2_close.webp) center/contain no-repeat!important;border:0!important;box-shadow:none!important;font-size:0!important;color:transparent!important;width:44px!important;height:46px!important}
+#mx *{display:none}
+.row{border-style:solid!important;border-width:12px 16px!important;border-image:url(assets/ui2_row.webp) 40 54 40 54 fill/12px 16px/0 stretch!important;background:none!important;border-radius:0!important;padding:0 2px!important;box-shadow:none!important}
+.pill{border-style:solid;border-width:6px 12px;border-image:url(assets/ui2_pill.webp) 34 60 34 60 fill/6px 12px/0 stretch;background:none!important;border-radius:0!important;padding:0 2px 0 0!important}
+#nickin,#mkprice,#modal input[type=text],#modal input[type=number],#modal input:not([type]),#modal select,.mkform input{border-style:solid!important;border-width:10px 14px!important;border-image:url(assets/ui2_input.webp) 40 50 40 50 fill/10px 14px/0 stretch!important;background:none!important;border-radius:0!important;color:#2a2340!important;padding:2px 0!important;outline:none}
+.feature-progress{height:12px!important;border-radius:0!important;border-style:solid;border-width:3px 6px;border-image:url(assets/ui2_bar.webp) 18 28 18 28 fill/3px 6px/0 stretch;background:none!important;overflow:hidden}
+.feature-progress i{border-radius:3px}
+#pop .px{background:url(assets/ui2_close.webp) center/contain no-repeat!important;border:0!important;box-shadow:none!important;font-size:0!important;color:transparent!important}
+#pop .px *{display:none}
