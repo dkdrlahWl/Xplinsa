@@ -1,0 +1,248 @@
+window.DEFENSE = (() => {
+  const WIDTH = 720, HEIGHT = 960;
+  const root = document.createElement('section');
+  root.id = 'defense-screen';
+  root.hidden = true;
+  $('game').appendChild(root);
+  const background = new Image();
+  background.src = 'assets/defense_camp.webp';
+  const directions = { north: '북', east: '동', south: '남', west: '서' };
+  const arrows = { north: [360, 63, '↓'], east: [658, 480, '←'], south: [360, 901, '↑'], west: [62, 480, '→'] };
+  const positions = new Map();
+  const swings = new Map();
+  let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0;
+
+  const button = (action, label, disabled = false) =>
+    '<button type="button" data-defense="' + action + '" ' + (disabled ? 'disabled' : '') + '>' + label + '</button>';
+
+  function loadout(ready) {
+    const weapon = WT[wType()];
+    NET.defense('loadout', {
+      ready, hero: S.hero, weapon: S.slots[0], attack: ST.atk, hp: ST.maxhp, speed: ST.spd,
+      rate: ST.aspd / weapon.cd,
+      multiplier: weapon.m * (weapon.hits || weapon.pel || 1)
+    });
+  }
+
+  function screen() {
+    root.className = state && state.phase !== 'lobby' ? 'defense-arena' : 'defense-lobby';
+    if (!state) {
+      root.innerHTML = '<header>캠프 방어전' + button('exit', '닫기') + '</header>' +
+        '<div class="defense-card"><h2>모닥불을 지켜라</h2><p>최대 4명 · 5단계</p>' +
+        '<label for="defense-stage-select">방 만들 단계</label><select id="defense-stage-select">'+
+        [1,2,3,4,5].map(stage=>'<option value="'+stage+'" '+(stage>best+1?'disabled':stage===Math.min(5,best+1)?'selected':'')+'>'+stage+'단계'+(stage>best+1?' · 잠김':stage<=best?' · 클리어':'')+'</option>').join('')+
+        '</select>'+button('create', '방 만들기') + '<div class="defense-join"><input id="defense-code" aria-label="방 코드" inputmode="numeric" maxlength="6" placeholder="방 코드 6자리">' +
+        button('join', '입장') + '</div><p id="defense-error" role="status"></p></div>';
+      return;
+    }
+    if (state.phase === 'lobby') {
+      const host = state.host === NET.me(), me = state.players.find(p => p.id === NET.me());
+      const names = state.players.map((p, i) => '<li><b id="defense-member-' + i + '"></b><span>' +
+        (p.id === state.host ? '방장' : p.ready ? '준비 완료' : '대기 중') + '</span></li>').join('');
+      root.innerHTML = '<header>방 코드 ' + state.code + button('exit', '나가기') + '</header>' +
+        '<div class="defense-card"><h2>'+state.stage+'단계 · 대기실 ' + state.players.length + '/4</h2><ul>' + names +
+        '</ul><p>친구에게 방 코드를 알려주세요.</p>' +
+        (host ? button('start', '시작', !statsSent || state.players.some(p => p.id !== state.host && !p.ready)) :
+          button('ready', me?.ready ? '준비 취소' : '준비 완료')) + '<p id="defense-error" role="status"></p></div>';
+      state.players.forEach((p, i) => { $('defense-member-' + i).textContent = p.nick || '모험가'; });
+      return;
+    }
+    root.innerHTML = '<canvas id="defense-canvas"></canvas><div class="defense-hud"><header><b id="defense-stage"></b>' +
+      button('exit', '나가기') + '</header><div class="defense-camp-hp"><span id="defense-hp"></span>' +
+      '<progress id="defense-meter" max="100" value="100"></progress></div></div><div id="defense-notice"></div>';
+    const canvas = $('defense-canvas');
+    canvas.onpointerdown = e => {
+      if (pointer) return;
+      pointer = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0 };
+      canvas.setPointerCapture(e.pointerId);
+    };
+    canvas.onpointermove = e => {
+      if (!pointer || e.pointerId !== pointer.id) return;
+      const x = e.clientX - pointer.ox, y = e.clientY - pointer.oy, len = Math.max(36, Math.hypot(x, y));
+      pointer.x = x / len; pointer.y = y / len;
+    };
+    canvas.onpointerup = canvas.onpointercancel = canvas.onlostpointercapture = e => {
+      if (pointer?.id === e.pointerId) pointer = null;
+    };
+  }
+
+  function updateHud() {
+    const stage = $('defense-stage');
+    if (!stage) return;
+    stage.textContent = state.stage + '/5단계 · ' + state.lanes.map(d => directions[d]).join('·') + ' · ' + state.timer + '초';
+    $('defense-hp').textContent = '모닥불 ' + state.camp + ' / ' + state.campMax;
+    $('defense-meter').value = state.camp / state.campMax * 100;
+    const notice = $('defense-notice'), me = state.players.find(p => p.id === NET.me());
+    if (state.phase === 'cleared' || state.phase === 'failed') {
+      const clear = state.phase === 'cleared', available = clear && S.defenseClaim !== calendarKey();
+      const unlock = clear && state.stage === best && best < 5 ? '<p>'+(best+1)+'단계 방을 만들 수 있어요.</p>' : '';
+      notice.className = 'defense-result';
+      notice.innerHTML = '<h2>' + (clear ? state.stage+'단계 방어 성공!' : '방어 실패') + '</h2>' +
+        (clear ? '<p>' + (available ? '오늘 첫 클리어 · 골드 '+fmt(6000*state.stage)+' · 주문서 '+4*state.stage : '오늘 첫 클리어 보상 수령 완료') + '</p>' : '') +
+        unlock + (available ? button('claim', '보상 받기') : '') + button('exit', '캠프로 돌아가기');
+    } else {
+      notice.className = '';
+      notice.textContent = state.phase === 'prepare' ? state.stage + '단계 준비 · ' + state.timer + '초' :
+        me?.hp === 0 ? '잠시 후 모닥불 근처에서 부활합니다' :
+        me && Math.hypot(me.x-360,me.y-480)<=34 ? '회복 중 · 회복 범위 안에서는 공격할 수 없어요' : '';
+    }
+  }
+
+  function receive(message) {
+    if (!visible) return;
+    if (message.t === 'defenseInfo') {
+      best = message.best;
+      if (!state) screen();
+      return;
+    }
+    if (message.t === 'defenseError') {
+      const error = $('defense-error');
+      if (error) error.textContent = message.text;
+      return;
+    }
+    const previous = state;
+    state = message; best = state.best;
+    if (!previous || previous.phase === 'lobby' || !$('defense-canvas')) screen();
+    if (state.phase === 'lobby' && !statsSent) { statsSent = true; loadout(false); }
+    if (state.phase !== 'lobby') updateHud();
+  }
+
+  function open() {
+    if (!window.NET?.on()) { toast('서버에 연결된 후 입장할 수 있어요'); return; }
+    if (P.dead) { toast('부활한 뒤 입장할 수 있어요'); return; }
+    close();
+    visible = true; root.hidden = false; statsSent = false; state = null;
+    joy.on = false; joy.x = joy.y = 0;
+    P.moving = false; P.recall = null;
+    for (const boss of sharedBosses) boss.agg = false;
+    positions.clear(); swings.clear();
+    screen();
+    NET.defense('info');
+    NET.defense('resume');
+  }
+
+  function exit() {
+    NET.defense('leave');
+    visible = false; root.hidden = true; state = null; pointer = null;
+  }
+
+  root.addEventListener('click', e => {
+    const clicked = e.target.closest('[data-defense]');
+    if (!clicked || clicked.disabled) return;
+    const action = clicked.dataset.defense;
+    if (action === 'exit') return exit();
+    if (action === 'create') return NET.defense('create', { stage: Number($('defense-stage-select').value) });
+    if (action === 'join') return NET.defense('join', { code: $('defense-code').value.trim() });
+    if (action === 'start') return NET.defense('start');
+    if (action === 'ready') return loadout(!state.players.find(p => p.id === NET.me())?.ready);
+    if (action === 'claim' && state?.phase === 'cleared' && S.defenseClaim !== calendarKey()) {
+      S.defenseClaim = calendarKey();
+      markRewardOrigin(clicked);
+      give({ gold: 6000 * state.stage, scr: 4 * state.stage });
+      save();
+      updateHud();
+    }
+  });
+
+  function drawHero(player, pos, g, time) {
+    if (player.hp <= 0) return;
+    const prior = swings.get(player.id);
+    if (!prior || prior.count !== player.swing) swings.set(player.id, { count: player.swing, at: time });
+    const elapsed = time - swings.get(player.id).at;
+    const heroState = { ...P }, oldHero = S.hero, oldWeapon = S.slots[0], oldContext = ctx, oldPV = PV;
+    Object.assign(P, { x: pos.x, y: pos.y, dir: player.dir, dead: false, moving: player.moving, walk: time * .012,
+      swingT: player.swing ? Math.max(0, .24 - elapsed / 1000) : 0, sw: .24, trail: [], scarf: [], hitT: 0 });
+    if (HERO.some(hero => hero.k === player.hero)) S.hero = player.hero;
+    if (WT[player.weapon?.split('_')[0]] && GR[Number(player.weapon.split('_')[1])]) S.slots[0] = player.weapon;
+    ctx = g; PV = 1;
+    try { drawPlayer(); } finally {
+      Object.assign(P, heroState); S.hero = oldHero; S.slots[0] = oldWeapon; ctx = oldContext; PV = oldPV;
+    }
+  }
+
+  function draw(dt) {
+    const canvas = $('defense-canvas');
+    if (!canvas || !state) return;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    const dp = Math.min(2, devicePixelRatio || 1);
+    if (canvas.width !== Math.round(w * dp) || canvas.height !== Math.round(h * dp)) {
+      canvas.width = Math.round(w * dp); canvas.height = Math.round(h * dp);
+    }
+    const g = canvas.getContext('2d'), scale = Math.min(w / WIDTH, h / HEIGHT) * dp;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    g.setTransform(scale, 0, 0, scale, (canvas.width - WIDTH * scale) / 2, (canvas.height - HEIGHT * scale) / 2);
+    if (background.complete && background.naturalWidth) g.drawImage(background, 0, 0, WIDTH, HEIGHT);
+    else { g.fillStyle = '#507643'; g.fillRect(0, 0, WIDTH, HEIGHT); }
+    g.beginPath(); g.arc(360, 480, 34, 0, Math.PI * 2);
+    g.fillStyle = '#94f8a849'; g.fill(); g.strokeStyle = '#b7ffba'; g.lineWidth = 2; g.stroke();
+    const camp = AI('bld_fire');
+    if (camp) g.drawImage(camp, 340, 440, 40, 44);
+    const time = performance.now();
+    const alive = new Set();
+    function smooth(key, entity) {
+      alive.add(key);
+      const p = positions.get(key) || { x: entity.x, y: entity.y };
+      const t = Math.min(1, dt * 13);
+      p.x += (entity.x - p.x) * t; p.y += (entity.y - p.y) * t;
+      positions.set(key, p);
+      return p;
+    }
+    const scene = [
+      ...state.enemies.map(e => ({ entity: e, pos: smooth('e' + e.id, e), monster: true })),
+      ...state.players.filter(p => p.hp > 0).map(p => ({ entity: p, pos: smooth('p' + p.id, p), monster: false }))
+    ].sort((a, b) => a.pos.y - b.pos.y);
+    const me = scene.find(item => !item.monster && item.entity.id === NET.me());
+    if (me) {
+      g.beginPath(); g.arc(me.pos.x, me.pos.y, 100, 0, Math.PI * 2);
+      g.strokeStyle = '#ffffff75'; g.stroke();
+    }
+    for (const item of scene) {
+      const { entity, pos, monster } = item;
+      let marker = pos.y - 68;
+      if (monster) {
+        const sprite = AI('mon_' + entity.type), width = entity.boss ? 112 : 52;
+        const height = sprite ? width * sprite.height / sprite.width : width;
+        if (sprite) g.drawImage(sprite, pos.x - width / 2, pos.y - height, width, height);
+        else { g.fillStyle = '#b55d31'; g.fillRect(pos.x - 14, pos.y - 26, 28, 26); }
+        marker = pos.y - height - 7;
+      } else {
+        drawHero(entity, pos, g, time);
+        g.font = 'bold 21px sans-serif'; g.textAlign = 'center';
+        g.lineWidth = 4; g.strokeStyle = '#29202d'; g.strokeText(entity.nick || '모험가', pos.x, marker - 7);
+        g.fillStyle = '#fff'; g.fillText(entity.nick || '모험가', pos.x, marker - 7);
+      }
+      g.fillStyle = '#2b2434'; g.fillRect(pos.x - 23, marker, 46, 7);
+      g.fillStyle = monster ? '#ff6461' : '#89ed71';
+      g.fillRect(pos.x - 21, marker + 1, 42 * entity.hp / entity.maxHp, 5);
+    }
+    for (const key of positions.keys()) if (!alive.has(key)) positions.delete(key);
+    if (state.phase === 'prepare') {
+      g.font = 'bold 54px sans-serif'; g.textAlign = 'center';
+      g.fillStyle = '#fff0a1'; g.strokeStyle = '#403055'; g.lineWidth = 6;
+      for (const lane of state.lanes) {
+        const [x, y, symbol] = arrows[lane];
+        g.strokeText(symbol, x, y + 20); g.fillText(symbol, x, y + 20);
+      }
+    }
+  }
+
+  function tick(dt) {
+    if (!visible || !state) return;
+    if (['prepare', 'battle'].includes(state.phase)) {
+      sendWait -= dt;
+      if (sendWait <= 0) {
+        sendWait = .07;
+        const x = pointer?.x ?? (Number(keys.d || keys.arrowright || false) - Number(keys.a || keys.arrowleft || false));
+        const y = pointer?.y ?? (Number(keys.s || keys.arrowdown || false) - Number(keys.w || keys.arrowup || false));
+        NET.defense('move', { x, y });
+      }
+    }
+    draw(dt);
+  }
+
+  return { get visible() { return visible; }, open, receive, tick, disconnect() {
+    if (visible) { state = null; statsSent = false; pointer = null; screen(); $('defense-error').textContent = '연결이 끊겨 방에서 나왔어요.'; }
+  } };
+})();

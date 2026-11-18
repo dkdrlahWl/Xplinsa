@@ -330,6 +330,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .smith-odds{width:100%;margin:14px 0;border-collapse:collapse;background:#252239;border-radius:12px;text-align:center}.smith-odds th,.smith-odds td{padding:10px 5px;border-bottom:1px solid #ffffff17}.smith-odds thead{color:#fbe4ab}.smith-confirm{width:100%;display:flex;align-items:center;justify-content:center;gap:6px}.smith-confirm :is(img,svg){width:23px;height:23px;object-fit:contain}
 </style>
 <link rel="stylesheet" href="tower.css?v=3">
+<link rel="stylesheet" href="defense.css?v=1">
 </head>
 <body>
 <div id="game">
@@ -342,7 +343,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
   <div id="menu" class="hud ts">☰</div>
   <div id="quests" class="hud ts"><div class="qc main" id="qc0"><div class="qtx"><div id="qt"></div><div class="qb"><i id="qfill"></i><span id="qs"></span></div></div><div class="qi" id="qi0"></div><div class="qget">받기</div></div></div>
-  <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><button type="button" class="lbb reward-shortcut" data-p="box" data-ic="gift" aria-label="선물함"><i class="ldot" id="dotbox">!</i></button><button type="button" class="lbb reward-shortcut" data-p="att" data-ic="attendance" aria-label="출석 보상"><i class="ldot" id="dotatt">!</i></button><div class="lbb" data-p="home" data-ic="home"></div></div>
+  <div id="lb" class="hud"><div class="lbb" data-p="quests" data-ic="cal"></div><div class="lbb" data-p="map" data-ic="map"></div><button type="button" class="lbb reward-shortcut" data-p="box" data-ic="gift" aria-label="선물함"><i class="ldot" id="dotbox">!</i></button><button type="button" class="lbb reward-shortcut" data-p="att" data-ic="attendance" aria-label="출석 보상"><i class="ldot" id="dotatt">!</i></button><div class="lbb" data-p="home" data-ic="home"></div><button class="lbb defense-entry" data-p="defense" aria-label="캠프 방어전">방어전</button></div>
   <div id="bagw" class="hud ts"><div id="bag"><div id="bagf"></div><span id="bagt"></span></div><div id="bagc"></div></div>
   <div id="toast" class="hud ts"></div>
   <div id="pop"></div>
@@ -363,7 +364,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=12"></script>
+<script src="net.js?v=13"></script>
 <script src="reward-fx.js?v=1"></script>
 <script>
 'use strict';
@@ -1671,6 +1672,7 @@ function eqFree(k){return 0}
 function cur(list){$('mcur').innerHTML=list.map(k=>`<div class="pill" data-reward-kind="${k}">${IC[k]}<span>${fmt(S[k])}</span></div>`).join('')}
 function costBtn(c,act,ok,extra){return `<button class="btn ${ok?'':'no'}" data-a="${act}">${c.scr?`<span>${IC.scr}${c.scr}</span>`:''}${c.rb?`<span>${IC.rb}${c.rb}</span>`:''}${c.orb?`<span>${IC.orb}${c.orb}</span>`:''}${c.cry?`<span>${IC.cry}${c.cry}</span>`:''}${c.gold!=null?`<span>${IC.gold}${fmt(c.gold)}</span>`:''}${extra||''}</button>`}
 function open(p){
+ if(p==="defense"){window.DEFENSE?.open();return}
  if(p==='att'){panel='att';draw();$('modal').className='open';return}
  if(p==='home'){if(P.dead)return;if(Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand){toast('이미 기지에 있어요');return}P.recall={t:2,x:P.x,y:P.y};toast('기지로 귀환 중… (움직이면 취소)');return}
  if(p==='tower'){if(window.TOWER)TOWER.open();return}
@@ -1757,7 +1759,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0552 (VIP 교환·대장간 승급)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0560 (캠프 방어전)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(featureAct(k,v))return;if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='goatt'){panel='att'}else if(k==='goshop'){panel='shop'}
  else if(k==='soon'){toast('준비 중이에요');return}
@@ -1853,10 +1855,11 @@ function drawPreview(){const isHero=panel==='heroDetail',c=$(isHero?'herocv':'eq
  P.x=0;P.y=0;P.dir=.35;P.moving=false;P.swingT=0;P.dead=false;P.hitT=0;ctx=g;PV=1;const scale=dp*Math.min(1.83,W/(isHero?96:116));g.setTransform(scale,0,0,scale,W*dp*.39,H*dp*.84);g.lineWidth=2.2;g.strokeStyle=OLC;
  g.fillStyle='rgba(120,150,170,.55)';g.beginPath();g.ellipse(0,0,34,11,0,0,TAU);g.fill();g.fillStyle='rgba(95,224,111,.55)';g.beginPath();g.ellipse(0,0,22,7,0,0,TAU);g.fill();
  try{drawPlayer()}catch(e){}PV=0;ctx=old;S.hero=oldHero;Object.assign(P,keep)}
-function frame(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;if(window.TOWER&&TOWER.visible){TOWER.tick(dt);if(window.NET)NET.tick(dt);TOWER.draw();requestAnimationFrame(frame);return}update(dt);if(window.NET)NET.tick(dt);render();hud();if(panel==='wpn'||panel==='heroDetail')drawPreview();requestAnimationFrame(frame)}
+function frame(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;if(window.DEFENSE?.visible){DEFENSE.tick(dt);if(window.NET)NET.tick(dt);requestAnimationFrame(frame);return}if(window.TOWER&&TOWER.visible){TOWER.tick(dt);if(window.NET)NET.tick(dt);TOWER.draw();requestAnimationFrame(frame);return}update(dt);if(window.NET)NET.tick(dt);render();hud();if(panel==='wpn'||panel==='heroDetail')drawPreview();requestAnimationFrame(frame)}
 window.__G={WW,WH,CX,CY,gz,ZC,buyBox,BOX,useSkill,openPop,renderPop,gptGuide,AI,setAsset,assetSlots,attack,HERO,sqG,worldMap,BLD,subPos,zoneOpen,inStage,walk,ZB,obs,S:()=>S,P,ST,mons,drops,update,render,hud,open,act,close,joy,calc};
 qlv();loadAssets();requestAnimationFrame(frame);
 </script>
 <script src="tower.js?v=3"></script>
+<script src="defense.js?v=1"></script>
 </body>
 </html>
