@@ -17,6 +17,7 @@ function connect(){if(kicked)return;
  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
   if(m.t==='kick')return kick();
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
+  if(['raidState','raidError','raidInfo','raidRooms'].includes(m.t)){window.RAID?.receive(m);return}
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
    for(const g of sharedBosses){g.own=null;if(g.dead){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy}}
    for(const[i,hp,dead,own,left]of m.ms){const g=mons[L(i)];if(!g?.d.boss)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
@@ -26,7 +27,7 @@ function connect(){if(kicked)return;
   else if(m.t==='mr'){const g=mons[L(m.i)];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.world)showBanner('월드 보스 등장!','월드 보스 구역으로 모두 모여요');else if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
   else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[L(o.mp[k])];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
- ws.onclose=()=>{window.DEFENSE?.disconnect();others.clear();ME=null;for(const g of sharedBosses)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
+ ws.onclose=()=>{window.DEFENSE?.disconnect();window.RAID?.disconnect();others.clear();ME=null;for(const g of sharedBosses)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
 }
 function upd(o){const now=performance.now();let r=others.get(o.id);
  if(!r){r={id:o.id,buf:[],x:o.x,y:o.y,d:o.d,walk:0,swingT:0,sw:.3,sc:o.sc,trail:[],scarf:[],hitT:0,flS:1};others.set(o.id,r)}
@@ -82,7 +83,8 @@ let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{
   const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
 chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chkVer()});
 function defense(action,details={}){if(on())ws.send(JSON.stringify({t:"defense",action,...details}))}
-const NETO={logout,on,hit,remote,defense,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
+function raid(action,details={}){if(on())ws.send(JSON.stringify({t:"raid",action,...details}))}
+const NETO={logout,on,hit,remote,defense,raid,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});

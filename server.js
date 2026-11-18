@@ -101,6 +101,8 @@ const server = http.createServer(async (req, res) => {
 const clients = new Map(); // id -> {sock, u, st}
 const defense = require("./defense")(clients, wsSend, markDirty);
 setInterval(() => defense.tick(.1), 100);
+const raid = require('./raid')(clients, wsSend, markDirty);
+setInterval(() => raid.tick(.1), 100);
 // 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
 // Stable IDs of the two shared bosses in each region. Match the client spawn table.
 // 보스 번호는 클라이언트 지도 생성 순서로 정해짐 → 범위만 확인 (일반 몬스터는 애초에 서버로 안 보냄)
@@ -163,7 +165,7 @@ server.on('upgrade', (req, sock) => {
       onMsg(c, m);
     }
   });
-  const bye = () => { if (clients.get(u.id) === c) { clients.delete(u.id); defense.leave(u.id); broadcast({ t: 'leave', id: u.id }); release(u.id); } };
+  const bye = () => { if (clients.get(u.id) === c) { clients.delete(u.id); defense.leave(u.id); raid.leave(u.id); broadcast({ t: 'leave', id: u.id }); release(u.id); } };
   sock.on('close', bye); sock.on('error', bye);
 });
 
@@ -171,6 +173,7 @@ function onMsg(c, m) {
   c.alive = Date.now();
   if (!m || typeof m !== 'object') return;
   if (m.t === 'defense') { defense.handle(c, m); return; }
+  if (m.t === 'raid') { raid.handle(c, m); return; }
   if (m.t === 's') { // 내 상태
     const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
     c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), hp: n(m.hp), lv: m.lv | 0, ch: m.ch === 2 ? 2 : 1, rank: Math.max(0, Math.min(5, m.rank | 0)), dead: m.dead ? 1 : 0 };
@@ -200,7 +203,7 @@ setInterval(() => {
     if (g.dead && now >= g.rt) { g.dead = false; g.hp = g.max; g.hit.clear(); broadcast({ t: 'mr', i }); }
     else if (!g.dead && g.hp < g.max && !g.own && now - g.last > 8000) { g.hp = g.max; g.hit.clear(); broadcast({ t: 'mh', i, hp: g.hp }); }
   }
-  for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
+  for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); raid.leave(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
 }, 50);
 
 server.listen(PORT, () => console.log('링구 HERO 서버 실행 중: 포트 ' + PORT));
