@@ -99,4 +99,4 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 
 ## 운영자 선물 (1119-0115)
 - server.js `GIFTS` 배열에 `{id, gem, gold, ..., msg}` 추가 → 모든 유저가 다음 접속 2.5초 뒤 1번 받음(`u.gifts[id]`로 중복 방지). 클라 `giftCheck()` → `/api/gift`.
-- 지금: `test-season-1` 보석 50,000, `test-season-2` 보석 100,000 (테스트 시즌). 받은 즉시 서버에 저장 올림.
+- 지금: `test-season-1` 보석 50,000, `test-season-2` 보석 100,000, `test-season-3` 보석 5,000,000 (테스트 시즌). 받은 즉시 서버에 저장 올림.

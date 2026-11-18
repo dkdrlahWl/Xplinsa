@@ -33,6 +33,7 @@ const MK_FILE = path.join(DATA, 'market.json');
 const GIFTS = [
   { id: 'test-season-1', gem: 50000, msg: '테스트 시즌 선물' },
   { id: 'test-season-2', gem: 100000, msg: '테스트 시즌 선물 2' },
+  { id: 'test-season-3', gem: 5000000, msg: '테스트 시즌 선물 3' },
 ];
 let mk = { list: [], mail: {}, seq: 0 };
 try { mk = Object.assign(mk, JSON.parse(fs.readFileSync(MK_FILE, 'utf8'))); } catch (e) {}
