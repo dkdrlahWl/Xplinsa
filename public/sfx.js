@@ -45,7 +45,7 @@ window.SFX = (() => {
     if (last[name] && now - last[name] < gap) return; last[name] = now;
     if (live > 8) return;
     let v = o.v ?? 1;
-    if (o.x !== undefined && window.P) { const d = Math.hypot(o.x - P.x, o.y - P.y); if (d > 900) return; v *= Math.max(.15, 1 - d / 900); }
+    if (o.x !== undefined && window.P) { const d = Math.hypot(o.x - P.x, o.y - P.y); if (d > 520) return; v *= Math.max(.1, 1 - d / 520); }
     const arr = LIST[name] || [name], n = arr[Math.floor(Math.random() * arr.length)], b = buf[n];
     if (!b) { load(n); return; }
     const s = ctx.createBufferSource(), g = ctx.createGain();

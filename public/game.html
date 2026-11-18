@@ -1247,7 +1247,7 @@ function sqC(){return 1+Math.floor(S.sq.ci/3)}
 function sqCheck(){if(S.sq.g>=sqG()){S.sq.g=0;S.sq.gi++;toast('임무 완료! '+give({gem:5+S.sq.gi*3}))}if(S.sq.c>=sqC()){S.sq.c=0;S.sq.ci++;toast('임무 완료! '+give({cry:5+S.sq.ci*2,scr:2}))}}
 function qlv(){const q=Q[S.q];if(q&&((q.type==='up'&&S.qp>=q.need)||(q.type==='lv'&&S.lv>=q.need)||(q.type==='build'&&S.built[q.key])))qdone()}
 function drop(x,y,kind,v){const a=rnd(0,TAU),s=rnd(60,150);drops.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,kind,v})}
-function dmg(m,d,crit){if(m.dead)return;if(window.SFX){const t=wType();SFX.play(m.d.boss?'hit_boss':crit?'hit_crit':t==='mace'||t==='axe'?'hit_blunt':t==='bow'?'hit_arrow':'hit',{v:crit?.45:.3,x:m.x,y:m.y})}m.hp-=d;if(ST.ls)P.hp=Math.min(ST.maxhp,P.hp+d*ST.ls);m.hitT=.15;m.agg=true;IF('atk_hit',{x:m.x+rnd(-6,6),y:m.y-m.d.r*1.1+rnd(-6,6),t:.16,s0:16,s1:30,rot:rnd(0,6)});num(m.x,m.y-m.d.r*2-6,fmt(d),crit?'#ffd93c':'#fff',crit);if(combatArena){combatArena.hit(m,d);if(m.hp<=0)m.dead=true;return}if(m.d.boss&&window.NET&&NET.on()){NET.hit(m,d);if(m.hp<1)m.hp=1}else if(m.hp<=0)kill(m)}
+function dmg(m,d,crit,quiet){if(m.dead)return;if(window.SFX&&!quiet){const t=wType();SFX.play(m.d.boss?'hit_boss':crit?'hit_crit':t==='mace'||t==='axe'?'hit_blunt':t==='bow'?'hit_arrow':'hit',{v:crit?.45:.3,x:m.x,y:m.y})}m.hp-=d;if(ST.ls)P.hp=Math.min(ST.maxhp,P.hp+d*ST.ls);m.hitT=.15;m.agg=true;IF('atk_hit',{x:m.x+rnd(-6,6),y:m.y-m.d.r*1.1+rnd(-6,6),t:.16,s0:16,s1:30,rot:rnd(0,6)});num(m.x,m.y-m.d.r*2-6,fmt(d),crit?'#ffd93c':'#fff',crit);if(combatArena){combatArena.hit(m,d);if(m.hp<=0)m.dead=true;return}if(m.d.boss&&window.NET&&NET.on()){NET.hit(m,d);if(m.hp<1)m.hp=1}else if(m.hp<=0)kill(m)}
 function kill(m){if(m.dead)return;const d=m.d;window.SFX&&SFX.play(d.boss?'kill_boss':'kill',{v:d.boss?1:.5,x:m.x,y:m.y});if(!combatArena&&d.c2ch){const sc=d.boss?6+Math.max(0,ZS.indexOf(ZS[m.z])):d.elite?2:d.chest?3:d.cry===3&&!d.boss&&!d.elite?1:Math.random()<.02?1:0;if(sc){S.scl=(S.scl||0)+sc;num(m.x,m.y-d.r*2-30,'용의 비늘 +'+sc,'#ff8a4a')}}const book=collectionState();book.monsters[m.type]=(book.monsters[m.type]||0)+1;m.dead=true;m.respT=d.resp;m.slam=null;fxs.push({x:m.x,y:m.y-d.r,t:.3,r:d.r*2.2,c:'#fff'});
  const n=d.boss?10:d.elite?5:Math.min(3,d.xp);for(let i=0;i<n;i++)drop(m.x,m.y,'xp',d.xp/n*(1+(heroOf().fx.xp||0)+(window.PET?PET.b('xp'):0)));
  const g=d.boss?8:d.elite?4:1;for(let i=0;i<g;i++)drop(m.x,m.y,'gold',d.gold/g*(1+(heroOf().fx.gold||0)+(window.PET?PET.b('gold'):0)));
@@ -1969,7 +1969,7 @@ function eqFree(k){return 0}
 const MK={tab:'buy',list:[],sel:null,cur:'gold',grade:-1,me:null,busy:false};
 function mkApi(a,o){return fetch('/api/market',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token:localStorage.getItem('xp_token'),a},o||{}))}).then(r=>r.json())}
 function addWq(k,q){addW(k);const a=S.wq[k];a[a.length-1]=q}
-function giftCheck(){fetch('/api/gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),a:'claim'})}).then(r=>r.json()).then(j=>{for(const g of j.gifts||[]){const rw={};for(const k of['gold','gem','cry','orb','scr','myth','scl'])if(g[k])rw[k]=g[k];const t=give(rw);save();toast('🎁 '+(g.msg||'선물')+' · '+t)}}).catch(()=>{})}
+function giftCheck(){fetch('/api/gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),a:'claim'})}).then(r=>r.json()).then(j=>{for(const g of j.gifts||[]){const rw={};for(const k of['gold','gem','cry','orb','scr','myth','scl'])if(g[k])rw[k]=g[k];const t=give(rw);toast('🎁 '+(g.msg||'선물')+' · '+t)}if((j.gifts||[]).length){save();fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),save:S}),keepalive:true}).catch(()=>{})}}).catch(()=>{})}
 setTimeout(giftCheck,2500);
 function mkLoad(){mkApi('list').then(j=>{MK.list=j.list||[];MK.me=j.me;if(j.mail)mkClaim();if(panel==='market')draw()}).catch(()=>{})}
 function mkClaim(){mkApi('claim').then(j=>{const m=j.mail||[];if(!m.length)return;const g={gold:0,gem:0};for(const x of m){g.gold+=x.gold||0;g.gem+=x.gem||0}const rw={};if(g.gold)rw.gold=g.gold;if(g.gem)rw.gem=g.gem;toast('거래소 판매 대금 '+m.length+'건 · '+give(rw));save();if(panel==='market')draw()}).catch(()=>{})}
@@ -2244,7 +2244,7 @@ qlv();loadAssets();requestAnimationFrame(frame);
 <script src="tower.js?v=6"></script>
 <script src="defense.js?v=10"></script>
 <script src="raid.js?v=8"></script>
-<script src="pet.js?v=8"></script>
-<script src="sfx.js?v=3"></script>
+<script src="pet.js?v=9"></script>
+<script src="sfx.js?v=4"></script>
 </body>
 </html>

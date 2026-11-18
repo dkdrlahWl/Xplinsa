@@ -32,6 +32,7 @@ const MK_FILE = path.join(DATA, 'market.json');
 // 운영자 선물: id를 새로 추가하면 모든 유저가 다음 접속 때 1번 받음
 const GIFTS = [
   { id: 'test-season-1', gem: 50000, msg: '테스트 시즌 선물' },
+  { id: 'test-season-2', gem: 100000, msg: '테스트 시즌 선물 2' },
 ];
 let mk = { list: [], mail: {}, seq: 0 };
 try { mk = Object.assign(mk, JSON.parse(fs.readFileSync(MK_FILE, 'utf8'))); } catch (e) {}
