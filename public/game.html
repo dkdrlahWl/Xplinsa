@@ -1069,6 +1069,14 @@ function eqCount(k){let n=0;for(const x of S.slots)if(x===k)n++;return n}
 function freeBest(){return Object.keys(S.weapons).filter(k=>S.weapons[k]>eqCount(k)).sort((a,b)=>wAtk(b)-wAtk(a))[0]}
 // 빈 슬롯 자동 채우기: 내가 직접 해제한 슬롯(S.manual)은 건드리지 않음
 // 자동 장착 없음: 잠긴 슬롯만 비움 (장착은 항상 직접 슬롯을 골라서)
+// 자동 장착: 공격력(등급 기본값×능력치×슬롯 레벨, 등급 최대 레벨 반영)이 가장 높아지게 배치. 가장 센 무기가 메인
+function autoEquip(){const n=slotCount(),pool=[];for(const k in S.weapons){const a=((S.wq&&S.wq[k])||[]).slice().sort((x,y)=>y-x);for(let c=0;c<S.weapons[k];c++)pool.push({k,q:a.length?a[Math.min(c,a.length-1)]:1,g:+k.split('_')[1]})}
+ const val=(w,i)=>GR[w.g].b*w.q*(1+.1*(Math.min(S.slv[i],GMAX[w.g])-1));pool.sort((a,b)=>val(b,0)-val(a,0)||b.g-a.g);const pick=pool.slice(0,n);
+ for(let i=0;i<6;i++)S.slots[i]=null;if(!pick.length){fixSlots();calc();save();return}
+ // 메인(0번): 가장 센 무기. 나머지: 무기마다 가장 이득이 큰 빈 슬롯
+ const free=[];for(let i=1;i<n;i++)free.push(i);S.slots[0]=pick[0].k;
+ for(const w of pick.slice(1)){let bi=0,bv=-1;for(let j=0;j<free.length;j++){const v=val(w,free[j]);if(v>bv){bv=v;bi=j}}S.slots[free[bi]]=w.k;free.splice(bi,1)}
+ fixSlots();calc();save()}
 function autoFill(){const n=slotCount();for(let i=n;i<6;i++)S.slots[i]=null;}
 function fixSlots(){for(let i=0;i<6;i++){const k=S.slots[i];if(k&&(!S.weapons[k]||eqCount(k)>S.weapons[k]))S.slots[i]=null}if(!Object.keys(S.weapons).length){S.weapons.sword_0=1;S.wq=S.wq||{};S.wq.sword_0=[1]}if(!S.slots.some(Boolean)&&S.weapons.sword_0&&!S.manual0)S.slots[0]='sword_0'}
 function slotCost(l){return{scr:2*l-1,gold:33*l}}
@@ -2188,7 +2196,7 @@ function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  else if(k==='hero'){if(panel==='heroes'){setTimeout(()=>{},0)}const h=HERO.find(x=>x.k===v);if(!S.heroes[v]){if((S.shards[v]||0)<hneed(h)){toast('영혼 파편이 부족해요 ('+(S.shards[v]||0)+'/'+hneed(h)+') · 상점 영혼 상자에서 모아요');return}S.shards[v]-=hneed(h);S.heroes[v]=1;toast(h.n+' 제작 완료!')}S.hero=v;P.scarf=[];const oh=ST.maxhp;calc();P.hp=Math.min(ST.maxhp,P.hp+Math.max(0,ST.maxhp-oh));save()}
  else if(k==='eq'){if(S.weapons[v]>eqCount(v)){S.slots[selSlot]=v;calc();save()}else toast('남는 무기가 없어요')}
  else if(k==='uneq'){if(selSlot>0){S.slots[selSlot]=null;calc();save()}}
- else if(k==='auto'){for(let i=0;i<slotCount();i++)S.slots[i]=null;const pool=[];for(const w in S.weapons)for(let c=0;c<S.weapons[w];c++)pool.push(w);pool.sort((a,b)=>wAtk(b)-wAtk(a));const mi=pool.findIndex(w=>!WT[w.split('_')[0]].shot);if(mi>0)pool.unshift(pool.splice(mi,1)[0]);for(let i=0;i<slotCount()&&pool.length;i++)S.slots[i]=pool.shift();fixSlots();calc();save()}
+ else if(k==='auto'){autoEquip();toast('자동 장착 · 전투력 '+fmt(ST.pow))}
  else if(k==='sup'){const l=S.slv[selSlot],c=slotCost(l);if(l>=SLOT_MAX)return;if(!afford(c)){toast('주문서나 금화가 부족해요');return}S.gold-=c.gold;S.scr-=c.scr;S.slv[selSlot]++;calc();save()}
  else if(k==='merge'||k==='mergeall'){let cnt=0;const got=[];if(k==='merge'){const r=merge1(v);if(r){cnt++;got.push(r)}}else{let again=true;while(again){again=false;for(const w of Object.keys(S.weapons)){let r;while(r=merge1(w,1)){cnt++;for(let q=0;q<3;q++){const i=got.indexOf(w);if(i>=0)got.splice(i,1)}got.push(r);again=true}}}}setTimeout(()=>mergeFx(got),30);
   fixSlots();autoFill();calc();save();draw();const lg=$('mlog');if(lg)lg.textContent=cnt?' · '+cnt+'회 합성 완료':' · 합성할 무기가 없어요';return}
