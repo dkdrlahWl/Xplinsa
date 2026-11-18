@@ -1,5 +1,5 @@
 window.DEFENSE = (() => {
-  const WIDTH = 720, HEIGHT = 960;
+  const WIDTH = 960, HEIGHT = 1280, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
   const root = document.createElement('section');
   root.id = 'defense-screen';
   root.hidden = true;
@@ -7,11 +7,14 @@ window.DEFENSE = (() => {
   const background = new Image();
   background.src = 'assets/defense_camp.webp';
   const directions = { north: '북', east: '동', south: '남', west: '서' };
-  const arrows = { north: [360, 63, '↓'], east: [658, 480, '←'], south: [360, 901, '↑'], west: [62, 480, '→'] };
+  const arrows = { north:'↓', east:'←', south:'↑', west:'→' };
   const positions = new Map(), targets = new Map();
-  let arena = null;
+  let arena = null, localPosition = null;
+  let sentX = 0, sentY = 0;
   function resetCombat(){
-    arena = {player:{...P,atkCd:0,swingT:0,pend:null,s2:null,sk:[0,0,0,0,0,0],sub:{},extraT:0,trail:[],scarf:[]},
+    localPosition = null;
+    sentX = sentY = 0;
+    arena = {width:WIDTH,height:HEIGHT,player:{...P,atkCd:0,swingT:0,pend:null,s2:null,sk:[0,0,0,0,0,0],sub:{},extraT:0,trail:[],scarf:[]},
       enemies:[],shots:[],nums:[],fxs:[],timers:[],
       hit(enemy,damage){NET.defense('hit',{enemy:enemy.i,damage})}};
     targets.clear();
@@ -86,16 +89,21 @@ window.DEFENSE = (() => {
     const canvas = $('defense-canvas');
     canvas.onpointerdown = e => {
       if (pointer) return;
-      pointer = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0 };
+      const bounds=canvas.getBoundingClientRect();
+      const lowerLeft=e.pointerType==='touch'&&e.clientX-bounds.left<bounds.width*.58&&e.clientY-bounds.top>bounds.height*.48;
+      pointer={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:0,y:0,radius:lowerLeft?36:52,deadzone:lowerLeft?.075:.12};
       canvas.setPointerCapture(e.pointerId);
     };
     canvas.onpointermove = e => {
       if (!pointer || e.pointerId !== pointer.id) return;
-      const x = e.clientX - pointer.ox, y = e.clientY - pointer.oy, len = Math.max(36, Math.hypot(x, y));
+      const x = e.clientX - pointer.ox, y = e.clientY - pointer.oy, len = Math.max(pointer.radius, Math.hypot(x, y));
       pointer.x = x / len; pointer.y = y / len;
     };
     canvas.onpointerup = canvas.onpointercancel = canvas.onlostpointercapture = e => {
-      if (pointer?.id === e.pointerId) pointer = null;
+      if (pointer?.id === e.pointerId) {
+        pointer = null;
+        sendWait = 0;
+      }
     };
   }
 
@@ -117,7 +125,7 @@ window.DEFENSE = (() => {
       notice.className = '';
       notice.textContent = state.phase === 'prepare' ? state.stage + '단계 준비 · ' + state.timer + '초' :
         me?.hp === 0 ? '잠시 후 모닥불 근처에서 부활합니다' :
-        me && Math.hypot(me.x-360,me.y-480)<=34 ? '회복 중 · 회복 범위 안에서는 공격할 수 없어요' : '';
+        me && Math.hypot(me.x-CENTER_X,me.y-CENTER_Y)<=34 ? '회복 중 · 회복 범위 안에서는 공격할 수 없어요' : '';
     }
   }
 
@@ -230,17 +238,17 @@ window.DEFENSE = (() => {
     }
     const you=state.players.find(p=>p.id===NET.me());
     if(!you||!arena)return;
-    const focus=smooth('p'+you.id,you),viewW=w/zoom,viewH=h/zoom;
+    const focus=localPosition||you,viewW=w/zoom,viewH=h/zoom;
     const follow=(value,size,view)=>view>=size?size/2:clamp(value,view/2,size-view/2);
     const camX=follow(focus.x,WIDTH,viewW),camY=follow(focus.y-20,HEIGHT,viewH);
     g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,canvas.width,canvas.height);
     g.setTransform(scale,0,0,scale,canvas.width/2-camX*scale,canvas.height/2-camY*scale);
     if(background.complete&&background.naturalWidth)g.drawImage(background,0,0,WIDTH,HEIGHT);
     else{g.fillStyle='#507643';g.fillRect(0,0,WIDTH,HEIGHT)}
-    g.beginPath();g.arc(360,480,34,0,Math.PI*2);
+    g.beginPath();g.arc(CENTER_X,CENTER_Y,34,0,Math.PI*2);
     g.fillStyle='#94f8a849';g.fill();g.strokeStyle='#b7ffba';g.lineWidth=2;g.stroke();
     const camp=AI('bld_fire');
-    if(camp){const size=90;g.drawImage(camp,360-size/2,500-size*camp.height/camp.width,size,size*camp.height/camp.width)}
+    if(camp){const size=90;g.drawImage(camp,CENTER_X-size/2,CENTER_Y+20-size*camp.height/camp.width,size,size*camp.height/camp.width)}
     withArenaCombat(arena,()=>{
       ctx=g;PV=0;
       const scene=arena.enemies.map(enemy=>({y:enemy.y,draw(){
@@ -271,15 +279,15 @@ window.DEFENSE = (() => {
       const bounds=canvas.getBoundingClientRect();
       const x=pointer.ox-bounds.left,y=pointer.oy-bounds.top;
       g.setTransform(dp,0,0,dp,0,0);
-      g.fillStyle='#1c183059';g.beginPath();g.arc(x,y,44,0,Math.PI*2);g.fill();
-      g.fillStyle='#ffffffcc';g.beginPath();g.arc(x+pointer.x*36,y+pointer.y*36,19,0,Math.PI*2);g.fill();
+      g.fillStyle='#1c183059';g.beginPath();g.arc(x,y,pointer.radius+4,0,Math.PI*2);g.fill();
+      g.fillStyle='#ffffffcc';g.beginPath();g.arc(x+pointer.x*pointer.radius,y+pointer.y*pointer.radius,19,0,Math.PI*2);g.fill();
     }
     if (state.phase === 'prepare') {
       g.setTransform(dp,0,0,dp,0,0);
       g.font = 'bold 32px sans-serif'; g.textAlign = 'center';
       g.fillStyle = '#fff0a1'; g.strokeStyle = '#403055'; g.lineWidth = 6;
       for (const lane of state.lanes) {
-        const symbol=arrows[lane][2];
+        const symbol=arrows[lane];
         const x=lane==='east'?w-25:lane==='west'?25:w/2;
         const y=lane==='north'?119:lane==='south'?h-42:h/2;
         g.strokeText(symbol,x,y);g.fillText(symbol,x,y);
@@ -287,16 +295,16 @@ window.DEFENSE = (() => {
     }
   }
 
-  function fight(dt){
+  function fight(dt,input){
     const me=state.players.find(p=>p.id===NET.me());
     if(!arena||!me)return;
     withArenaCombat(arena,()=>{
       T+=dt;
       if(me.hp<P.hp&&me.hp>0){P.hitT=.2;num(me.x,me.y-56,'-'+fmt(P.hp-me.hp),'#ff6b6b')}
-      Object.assign(P,{x:me.x,y:me.y,hp:me.hp,dead:me.hp<=0,moving:me.moving});
-      if(P.swingT<=0&&me.moving)P.dir=me.dir;
+      Object.assign(P,{x:localPosition.x,y:localPosition.y,hp:me.hp,dead:me.hp<=0,moving:me.hp>0&&input.active});
+      if(P.swingT<=0&&P.moving)P.dir=Math.atan2(input.y,input.x);
       if(P.moving)P.walk+=dt*11*Math.min(1.5,ST.spd/190);
-      if(state.phase==='battle'&&!P.dead&&Math.hypot(P.x-360,P.y-480)>34){
+      if(state.phase==='battle'&&!P.dead&&Math.hypot(P.x-CENTER_X,P.y-CENTER_Y)>34){
         const prior=P.pend;
         stepPlayerCombat(dt);
         if(P.pend&&P.pend!==prior)NET.defense('swing',{dir:P.dir});
@@ -310,19 +318,43 @@ window.DEFENSE = (() => {
     });
   }
 
+  function movementInput(){
+    let x=pointer?.x||0,y=pointer?.y||0;
+    if(keys.a||keys.arrowleft)x--;if(keys.d||keys.arrowright)x++;
+    if(keys.w||keys.arrowup)y--;if(keys.s||keys.arrowdown)y++;
+    const length=Math.hypot(x,y);
+    if(length<=(pointer?.deadzone??.12))return {x:0,y:0,active:false};
+    return {x:x/Math.max(1,length),y:y/Math.max(1,length),active:true};
+  }
+
+  function moveLocal(me,input,dt){
+    const gap=localPosition?Math.hypot(me.x-localPosition.x,me.y-localPosition.y):Infinity;
+    if(!localPosition||localPosition.dead!==(me.hp<=0)||gap>100){
+      localPosition={x:me.x,y:me.y,dead:me.hp<=0};
+    }
+    if(!input.active||me.hp<=0)return;
+    const speed=clamp(ST.spd,155,265), step=speed*dt;
+    const length=Math.hypot(input.x,input.y);
+    const x=input.x/length,y=input.y/length;
+    // Only correct while moving, and only along the current input direction.
+    const along=(me.x-localPosition.x)*x+(me.y-localPosition.y)*y;
+    const correction=clamp(along*.08,-step*.2,step*.2);
+    localPosition.x=clamp(localPosition.x+input.x*step+x*correction,43,WIDTH-43);
+    localPosition.y=clamp(localPosition.y+input.y*step+y*correction,49,HEIGHT-49);
+  }
+
   function tick(dt) {
     if (!visible || !state) return;
     if (['prepare', 'battle'].includes(state.phase)) {
-      sendWait -= dt;
-      if (sendWait <= 0) {
-        sendWait = .07;
-        const stick = pointer && Math.hypot(pointer.x,pointer.y)>.075 ? pointer : null;
-        const x = stick?.x ?? (Number(keys.d || keys.arrowright || false) - Number(keys.a || keys.arrowleft || false));
-        const y = stick?.y ?? (Number(keys.s || keys.arrowdown || false) - Number(keys.w || keys.arrowup || false));
-        NET.defense('move', { x, y });
+      const input=movementInput(),me=state.players.find(p=>p.id===NET.me());
+      if(me)moveLocal(me,input,dt);
+      sendWait-=dt;
+      if(sendWait<=0||input.x!==sentX||input.y!==sentY){
+        sendWait=.07;sentX=input.x;sentY=input.y;
+        NET.defense('move',{x:sentX,y:sentY});
       }
+      fight(dt,input);
     }
-    if(['prepare','battle'].includes(state.phase))fight(dt);
     draw(dt);
   }
 

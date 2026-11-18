@@ -1,6 +1,6 @@
 'use strict';
 
-const WIDTH = 720, HEIGHT = 960, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
+const WIDTH = 960, HEIGHT = 1280, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
 const HEAL_RADIUS = 34;
 const ENTRIES = {
   north: [CENTER_X, 60], east: [WIDTH - 54, CENTER_Y],
