@@ -26,10 +26,10 @@ module.exports = function createDefense(clients, send, markDirty) {
   let sequence = 0;
 
   function daily(user, day = dayKey()) {
-    return user.defenseDaily?.day === day ? user.defenseDaily : { day, used: 0, wins: 0 };
+    return user.defenseDaily?.day === day ? user.defenseDaily : { day, wins: 0 };
   }
   function allowance(user) {
-    return { remaining: Math.max(0, DAILY_LIMIT - daily(user).used), limit: DAILY_LIMIT };
+    return { remaining: Math.max(0, DAILY_LIMIT - daily(user).wins), limit: DAILY_LIMIT };
   }
 
   function roomList() {
@@ -113,7 +113,7 @@ module.exports = function createDefense(clients, send, markDirty) {
         return;
       case 'create': {
         if (room) { sendRoom(room); return; }
-        if (!allowance(client.u).remaining) return error('오늘 도전 횟수를 모두 사용했어요.');
+        if (!allowance(client.u).remaining) return error('오늘 클리어 횟수를 모두 사용했어요.');
         const stage = Number(message.stage);
         if (!Number.isInteger(stage) || stage < 1 || stage > WAVES.length || stage > (client.u.defenseBest || 0) + 1) {
           return error('이전 단계를 먼저 클리어해 주세요.');
@@ -128,7 +128,7 @@ module.exports = function createDefense(clients, send, markDirty) {
       }
       case 'join': {
         if (room) { sendRoom(room); return; }
-        if (!allowance(client.u).remaining) return error('오늘 도전 횟수를 모두 사용했어요.');
+        if (!allowance(client.u).remaining) return error('오늘 클리어 횟수를 모두 사용했어요.');
         const target = rooms.get(String(message.code));
         if (!target || target.phase !== 'lobby') return error('대기 중인 방을 찾을 수 없어요.');
         if (target.players.size >= 4) return error('이 방은 4명이 꽉 찼어요.');
@@ -153,15 +153,8 @@ module.exports = function createDefense(clients, send, markDirty) {
       } else if (message.action === 'start' && room.host === id) {
         const players = [...room.players.values()];
         if (players.some(p => !p.attack || (p.id !== id && !p.ready))) return error('모두 준비 완료한 뒤 시작할 수 있어요.');
-        const day = dayKey();
         const users = players.map(p => clients.get(p.id)?.u);
-        if (users.some(user => !user || daily(user, day).used >= DAILY_LIMIT)) return error('오늘 도전 횟수를 모두 사용한 참가자가 있어요.');
-        for (const user of users) {
-          const attempts = daily(user, day);
-          attempts.used++;
-          user.defenseDaily = attempts;
-        }
-        markDirty();
+        if (users.some(user => !user || !allowance(user).remaining)) return error('오늘 클리어 횟수를 모두 사용한 참가자가 있어요.');
         room.lanes = LANES[players.length];
         room.campMax = room.camp = 750 + 250 * players.length;
         room.phase = 'prepare'; room.timer = 5;

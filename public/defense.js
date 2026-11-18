@@ -45,7 +45,7 @@ window.DEFENSE = (() => {
   }
 
   function attemptLabel(){
-    return '<small class="defense-attempts">오늘 남은 도전 <b>'+(remaining??'…')+' / 10</b></small>';
+    return '<small class="defense-attempts">오늘 남은 클리어 <b>'+(remaining??'…')+' / 10</b></small>';
   }
 
   function showRooms() {
@@ -87,7 +87,7 @@ window.DEFENSE = (() => {
             (locked?'잠김':stage<=best?'클리어':selected?'선택됨':'선택')+'</small></button>';
         }).join('')+'</div>'+rewardPreview(selectedStage)+
         button('create',selectedStage+'단계 방 만들기',remaining===null||remaining===0)+
-        '<small class="defense-attempt-note">전투 시작 시 참가자마다 1회 차감 · 한국 시간 00시 초기화</small>'+
+        '<small class="defense-attempt-note">클리어 시 참가자마다 1회 차감 · 한국 시간 00시 초기화</small>'+
         '<div class="defense-section"><h3>대기 중인 방</h3><span>최대 4명</span></div><ul id="defense-rooms"></ul><p id="defense-error" role="status"></p></div>';
       showRooms();
       return;
