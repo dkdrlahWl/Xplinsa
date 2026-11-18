@@ -3,7 +3,8 @@
 window.IS_ADMIN=localStorage.getItem('xp_admin')==='1';const TOKEN=localStorage.getItem('xp_token'),NICK=localStorage.getItem('xp_nick')||'';
 if(!TOKEN){location.replace('index.html');return}
 const others=new Map();let ME=null,ws=null,sc=0,lastSw=0,sendT=0,kicked=false,retry=0,saveT=0,saveDirty=false;
-const DELAY=110; // ms 보간 지연
+const DELAY=110;
+const CHO=()=>((typeof CHAP!=='undefined'?CHAP:1)-1)*5000,L=i=>{const o=CHO();return i>=o&&i<o+5000?i-o:-1},Gi=i=>i+CHO(),MYCH=()=>typeof CHAP!=='undefined'?CHAP:1; // ms 보간 지연
 
 function kick(msg){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}localStorage.removeItem('xp_token');
  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.85);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
@@ -18,18 +19,18 @@ function connect(){if(kicked)return;
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
    for(const g of sharedBosses){g.own=null;if(g.dead){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy}}
-   for(const[i,hp,dead,own,left]of m.ms){const g=mons[i];if(!g?.d.boss)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
-  else if(m.t==='mh'){const g=mons[m.i];if(g?.d.boss&&!g.dead)g.hp=Math.max(1,m.hp)}
-  else if(m.t==='mo'){const g=mons[m.i];if(g?.d.boss){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
-  else if(m.t==='mk'){const g=mons[m.i];if(g?.d.boss&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
-  else if(m.t==='mr'){const g=mons[m.i];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.world)showBanner('월드 보스 등장!','기지의 보라색 포탈로 모두 모여요');else if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
-  else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[o.mp[k]];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
+   for(const[i,hp,dead,own,left]of m.ms){const g=mons[L(i)];if(!g?.d.boss)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
+  else if(m.t==='mh'){const g=mons[L(m.i)];if(g?.d.boss&&!g.dead)g.hp=Math.max(1,m.hp)}
+  else if(m.t==='mo'){const g=mons[L(m.i)];if(g?.d.boss){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
+  else if(m.t==='mk'){const g=mons[L(m.i)];if(g?.d.boss&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
+  else if(m.t==='mr'){const g=mons[L(m.i)];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.world)showBanner('월드 보스 등장!','월드 보스 구역으로 모두 모여요');else if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
+  else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[L(o.mp[k])];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
  ws.onclose=()=>{window.DEFENSE?.disconnect();others.clear();ME=null;for(const g of sharedBosses)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
 }
 function upd(o){const now=performance.now();let r=others.get(o.id);
  if(!r){r={id:o.id,buf:[],x:o.x,y:o.y,d:o.d,walk:0,swingT:0,sw:.3,sc:o.sc,trail:[],scarf:[],hitT:0,flS:1};others.set(o.id,r)}
- r.rank=Math.max(0,Math.min(5,o.rank|0));r.n=o.n;r.w=o.w;r.h=o.h;r.hp=o.hp;r.lv=o.lv;r.dead=o.dead;r.mv=o.mv;
+ r.ch=o.ch||1;r.rank=Math.max(0,Math.min(5,o.rank|0));r.n=o.n;r.w=o.w;r.h=o.h;r.hp=o.hp;r.lv=o.lv;r.dead=o.dead;r.mv=o.mv;
  if(o.sc!==r.sc){r.sc=o.sc;r.sw=o.sw||.3;r.swingT=r.sw}
  r.buf.push({t:now,x:o.x,y:o.y,d:o.d});if(r.buf.length>20)r.buf.shift();r.seen=now}
 
@@ -39,9 +40,9 @@ function tick(dt){if(kicked)return;
  if(P.swingT>lastSw+.001)sc++;lastSw=P.swingT;
  sendT-=dt;if(sendT<=0&&ws&&ws.readyState===1){sendT=1/20;
   const mp=[];for(const g of sharedBosses){if(g.dead)continue;
-   if(g.agg&&!g.own&&(g.claimT||0)<=0){g.claimT=.5;ws.send(JSON.stringify({t:'c',i:g.i,mx:g.d.hp,rs:g.d.resp}))}
-   if(g.own===ME){if(!g.agg){g.own=null;ws.send(JSON.stringify({t:'r',i:g.i}))}else mp.push(g.i,Math.round(g.x),Math.round(g.y))}}
-  ws.send(JSON.stringify({t:'s',mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:S.slots[0],h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,rank:promotionRank(),dead:P.dead}))}
+   if(g.agg&&!g.own&&(g.claimT||0)<=0){g.claimT=.5;ws.send(JSON.stringify({t:'c',i:Gi(g.i),mx:g.d.hp,rs:g.d.resp}))}
+   if(g.own===ME){if(!g.agg){g.own=null;ws.send(JSON.stringify({t:'r',i:Gi(g.i)}))}else mp.push(Gi(g.i),Math.round(g.x),Math.round(g.y))}}
+  ws.send(JSON.stringify({t:'s',ch:MYCH(),mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:S.slots[0],h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,rank:promotionRank(),dead:P.dead}))}
  const rt=performance.now()-DELAY;
  for(const r of others.values()){const b=r.buf;let x=r.x,y=r.y,d=r.d;
   if(b.length){let i=b.length-1;while(i>0&&b[i-1].t>rt)i--;
@@ -60,10 +61,10 @@ function draw(r){if(r.dead)return;const sv={};for(const k of KEYS)sv[k]=P[k];con
  window.REM=r;try{drawPlayer()}catch(e){}window.REM=null;
  for(const k of KEYS)P[k]=sv[k];S.slots[0]=s0;S.hero=hero;S.lv=lv}
 function on(){return !!(ws&&ws.readyState===1&&ME)}
-function hit(m,d){if(m.d.boss&&on())ws.send(JSON.stringify({t:'h',i:m.i,d,mx:m.d.hp,rs:m.d.resp,w:m.d.world?1:0}))}
+function hit(m,d){if(m.d.boss&&on())ws.send(JSON.stringify({t:'h',i:Gi(m.i),d,mx:m.d.hp,rs:m.d.resp,w:m.d.world?1:0}))}
 // 다른 사람이 쫓고 있는 몬스터: 받은 위치로 부드럽게 이동만
 function remote(m,dt){if(!m.d.boss||!on()||!m.own||m.own===ME)return false;m.ph+=dt*6;if(m.rx!==undefined){const k=Math.min(1,dt*10);m.x+=(m.rx-m.x)*k;m.y+=(m.ry-m.y)*k}m.agg=false;return true}
-function list(){return others.values()}
+function list(){return [...others.values()].filter(r=>r.ch===MYCH())}
 
 // 서버 저장
 function pushSave(){saveDirty=false;saveT=4;
@@ -81,7 +82,7 @@ let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{
   const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
 chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chkVer()});
 function defense(action,details={}){if(on())ws.send(JSON.stringify({t:"defense",action,...details}))}
-window.NET={logout,on,hit,remote,defense,me:()=>ME,tick,draw,list,markSave,nick:NICK};
+const NETO={logout,on,hit,remote,defense,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});

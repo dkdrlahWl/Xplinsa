@@ -98,7 +98,7 @@ setInterval(() => defense.tick(.1), 100);
 // 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
 // Stable IDs of the two shared bosses in each region. Match the client spawn table.
 // 보스 번호는 클라이언트 지도 생성 순서로 정해짐 → 범위만 확인 (일반 몬스터는 애초에 서버로 안 보냄)
-const SHARED_BOSSES = { has: i => Number.isInteger(i) && i >= 0 && i < 5000 };
+const SHARED_BOSSES = { has: i => Number.isInteger(i) && i >= 0 && i < 20000 };
 const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
 function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } else if (mx > 1 && m.max !== mx) { const fraction = m.max > 0 ? m.hp / m.max : 1; m.max = mx; if (!m.dead) m.hp = Math.max(1, Math.round(mx * fraction)); } return m; }
 const MONS_FILE = path.join(DATA, 'mons.json');
@@ -167,7 +167,7 @@ function onMsg(c, m) {
   if (m.t === 'defense') { defense.handle(c, m); return; }
   if (m.t === 's') { // 내 상태
     const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
-    c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), hp: n(m.hp), lv: m.lv | 0, rank: Math.max(0, Math.min(5, m.rank | 0)), dead: m.dead ? 1 : 0 };
+    c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), hp: n(m.hp), lv: m.lv | 0, ch: m.ch === 2 ? 2 : 1, rank: Math.max(0, Math.min(5, m.rank | 0)), dead: m.dead ? 1 : 0 };
     c.dirty = true;
     if (Array.isArray(m.mp)) { const mp = []; for (let k = 0; k + 2 < m.mp.length && k < 300; k += 3) { const g = mons.get(m.mp[k] | 0); if (g && g.own === c.u.id && !g.dead) mp.push(m.mp[k] | 0, n(m.mp[k + 1]), n(m.mp[k + 2])); } c.st.mp = mp; }
   } else if (m.t === 'h') { // 몬스터 때림
