@@ -36,7 +36,7 @@ module.exports = function createDefense(clients, send, markDirty) {
     return user.defenseDaily?.day === day ? user.defenseDaily : { day, wins: 0 };
   }
   function allowance(user) {
-    return { remaining: Math.max(0, DAILY_LIMIT - daily(user).wins), limit: DAILY_LIMIT };
+    const d = daily(user); return { remaining: Math.max(0, DAILY_LIMIT - d.wins), limit: DAILY_LIMIT, todayCleared: Object.keys(d.st || {}).map(Number) };
   }
 
   function roomList() {
@@ -254,7 +254,7 @@ module.exports = function createDefense(clients, send, markDirty) {
             const client = clients.get(id);
             if (!client) continue;
             const day = daily(client.u);
-            const first = day.wins === 0;
+            day.st = day.st || {}; const first = !day.st[room.stage]; day.st[room.stage] = 1;
             room.players.get(id).reward = { ...REWARDS[room.stage - 1][first ? 'first' : 'repeat'], first };
             day.wins++;
             client.u.defenseDaily = day;

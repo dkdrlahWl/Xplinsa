@@ -21,7 +21,7 @@ window.DEFENSE = (() => {
   }
   const swings = new Map();
   let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0, rooms = [];
-  let rewards = [], remaining = null, selectedStage = 1;
+  let rewards = [], remaining = null, selectedStage = 1, todayCleared = [];
   const stageNames = ['숲길 초소','사막 관문','마력 수풀','서리 전초기지','화산 방벽','해안 부두','버섯 늪 둑','수정 갱도','하늘 성벽','용의 관문'];
 
   const button = (action, label, disabled = false) =>
@@ -40,8 +40,9 @@ window.DEFENSE = (() => {
 
   function rewardPreview(stage){
     const reward=rewards[stage-1];
-    return reward?'<div class="defense-prizes"><div><b>오늘 첫 클리어</b>'+rewardItems(reward.first)+'</div>'+
-      '<div><b>반복 클리어</b>'+rewardItems(reward.repeat)+'</div></div>':'';
+    const done=todayCleared.includes(stage);
+    return reward?'<div class="defense-prizes"><div'+(done?' style="opacity:.45"':'')+'><b>'+stage+'단계 오늘 첫 클리어'+(done?' ✔':'')+'</b>'+rewardItems(reward.first)+'</div>'+
+      '<div'+(done?' style="box-shadow:0 0 0 2px #ffd23c"':'')+'><b>반복 클리어</b>'+rewardItems(reward.repeat)+'</div></div>':'';
   }
 
   function attemptLabel(){
@@ -155,7 +156,7 @@ window.DEFENSE = (() => {
   function receive(message) {
     if (!visible) return;
     if (message.t === 'defenseInfo') {
-      best=message.best; rooms=message.rooms||[]; rewards=message.rewards||[]; remaining=message.remaining;
+      best=message.best; rooms=message.rooms||[]; rewards=message.rewards||[]; remaining=message.remaining; todayCleared=message.todayCleared||[];
       selectedStage=Math.min(stageNames.length,best+1);
       if (!state) screen();
       return;
@@ -171,7 +172,7 @@ window.DEFENSE = (() => {
       return;
     }
     const previous = state;
-    state=message; best=state.best; remaining=state.remaining;
+    state=message; best=state.best; remaining=state.remaining; if(state.todayCleared)todayCleared=state.todayCleared;
     if (!previous || previous.phase === 'lobby' || !$('defense-canvas')) screen();
     if (state.phase === 'lobby' && !statsSent) { statsSent = true; loadout(false); }
     if (state.phase !== 'lobby') {
