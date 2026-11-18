@@ -187,19 +187,19 @@ window.PET = (() => {
   function drawInc() {
     const x = IX(), y = IY(), im = AI('bld_incubator');
     shadow(x, y + 6, 58);
-    if (im) { const w = 130, h = w * im.height / im.width; ctx.drawImage(im, x - w / 2, y + 14 - h, w, h) }
+    let ey0 = y - 18, gap = 24; if (im) { const w = 150, h = w * im.height / im.width; ctx.drawImage(im, x - w / 2, y + 16 - h, w, h); ey0 = y + 16 - h * .3; gap = 22 }
     else { ell(x, y - 2, 60, 24, '#8d8a9c'); ell(x, y - 10, 56, 21, '#b7b3c6'); ctx.save(); ctx.lineWidth = 3; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; ctx.strokeStyle = i % 2 ? '#c9953f' : '#e8bf62'; ctx.beginPath(); ctx.ellipse(x, y - 16, 46 + (i % 3) * 3, 17 + (i % 3), 0, a, a + .7); ctx.stroke() } ctx.restore(); ell(x, y - 16, 38, 13, '#7a5226', 1) }
-    const n = S.incN, gap = 24;
-    for (let i = 0; i < n; i++) { const o = S.inc[i], ex = x + (i - (n - 1) / 2) * gap, ey = y - 18;
+    const n = S.incN;
+    for (let i = 0; i < n; i++) { const o = S.inc[i], ex = x + (i - (n - 1) / 2) * gap, ey = ey0;
       if (!o) { ctx.globalAlpha = .35; ell(ex, ey, 8, 5, '#1c1830', 1); ctx.globalAlpha = 1; continue }
       const rd = incReady(i), e = AI('pet_egg' + o.g) || null, bob = rd ? Math.abs(Math.sin(T * 7 + i)) * 6 : Math.sin(T * 2 + i) * 1, rot = rd ? Math.sin(T * 14 + i) * .18 : 0;
       ctx.save(); ctx.translate(ex, ey - bob); ctx.rotate(rot); const w = 22, h = 28; if (e) ctx.drawImage(e, -w / 2, -h, w, h); else ell(0, -h / 2, w / 2, h / 2, GC[o.g]); ctx.restore();
       if (rd && Math.random() < .08) fxs.push({ x: ex + rnd(-10, 10), y: ey - 20, t: .4, r: 8, c: GC[o.g], up: 1 }) }
     const anyR = S.inc.some((o, i) => incReady(i)), live = []; S.inc.forEach((o, i) => { if (o && !incReady(i)) live.push(incLeft(i)) });
-    label('부화기', x, y - 62, 16, '#fff');
-    if (anyR) { ctx.globalAlpha = .75 + Math.sin(T * 6) * .25; label('부화 가능!', x, y - 80, 18, '#7dff8a'); ctx.globalAlpha = 1 }
-    else if (live.length) label(tfmt(Math.min(...live)), x, y - 80, 15, '#ffe066');
-    else if (bagN()) label('알을 넣어주세요', x, y - 80, 14, '#cfc8ee');
+    const ly = im ? y + 16 - 150 * im.height / im.width - 6 : y - 62; label('부화기', x, ly, 16, '#fff');
+    if (anyR) { ctx.globalAlpha = .75 + Math.sin(T * 6) * .25; label('부화 가능!', x, ly - 18, 18, '#7dff8a'); ctx.globalAlpha = 1 }
+    else if (live.length) label(tfmt(Math.min(...live)), x, ly - 18, 15, '#ffe066');
+    else if (bagN()) label('알을 넣어주세요', x, ly - 18, 14, '#cfc8ee');
   }
   function update(dt) {
     st(); const p = eq();
