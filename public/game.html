@@ -327,6 +327,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 #mfx{position:fixed;inset:0;z-index:9000;display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(circle,rgba(20,16,40,.55),rgba(20,16,40,0) 70%)}#mfx.on{display:flex;animation:mfxo 1.5s forwards}@keyframes mfxo{0%{opacity:0}10%{opacity:1}75%{opacity:1}100%{opacity:0}}.mfxt{font-family:Jua,sans-serif;font-size:30px;color:#ffe066;margin-bottom:10px}.mfxr{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:340px}.mfxc{position:relative;width:76px;height:76px;border-radius:14px;border:3px solid #1c1830;display:grid;place-items:center;animation:mfxp .45s cubic-bezier(.3,1.6,.5,1) both;box-shadow:0 0 22px rgba(255,230,120,.6)}.mfxc img{width:62px;height:62px;object-fit:contain}.mfxc b{position:absolute;bottom:-4px;left:0;right:0;text-align:center;font:13px Jua,sans-serif}.mfxc i{position:absolute;top:2px;right:5px;font:14px Jua,sans-serif;font-style:normal;color:#fff}@keyframes mfxp{0%{transform:scale(.2) rotate(-12deg);opacity:0}100%{transform:scale(1);opacity:1}}
 #reward-fx{position:absolute;inset:0;z-index:100;pointer-events:none;overflow:hidden}.reward-wallet{position:absolute;right:12px;min-width:74px;display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 8px;border:1px solid #eec96d;border-radius:14px;background:#211e38ee;font-size:13px}.reward-wallet :is(img,svg){width:22px;height:22px;object-fit:contain}.reward-wallet b{font-weight:400}
 @media(prefers-reduced-motion:reduce){.rfly{animation-duration:.25s}}
+.smith-odds{width:100%;margin:14px 0;border-collapse:collapse;background:#252239;border-radius:12px;text-align:center}.smith-odds th,.smith-odds td{padding:10px 5px;border-bottom:1px solid #ffffff17}.smith-odds thead{color:#fbe4ab}.smith-confirm{width:100%;display:flex;align-items:center;justify-content:center;gap:6px}.smith-confirm :is(img,svg){width:23px;height:23px;object-fit:contain}
 </style>
 <link rel="stylesheet" href="tower.css?v=3">
 </head>
@@ -526,7 +527,7 @@ const SK={dagger:{n:'그림자 연격',d:'양손 쌍검으로 가까운 적을 6
 const SP={dagger:'3연속 베기',sword:'넓고 강한 베기',mace:'큰 충격파',spear:'1.5배 길이 찌르기',axe:'360° 회전 베기',bow:'화살 3발',gun:'5발 산탄',staff:'큰 폭발'};
 function wName(k){const[t,g]=k.split('_');return GR[+g].p+' '+WT[t].n}
 const SM=[[100,0,0,0],[81.7,16.7,1.6,0],[74.6,20,5,.4],[69.2,23.3,6.7,.8]];
-const SMC=[null,{gold:1300,orb:0},{gold:20100,orb:10},{gold:34500,orb:20}];
+const SMITH_PROMOTION_GOLD=[1300,20100,34500];
 function sumG(n,f){let s=0;for(let i=1;i<=n;i++)s+=f(i);return s}
 const CG=[500,2500,10000,30000,60000,100000,200000,400000,800000,1500000];
 
@@ -784,15 +785,22 @@ function vipActive(){return Number(S.vipUntil||0)>Date.now()}
 function vipRemaining(){return Math.max(0,Math.ceil((Number(S.vipUntil||0)-Date.now())/86400000))}
 function benefitsPanel(){
  const end=vipActive()?new Date(S.vipUntil).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'';
- return '<div class="feature-head"><img src="assets/adventurer_rank_5.webp" alt="VIP"><div><b>VIP 30일권</b><small>탑 보상 2배 받기 · 매일 최대 3회<br>'+(vipActive()?'이용 중 · '+vipRemaining()+'일 남음':'구매 즉시 30일간 적용')+'</small></div></div><div class="vip-benefits"><h3>VIP 특전</h3><p>탑 승리·소탕 보상을 하루 3회까지 무료로 2배 받을 수 있어요.</p><p>골드·보석·주문서 보상에 적용됩니다.</p><p>추가 구매하면 남은 기간에 30일이 더해져요.</p>'+(end?'<small>만료: '+end+' (한국 시간)</small>':'')+'</div><button class="growth-button" data-a="buyvip" '+(S.gem<VIP_PRICE?'disabled':'')+'>'+IC.gem+' 보석 '+fmt(VIP_PRICE)+' · '+(vipActive()?'30일 연장':'30일 구매')+'</button>';
+ return '<div class="feature-head"><img src="assets/adventurer_rank_5.webp" alt="VIP"><div><b>VIP 30일권</b><small>탑 보상 2배 받기 · 매일 최대 3회<br>'+(vipActive()?'이용 중 · '+vipRemaining()+'일 남음':'구매 즉시 30일간 적용')+'</small></div></div><div class="vip-benefits"><h3>VIP 특전</h3><p>탑 승리·소탕 보상을 하루 3회까지 무료로 2배 받을 수 있어요.</p><p>탑 골드·보석·주문서 보상에 적용됩니다.</p><p>교환소 무료 보상은 재화별로 하루 3회 받을 수 있어요.</p><p>추가 구매하면 남은 기간에 30일이 더해져요.</p>'+(end?'<small>만료: '+end+' (한국 시간)</small>':'')+'</div><button class="growth-button" data-a="buyvip" '+(S.gem<VIP_PRICE?'disabled':'')+'>'+IC.gem+' 보석 '+fmt(VIP_PRICE)+' · '+(vipActive()?'30일 연장':'30일 구매')+'</button>';
 }
 function shopTabs(exchange=false){
  const tab=exchange===true?'exchange':exchange||'shop';
  return '<div class="tabs">'+[['shop','상자','goshop'],['exchange','교환','exchangego'],['benefits','특전','benefits']].map(([key,label,action])=>'<button class="tab '+(tab===key?'on':'')+'" data-a="'+action+'">'+label+'</button>').join('')+'</div>';
 }
+function freeExchangeUsed(kind,day){
+ const entry=S.exchangeFree?.[kind];
+ return entry===day?1:entry?.day===day?entry.count:0;
+}
+function freeExchangeRemaining(kind,day=calendarKey()){
+ return Math.max(0,(vipActive()?3:1)-freeExchangeUsed(kind,day));
+}
 function exchangePanel(){
  const rows=exchangeOffers();
- return '<div class="feature-head">'+featureImage('exchange')+'<div><b>재화 교환</b><small>기본 골드 = 현재 가방 용량 × 3<br>재화별 무료 교환은 하루 한 번</small></div></div><div class="exchange-grid">'+rows.map(([kind,amount,cost],index)=>{const used=!cost&&(S.exchangeFree||{})[kind]===calendarKey();return '<button class="collection-item" data-a="exchange:'+index+'" '+(used||S.gem<cost?'disabled':'')+'>'+IC[kind]+'<strong>'+fmt(amount)+'</strong><small>'+(cost?'보석 '+cost:used?'오늘 수령 완료':'무료 받기')+'</small></button>'}).join('')+'</div>';
+ return '<div class="feature-head">'+featureImage('exchange')+'<div><b>재화 교환</b><small>기본 골드 = 현재 가방 용량 × 3<br>무료 교환은 재화별 하루 '+(vipActive()?'3회 (VIP)':'1회 · VIP 3회')+'</small></div></div><div class="exchange-grid">'+rows.map(([kind,amount,cost],index)=>{const remaining=cost?0:freeExchangeRemaining(kind),used=!cost&&remaining===0;return '<button class="collection-item" data-a="exchange:'+index+'" '+(used||S.gem<cost?'disabled':'')+'>'+IC[kind]+'<strong>'+fmt(amount)+'</strong><small>'+(cost?'보석 '+cost:used?'오늘 수령 완료':'무료 받기 · '+remaining+'회 남음')+'</small></button>'}).join('')+'</div>';
 }
 function promotionRank(){return clamp(Math.floor(Number(S.promotion)||0),0,5)}
 function specialUnlocked(key){const rank=promotionRank(),requirement=SPU[key].rank||0;return rank>=requirement}
@@ -852,8 +860,13 @@ function featureAct(action,value){
  else if(action==='exchange'){
   const list=exchangeOffers(),entry=list[+value];
   if(!entry)return true;const [key,amount,cost]=entry;
-  if(S.gem<cost||(!cost&&(S.exchangeFree||{})[key]===calendarKey()))return true;
-  if(!cost){S.exchangeFree=S.exchangeFree||{};S.exchangeFree[key]=calendarKey()}
+  if(S.gem<cost)return true;
+  if(!cost){
+   const day=calendarKey(),remaining=freeExchangeRemaining(key,day);
+   if(!remaining)return true;
+   S.exchangeFree=S.exchangeFree||{};
+   S.exchangeFree[key]={day,count:freeExchangeUsed(key,day)+1};
+  }
   S.gem-=cost;S[key]+=amount;save();toast(RWN[key]+' '+fmt(amount)+'개 획득');
  }
  else if(action==='promote'){
@@ -1546,10 +1559,22 @@ function hud(){
  else{qt=q.t;qs=fmt(Math.min(S.qp,q.need))+'/'+fmt(q.need);qp=S.qp/q.need}
  const qic=!q?'flag':q.type==='dep'?'gold':q.type==='chest'?'box':q.type==='build'?'anvil':q.type==='kill'?'sword':q.type==='up'?'up':'flag';if(cache.qic!==qic){cache.qic=qic;$('qi0').innerHTML=IC[qic]}
  setT('qt',qt);setT('qs',qs);const qcl='qc main'+(go?' done':'');if(cache.qcl!==qcl){cache.qcl=qcl;$('qc0').className=qcl}const qw=Math.round(qp*100)+'%';if(cache.qw!==qw){cache.qw=qw;$('qfill').style.width=qw}
- const n6=smithBatch(),sl=S.step>=SXP.length;setT('smul','x'+n6);setT('scost',''+5*n6);setT('sxpt',sl?'MAX':S.sxp+'/'+SXP[S.step]);const sw2=sl?'100%':Math.round(clamp(S.sxp/SXP[S.step],0,1)*100)+'%';if(cache.sw2!==sw2){cache.sw2=sw2;$('sxpf').style.width=sw2}
+ const batch=smithBatch(),maxSmith=S.step>=SXP.length,readySmith=smithPromotionReady();
+ setT('smul',readySmith?'승급':'x'+batch);
+ setT('scost',readySmith?fmt(SMITH_PROMOTION_GOLD[S.step]):5*batch);
+ const smithCurrency=readySmith?'gold':'cry';
+ if(cache.smithCurrency!==smithCurrency){
+  cache.smithCurrency=smithCurrency;
+  const icon=$('scost').previousElementSibling;
+  icon.dataset.ic=smithCurrency;
+  icon.innerHTML=IC[smithCurrency];
+ }
+ setT('sxpt',maxSmith?'MAX':Math.min(S.sxp,SXP[S.step])+'/'+SXP[S.step]);
+ const sw2=maxSmith?'100%':Math.round(clamp(S.sxp/SXP[S.step],0,1)*100)+'%';
+ if(cache.sw2!==sw2){cache.sw2=sw2;$('sxpf').style.width=sw2}
  {const db=((S.sup||0)+SUPT<=Date.now())?'ldot on':'ldot',da=attOK()?'ldot on':'ldot';if(cache.db!==db){cache.db=db;document.getElementById('dotbox').className=db}if(cache.da!==da){cache.da=da;document.getElementById('dotatt').className=da}}
  let can=false;if(S.built.fire)for(const k in UP)if(S.up[k]<UP[k].max&&afford(UP[k].cost(S.up[k]))){can=true;break}
- const b=document.querySelectorAll('.bb');const c0='bb'+(S.built.fire?'':' lock')+(can?' on':''),c2='bb big ts'+(S.built.smith?'':' lock')+(S.built.smith&&S.cry>=5?' on':'');
+ const b=document.querySelectorAll('.bb');const c0='bb'+(S.built.fire?'':' lock')+(can?' on':''),c2='bb big ts'+(S.built.smith?'':' lock')+(S.built.smith&&(readySmith||S.cry>=batch*5)?' on':'');
  if(cache.c0!==c0){cache.c0=c0;b[0].className=c0}if(cache.c2!==c2){cache.c2=c2;b[2].className=c2}
 }
 
@@ -1604,6 +1629,12 @@ function resCard(r,i,big){if(r.h){const u=AURL['hero_'+r.h.k+'_head'];return `<d
 function showResults(){const R=GA.res,big=R.length===1;$('gres').innerHTML=`<div class="${big?'gone':'ggrid'}">${R.map((r,i)=>resCard(r,i,big)).join('')}</div><div class="gbtns"><button class="btn eq" data-g="ok">확인</button>${GA.id!=='hero'||1?`<button class="btn" data-g="again">${GA.n>1?'10개 더 열기':'한 번 더'}</button>`:''}</div>`}
 let cfxT=0;
 function smithBatch(){return [1,5,10].includes(S.cn)?S.cn:1}
+function smithPromotionReady(){return S.step<SXP.length&&S.sxp>=SXP[S.step]}
+function smithOddsTable(before,after){
+ return '<table class="smith-odds"><thead><tr><th>등급</th><th>현재</th><th>승급 후</th></tr></thead><tbody>'+GR.map((grade,index)=>
+  '<tr><th scope="row" style="color:'+grade.c+'">'+grade.n+'</th><td>'+(SM[before][index]??0)+'%</td><td>'+(SM[after][index]??0)+'%</td></tr>'
+ ).join('')+'</tbody></table>';
+}
 function craftFx(){const el=$('cfx'),g=$('game').getBoundingClientRect(),wb=document.querySelector('.bb[data-p="wpn"]').getBoundingClientRect(),ab=document.querySelector('.bb[data-p="smith"]').getBoundingClientRect();
  const n=lastGot.length,gap=6,cols=Math.min(n,Math.max(1,Math.floor((g.width-12)/(58+gap)))),cw=58,rows=Math.ceil(n/cols),y=ab.top-g.top-cw*1.45-14-(rows-1)*(cw+gap),tx=wb.left-g.left+wb.width/2-cw/2,ty=wb.top-g.top+4;
  el.innerHTML=lastGot.map((k,i)=>{const gr=+k.split('_')[1],row=Math.floor(i/cols),count=Math.min(cols,n-row*cols),x=(g.width-count*cw-(count-1)*gap)/2+(i%cols)*(cw+gap),py=y+row*(cw+gap);return `<div class="cfc gb${gr}${gr>=3?' hi'+gr:''}" style="left:${x}px;top:${py}px;--tx:${tx-x}px;--ty:${ty-py}px;animation-delay:${i*.07}s,${1.25+i*.05}s">${wIcon(k)}<span class="ts">${GR[gr].n}</span></div>`}).join('')+`<div class="cfxt ts" style="top:${y-28}px">무기 ${n}개 제작!</div>`;
@@ -1646,6 +1677,7 @@ function open(p){
  if(p==='up'&&!S.built.fire){toast('먼저 모닥불을 지어야 해요');return}
  if(p==='smith'&&!S.built.smith){toast('먼저 대장간을 지어야 해요');return}
  
+ if(p==='smith'&&smithPromotionReady()){panel='smithPromotion';$('modal').className='open';draw();return}
  if(p==='smith'){const count=smithBatch(),cost=count*5;if(S.cry<cost){toast(count+'개 제작에 크리스탈 '+cost+'개가 필요해요');return}act('craft:'+count);craftFx();return}
  panel=p;$('modal').className='open';draw()}
 function close(){closePop();swapKey=null;mergeSel=null;panel=null;lastGot=[];resetArm=false;$('modal').className=''}
@@ -1703,12 +1735,15 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   <div class="eqbar"><button class="sbtn" data-a="back">← 장비</button><h3 class="ts">선택</h3><button class="sbtn yel" data-a="mergeall">일괄합성</button></div>
   <div class="wgrid">${cards.map((k,ix)=>{const gg=+k.split('_')[1],can=S.weapons[k]>=3&&gg<4;return `<div class="wc gb${gg}${mk===k?' sel':''}${can?'':' dim'}" data-a="msel:${k}"><span class="lv ts">Lv.1</span>${wIcon(k)}${eqCount(k)?'<span class="eqd ts">장착됨</span>':''}</div>`}).join('')}</div>
   <button class="btn ${ok?'':'no'}" data-a="domerge" style="width:100%;margin-top:10px;font-size:18px">합성</button><div id="mlog" class="note"></div>`}
- else if(panel==='smith'){$('mtitle').textContent='대장간';cur(['cry']);const o=SM[S.step],sl=S.step>=SXP.length;
-  B.innerHTML=(lastGot.length?`<div class="note" style="font-size:16px;color:#fff">무기 획득!</div><div class="slots">${lastGot.map(k=>{const g=+k.split('_')[1];return `<div class="slot" style="border-color:${GR[g].c}"><b style="color:${GR[g].c}">${GR[g].n}</b><div class="wslot">${wIcon(k)}</div>${wName(k)}</div>`}).join('')}</div>`:'')+
-  `<div class="row"><div class="ric">${IC.anvil}</div><div class="rin"><h4>대장간 Lv.${S.step+1}</h4><p>무기를 만들수록 대장간 레벨이 올라 좋은 등급이 잘 나와요.</p><div class="l">${sl?'최고 레벨':'경험치 '+S.sxp+' / '+SXP[S.step]}</div></div></div>
-  <div class="odds">${GR.map((g,i)=>`<div style="color:${g.c}">${g.n}<br>${o[i]}%</div>`).join('')}</div>
-  <div class="row"><div class="ric">${IC.anvil}</div><div class="rin"><h4>무기 제작 x1</h4><p>무작위 무기 1개</p></div>${costBtn({cry:5},'craft:1',S.cry>=5)}</div>
-  <div class="row"><div class="ric">${IC.anvil}</div><div class="rin"><h4>무기 제작 x6</h4><p>한 번에 6개</p></div>${costBtn({cry:30},'craft:6',S.cry>=30)}</div>`}
+ else if(panel==='smithPromotion'||panel==='smithPromoted'){
+  const promoted=panel==='smithPromoted',before=promoted?S.step-1:S.step,after=before+1;
+  $('mtitle').textContent=promoted?'대장간 승급 완료':'대장간 승급';
+  cur(['gold']);
+  B.innerHTML='<div class="feature-head"><div class="ric">'+IC.anvil+'</div><div><b>Lv.'+(before+1)+' → Lv.'+(after+1)+'</b><small>'+(promoted?'제작 확률이 바뀌었어요.':'대장간 경험치가 가득 찼어요.')+'</small></div></div>'+smithOddsTable(before,after);
+  const gold=SMITH_PROMOTION_GOLD[before];
+  F.innerHTML=promoted?'<button class="growth-button smith-confirm" data-a="closeSmith">확인</button>':
+   '<button class="growth-button smith-confirm" data-a="promoteSmith" '+(S.gold<gold?'disabled':'')+'>'+IC.gold+' '+gold.toLocaleString('ko-KR')+' 골드로 승급</button>';
+ }
  else if(panel==='map'){$('mtitle').textContent='챕터 '+mapChapter; $('mcur').innerHTML='';F.innerHTML='<div class="tabs">'+[1,2,3,4].map(n=>'<button class="tab '+(mapChapter===n?'on':'')+'" data-a="chapter:'+n+'">챕터 '+n+'</button>').join('')+'</div>';B.innerHTML=stageRewards()+`${mapChapter===1?worldMap():'<div class="chapter-locked">🔒<br>다음 모험 준비 중</div>'}<div class="note">스테이지를 누르면 정보를 볼 수 있어요.</div><div id="mapinfo" class="note"></div>`}
  else if(panel==='box'){$('mtitle').textContent='선물함';cur(['gold','cry','scr']);const left=(S.sup||0)+SUPT-Date.now(),ok=left<=0,mins=Math.ceil(left/60e3),remaining=Math.floor(mins/60)+'시간 '+mins%60+'분';
   B.innerHTML=`<div class="row" style="border-color:${ok?'#7be36a':''}"><div class="ric">${IC.gift}</div><div class="rin"><h4>무료 보급 상자</h4><p>4시간마다 무료 · ${rwTxt(supRw())}</p></div><button class="btn ${ok?'':'no'}" data-a="sup" ${ok?'':'disabled'} style="min-width:86px">${ok?'열기':remaining}</button></div>`}
@@ -1722,7 +1757,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0550 (개인 사냥·보스 협동)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0552 (VIP 교환·대장간 승급)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(featureAct(k,v))return;if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='goatt'){panel='att'}else if(k==='goshop'){panel='shop'}
  else if(k==='soon'){toast('준비 중이에요');return}
@@ -1776,11 +1811,22 @@ function act(a){const[k,v]=a.split(':');if(featureAct(k,v))return;if(k==='adm'&&
  else if(k==='merge'||k==='mergeall'){let cnt=0;const got=[];if(k==='merge'){const r=merge1(v);if(r){cnt++;got.push(r)}}else{let again=true;while(again){again=false;for(const w of Object.keys(S.weapons)){let r;while(r=merge1(w)){cnt++;for(let q=0;q<3;q++){const i=got.indexOf(w);if(i>=0)got.splice(i,1)}got.push(r);again=true}}}}setTimeout(()=>mergeFx(got),30);
   fixSlots();autoFill();calc();save();draw();const lg=$('mlog');if(lg)lg.textContent=cnt?' · '+cnt+'회 합성 완료':' · 합성할 무기가 없어요';return}
  else if(k==='mz'){const i=+v,z=ZS[i],el=$('mapinfo');if(el)el.innerHTML=`스테이지 ${i+1} · ${z.n}<br>${zoneOpen(i)?'보스: '+MT[z.boss].n+(S.bk[i]?' (처치 완료)':''):'Lv.'+z.req+' 달성 시 열림'}`;return}
- else if(k==='craft'){const n=+v;if(S.cry<5*n){toast('크리스탈이 부족해요');return}S.cry-=5*n;const got=[];lastGot=[];const ts=Object.keys(WT),o=SM[S.step];
+ else if(k==='closeSmith'){close();return}
+ else if(k==='promoteSmith'){
+  if(panel!=='smithPromotion'||!S.built.smith||!smithPromotionReady())return;
+  const gold=SMITH_PROMOTION_GOLD[S.step];
+  if(S.gold<gold)return;
+  S.gold-=gold;
+  S.sxp-=SXP[S.step];
+  S.step++;
+  if(S.step===SXP.length)S.sxp=0;
+  panel='smithPromoted';
+  save();
+ }
+ else if(k==='craft'){const n=+v;if(!S.built.smith||smithPromotionReady()||![1,5,10].includes(n))return;if(S.cry<5*n){toast('크리스탈이 부족해요');return}S.cry-=5*n;const got=[];lastGot=[];const ts=Object.keys(WT),o=SM[S.step];
   for(let i=0;i<n;i++){let r=Math.random()*100,g=0;while(g<3&&r>=o[g]){r-=o[g];g++}const t=ts[Math.floor(Math.random()*ts.length)],key=t+'_'+g;addW(key);lastGot.push(key);got.push(`<span style="color:${GR[g].c}">${wName(key)}</span>`)}autoFill();
-  S.sxp+=n;while(S.step<SXP.length&&S.sxp>=SXP[S.step]){S.sxp-=SXP[S.step];S.step++;toast('대장간 레벨 업! Lv.'+(S.step+1))}if(S.step>=SXP.length)S.sxp=0;
+  if(S.step<SXP.length){S.sxp+=n;if(smithPromotionReady())toast('대장간 경험치 완료! 모루를 눌러 승급하세요.')}
   calc();qev('craft',null,n);save();draw();return}
- else if(k==='step'){}
  else if(k==='reset'){if(!window.IS_ADMIN)return;if(!resetArm){resetArm=true}else{S=fresh();calc();P.hp=ST.maxhp;P.x=BASE.x;P.y=BASE.y+120;drops.length=0;save();close();toast('처음부터 다시 시작합니다');return}}
  draw()}
 $('modal').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)act(b.dataset.a)});
