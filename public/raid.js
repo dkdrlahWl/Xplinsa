@@ -123,7 +123,7 @@ window.RAID = (() => {
     else if (a === 'lvm') { selLv--; lobby(); } else if (a === 'lvp') { selLv++; lobby(); }
     else if (a === 'start') start();
     else if (a === 'again') lobby();
-    else if (a === 'claim' && run?.reward) { const r = run.reward; run.reward = null; markRewardOrigin(c); give({ myth: r.myth, scl: r.scl, gem: r.gem, gold: r.goldK * topGold() }); save(); c.remove(); }
+    else if (a === 'claim' && run?.reward) { const r = run.reward; run.reward = null; markRewardOrigin(c); give({ myth: r.myth, scl: r.scl, gem: r.gem, gold: r.goldK * topGold() }); if (window.PET) PET.egg('raid'); save(); c.remove(); }
   });
   function tick(dt) { if (!visible) return; if (mode === 'battle' && run) step(Math.min(dt, .05)); if (mode === 'battle' || mode === 'result') draw(); }
   return { get visible() { return visible; }, open, tick, receive() {}, disconnect() {} };
