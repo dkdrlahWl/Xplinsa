@@ -2,3 +2,4 @@
 @media(max-height:650px){.tw-floor{top:16%}.tw-floor>b{height:38px;line-height:38px;font-size:22px}.tw-rewards{padding:4px}.tw-enemies{top:38%;height:29%}.tw-pass i{height:100px}.tw-actions button{min-height:50px;padding:7px;font-size:16px!important}}
 
 .tw-ready{position:absolute;inset:0;display:grid;place-items:center;font-size:68px;font-weight:bold;color:#fff4ae;text-shadow:0 4px 0 #1a2d42;pointer-events:none}.tw-ready[hidden]{display:none}.tw-actions button:disabled small{opacity:1;color:#fff}
+.tw-currencies{gap:5px}.tw-currencies>span{flex:1;min-width:0;padding:3px 4px;font-size:12px;gap:2px;white-space:nowrap}.tw-currencies img{width:20px;height:20px;flex:none}
