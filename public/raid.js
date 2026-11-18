@@ -5,7 +5,7 @@ window.RAID = (() => {
   root.id = 'raid-screen'; root.hidden = true; $('game').appendChild(root);
   const NAMES = ['빙결 여제', '염옥 마신', '뇌신 골렘', '심연의 괴수'], FLOOR = ['#a9d6ea', '#4a2620', '#55576e', '#251d3a'];
   const positions = new Map(), swings = new Map();
-  let arena = null, localPosition = null, sentX = 0, sentY = 0, bossT = null;
+  let arena = null, localPosition = null, sentX = 0, sentY = 0, bossT = null, pendDmg = 0, dmgWait = 0, floorPat = null, floorKey = '';
   let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = [0, 0, 0, 0], rooms = [], remaining = null, selBoss = 0, selLv = 1;
   const btn = (a, label, dis = false, extra = '') => '<button type="button" data-raid="' + a + '" ' + extra + (dis ? ' disabled' : '') + '>' + label + '</button>';
   const ui = (k, e) => AURL[k] ? '<img src="' + AURL[k] + '" style="width:20px;height:20px;vertical-align:-4px" alt="">' : e;
@@ -15,7 +15,7 @@ window.RAID = (() => {
   const bossImg = b => { const k = 'mon_raid' + b, al = ALIAS[k]; return AURL[k] ? '<img src="' + AURL[k] + '" alt="">' : al && AURL[al[0]] ? '<img src="' + AURL[al[0]] + '" style="filter:hue-rotate(' + al[1] + 'deg)" alt="">' : '' };
   function resetCombat() {
     localPosition = null; sentX = sentY = 0; bossT = null;
-    arena = { width: W, height: H, player: { ...P, atkCd: 0, swingT: 0, pend: null, s2: null, sk: [0, 0, 0, 0, 0, 0], sub: {}, extraT: 0, trail: [], scarf: [] }, enemies: [], shots: [], nums: [], fxs: [], timers: [], hit(e, d) { NET.raid('hit', { damage: d }) } };
+    arena = { width: W, height: H, player: { ...P, atkCd: 0, swingT: 0, pend: null, s2: null, sk: [0, 0, 0, 0, 0, 0], sub: {}, extraT: 0, trail: [], scarf: [] }, enemies: [], shots: [], nums: [], fxs: [], timers: [], hit(e, d) { pendDmg += d } };
   }
   function loadout(ready) { calc(); NET.raid('loadout', { ready, hero: S.hero, weapon: S.slots[0], attack: ST.atk, hp: ST.maxhp, speed: ST.spd, leech: ST.ls, pow: ST.pow }); }
   function showRooms() {
@@ -132,7 +132,7 @@ window.RAID = (() => {
   function draw(dt) {
     const c = $('raid-canvas'); if (!c || !state) return;
     const w = c.clientWidth, h = c.clientHeight; if (!w || !h) return;
-    const dp = Math.min(2, devicePixelRatio || 1);
+    const dp = Math.min(1.5, devicePixelRatio || 1);
     if (c.width !== Math.round(w * dp) || c.height !== Math.round(h * dp)) { c.width = Math.round(w * dp); c.height = Math.round(h * dp); }
     const g = c.getContext('2d'), zoom = w / 470, sc = zoom * dp, time = performance.now(), alive = new Set();
     const smooth = (k, e) => { alive.add(k); const p = positions.get(k) || { x: e.x, y: e.y }, a = Math.min(1, dt * 17); p.x += (e.x - p.x) * a; p.y += (e.y - p.y) * a; positions.set(k, p); return p; };
@@ -142,7 +142,7 @@ window.RAID = (() => {
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
     g.setTransform(sc, 0, 0, sc, c.width / 2 - cx * sc, c.height / 2 - cy * sc);
     const fl = AI('raid_floor_' + state.boss);
-    if (fl) { g.fillStyle = g.createPattern(fl, 'repeat'); g.fillRect(0, 0, W, H); } else { g.fillStyle = FLOOR[state.boss]; g.fillRect(0, 0, W, H); }
+    if (fl) { const fk = state.boss + ':' + c.width; if (!floorPat || floorKey !== fk) { floorPat = g.createPattern(fl, 'repeat'); floorKey = fk; } g.fillStyle = floorPat; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); } else { g.fillStyle = FLOOR[state.boss]; g.fillRect(0, 0, W, H); }
     g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 14; g.strokeRect(0, 0, W, H);
     for (const wn of state.warns) { const p = 1 - wn.t / wn.T; g.globalAlpha = .28; g.fillStyle = '#ff3b2f'; g.beginPath(); g.arc(wn.x, wn.y, wn.r, 0, Math.PI * 2); g.fill(); g.globalAlpha = .5; g.beginPath(); g.arc(wn.x, wn.y, wn.r * Math.min(1, p), 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; g.strokeStyle = '#ff7a6a'; g.lineWidth = 4; g.beginPath(); g.arc(wn.x, wn.y, wn.r, 0, Math.PI * 2); g.stroke(); }
     withArenaCombat(arena, () => {
@@ -198,8 +198,10 @@ window.RAID = (() => {
       sendWait -= dt;
       if (sendWait <= 0 || input.x !== sentX || input.y !== sentY) { sendWait = .07; sentX = input.x; sentY = input.y; NET.raid('move', { x: sentX, y: sentY }); }
       fight(dt, input);
+      dmgWait -= dt; if (pendDmg > 0 && dmgWait <= 0) { NET.raid('hit', { damage: Math.round(pendDmg) }); pendDmg = 0; dmgWait = .15; }
+      if (arena) { if (arena.nums.length > 24) arena.nums.splice(0, arena.nums.length - 24); if (arena.fxs.length > 50) arena.fxs.splice(0, arena.fxs.length - 50); }
     }
     draw(dt);
   }
-  return { get visible() { return visible; }, open, receive, tick, disconnect() { if (visible) { state = null; statsSent = false; pointer = null; rooms = []; screen(); const e = $('raid-error'); if (e) e.textContent = '연결이 끊겨 방에서 나왔어요.'; } } };
+  return { dbg: () => arena && ({ nums: arena.nums.length, fxs: arena.fxs.length, shots: arena.shots.length, timers: arena.timers.length }), get visible() { return visible; }, open, receive, tick, disconnect() { if (visible) { state = null; statsSent = false; pointer = null; rooms = []; screen(); const e = $('raid-error'); if (e) e.textContent = '연결이 끊겨 방에서 나왔어요.'; } } };
 })();

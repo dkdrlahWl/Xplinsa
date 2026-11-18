@@ -88,7 +88,7 @@ module.exports = function createRaid(clients, send, markDirty) {
       if (p.hp <= 0 || Math.hypot(p.x - r.b.x, p.y - r.b.y) > 560) return;
       // 1초에 공격력의 45배까지만 인정 (스킬 폭딜 포함)
       const now = Date.now(); if (now - p.winT > 1000) { p.winT = now; p.win = 0; }
-      const d = Math.min(clamp(m.damage, 0, p.attack * 25), Math.max(0, p.attack * 45 - p.win));
+      const d = Math.min(clamp(m.damage, 0, p.attack * 45), Math.max(0, p.attack * 45 - p.win));
       p.win += d; p.dmg += d; r.b.hp -= d; p.hp = Math.min(p.maxHp, p.hp + d * p.leech);
     } else if (m.action === 'swing' && r.phase === 'battle' && p.hp > 0) {
       p.dir = clamp(m.dir, -Math.PI, Math.PI); p.swing++;
