@@ -97,7 +97,8 @@ const defense = require("./defense")(clients, wsSend, markDirty);
 setInterval(() => defense.tick(.1), 100);
 // 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
 // Stable IDs of the two shared bosses in each region. Match the client spawn table.
-const SHARED_BOSSES = new Set([105, 106, 213, 214, 321, 322, 429, 430, 537, 538, 645, 646]);
+// 보스 번호는 클라이언트 지도 생성 순서로 정해짐 → 범위만 확인 (일반 몬스터는 애초에 서버로 안 보냄)
+const SHARED_BOSSES = { has: i => Number.isInteger(i) && i >= 0 && i < 5000 };
 const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
 function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } else if (mx > 1 && m.max !== mx) { const fraction = m.max > 0 ? m.hp / m.max : 1; m.max = mx; if (!m.dead) m.hp = Math.max(1, Math.round(mx * fraction)); } return m; }
 const MONS_FILE = path.join(DATA, 'mons.json');

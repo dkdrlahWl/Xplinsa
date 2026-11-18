@@ -379,7 +379,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>if(!localStorage.getItem("xp_token"))location.replace("index.html")</script>
-<script src="net.js?v=14"></script>
+<script src="net.js?v=15"></script>
 <script src="reward-fx.js?v=1"></script>
 <script>
 'use strict';
@@ -497,10 +497,11 @@ function inBR(x,y,pad,ok){for(const q of BR)if(ok(q)&&Math.hypot(x-q.x,y-q.y)<q.
 
 const BASEC={x:CX,y:CY,r:BASE.sand+6};
 function zoneOpen(i){return combatArena!==null||S.lv>=ZS[i].req}
-function inZ(z,x,y,pad){if(combatArena)return x>=0&&x<=combatArena.width&&y>=0&&y<=combatArena.height;return gz(z,x,y)>pad||inBR(x,y,pad,q=>q.a===z||q.b===z)}
+function inZ(z,x,y,pad){if(combatArena)return x>=0&&x<=combatArena.width&&y>=0&&y<=combatArena.height;if(Math.hypot(x-WBA.x,y-WBA.y)<WBA.r-pad)return true;return gz(z,x,y)>pad||inBR(x,y,pad,q=>q.a===z||q.b===z)}
 function inStage(x,y,pad){for(let i=0;i<NZ;i++)if(gz(i,x,y)>pad)return i;return -1}
 const WCTX=document.createElement('canvas').getContext('2d');
-function walk(x,y){if(Math.hypot(x-CX,y-CY)<BASEC.r-14)return true;for(let i=0;i<NZ;i++)if(zoneOpen(i)){const g=gz(i,x,y);if(g>3)return true;if(g>-40&&WCTX.isPointInPath(ZC[i].path,x,y))return true}return inBR(x,y,14,q=>zoneOpen(q.a)&&zoneOpen(q.b))}
+const WBA={x:3350,y:7250,r:520},WBP={x:0,y:0},WB_LV=24;
+function walk(x,y){if(Math.hypot(x-CX,y-CY)<BASEC.r-14)return true;if(Math.hypot(x-WBA.x,y-WBA.y)<WBA.r-16)return true;for(let i=0;i<NZ;i++)if(zoneOpen(i)){const g=gz(i,x,y);if(g>3)return true;if(g>-40&&WCTX.isPointInPath(ZC[i].path,x,y))return true}return inBR(x,y,14,q=>zoneOpen(q.a)&&zoneOpen(q.b))}
 const M=(n,lv,hp,atk,xp,gold,r,spd,sh,c,o)=>Object.assign({n,lv,hp,atk,xp,gold,r,spd,sh,c,resp:7},o||{});
 const EL=(orb,cry)=>({elite:1,resp:60,orb,cry,scr:2}),BO=(gem,cry,orb)=>({boss:1,resp:180,gem,cry,orb,rb:1,scr:6}),CH=(gem,cry)=>({chest:1,resp:300,gem,cry,scr:3});
 const MT0={
@@ -530,8 +531,10 @@ const fieldGold=[2.1,1.95,1.8,1.7,1.6,1.55];
 const fieldHealth=[1.22,1.3,1.36,1.42,1.46,1.5];
 const fieldAttack=[1.15,1.2,1.24,1.28,1.32,1.35];
 for(let zi=0;zi<6;zi++){const b=MT0[['sprout','cactus','toxic','bunny','dryad','lava'][zi]]||{hp:40,atk:2,xp:3,gold:1,lv:1+zi*10,r:20,spd:70};MT0['crys'+zi]=M('수정 슬라임',b.lv+1,Math.round(b.hp*2),b.atk,b.xp*2,b.gold*2,24,60,'slime','#7fe8f0',{c2:'#d8fbff',cry:3+zi*2})}
+MT0.wboss=M('태초의 거신',60,0,0,0,0,96,58,'golem','#8a6bd8',Object.assign({c2:'#ffd23c',crown:1,world:1},BO(40,30,30)));
 const MT=MT0;for(const k in MT){const d=MT[k],z=d.lv<10?0:d.lv<20?1:d.lv<30?2:d.lv<46?3:d.lv<56?4:5,big=d.boss?1.6:d.elite?1.3:1;d.gold=Math.round(Math.max(1,Math.round(d.gold*.55))*fieldGold[z]);d.xp=Math.max(1,Math.round(d.xp*.5*[1.86,1.26,.85,.38,.2,.08][z]));if(d.chest){d.hp=Math.round(d.hp*[3,4,5,6,7,8][z]);continue}
  d.hp=Math.round(d.hp*[3.5,5,6.5,8,9.5,11][z]*big*fieldHealth[z]);d.atk=Math.round(d.atk*[2.2,2.6,3,3.4,3.8,4.2][z]*big*fieldAttack[z]);d.spd=Math.round(d.spd*1.2);d.resp=Math.round(d.resp*(d.boss?1.2:1));if(d.boss){for(const q of['gold','xp','gem','cry','orb','scr'])if(d[q])d[q]=Math.ceil(d[q]/2);if(!['golem','skorp','elder','lord','queen','volc'].includes(k))d.rb=0}}
+{const w=MT.wboss;Object.assign(w,{hp:150000000,atk:5000,xp:400000,gold:200000,gem:150,orb:40,rb:3,cry:60,lv:60,resp:7200});}
 const BASIC_RANGE=100;
 for(const zone of ZS){const boss=MT[zone.boss];boss.hp=Math.round(boss.hp*1.8);boss.atk=Math.round(boss.atk*1.25)}
 const WT={
@@ -901,8 +904,9 @@ function fresh(){return{gold:0,gem:0,cry:0,orb:0,lv:1,xp:0,bag:0,up:{atk:0,bag:0
 let S=fresh();
 const KEY='camp_save_v2';
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&typeof d==='object'&&d.up){S=Object.assign(fresh(),d);S.up=Object.assign(fresh().up,d.up);S.built=Object.assign(fresh().built,d.built);S.bi=Object.assign(fresh().bi,d.bi);S.slots=(Array.isArray(d.slots)?d.slots:[]).slice(0,6);while(S.slots.length<6)S.slots.push(null);S.slv=Array.isArray(d.slv)?d.slv:[1,1,1,1,1,1];S.bp=Object.assign(fresh().bp,d.bp);S.pity=d.pity||{};S.shards=d.shards||{};S.sq=Object.assign(fresh().sq,d.sq);S.bk=Array.isArray(d.bk)?d.bk:[0,0,0,0,0,0];for(const k in S.weapons)if(!WT[k.split('_')[0]])delete S.weapons[k];fixSlots();delete S.equip}}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.NET)NET.markSave()}
-load();if(!window.IS_ADMIN)S.admin=false;S.wq=S.wq||{};for(const k in S.weapons){const a=S.wq[k]=S.wq[k]||[];while(a.length<S.weapons[k])a.push(Math.round(rnd(.8,1.2)*100)/100);if(a.length>S.weapons[k])a.length=S.weapons[k]}if(S.qv!==3){const ST0=[0, 25, 41, 58, 76, 94];let z=0;for(let i=0;i<6;i++)if(S.bk&&S.bk[i])z=i+1;S.q=ST0[Math.min(z,5)];if(z>=6)S.q=112;S.qp=0;S.qok=0;S.qv=3}if(S.qv===3){const INS=[24,40,57,75,93,111];let d=0;for(const p of INS)if(S.q>=p)d++;S.q+=d;S.qv=4}
+function save(){S.seen=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.NET)NET.markSave()}
+load();if(!window.IS_ADMIN)S.admin=false;
+{const now=Date.now(),sec=S.seen?Math.min(8*3600,Math.max(0,(now-S.seen)/1000)):0;if(sec>=300)S.offPend=Math.max(S.offPend||0,sec);S.seen=now}S.wq=S.wq||{};for(const k in S.weapons){const a=S.wq[k]=S.wq[k]||[];while(a.length<S.weapons[k])a.push(Math.round(rnd(.8,1.2)*100)/100);if(a.length>S.weapons[k])a.length=S.weapons[k]}if(S.qv!==3){const ST0=[0, 25, 41, 58, 76, 94];let z=0;for(let i=0;i<6;i++)if(S.bk&&S.bk[i])z=i+1;S.q=ST0[Math.min(z,5)];if(z>=6)S.q=112;S.qp=0;S.qok=0;S.qv=3}if(S.qv===3){const INS=[24,40,57,75,93,111];let d=0;for(const p of INS)if(S.q>=p)d++;S.q+=d;S.qv=4}
 const ST={};
 function wq(k){const a=S.wq&&S.wq[k];return a&&a.length?Math.max(...a):1}
 function addW(k){const collection=collectionState();collection.weapons[k]=(collection.weapons[k]||0)+1;S.weapons[k]=(S.weapons[k]||0)+1;S.wq=S.wq||{};(S.wq[k]=S.wq[k]||[]).push(Math.round(rnd(.8,1.2)*100)/100)}
@@ -1046,6 +1050,7 @@ function populateMonsterPacks(){
  }
 }
 populateMonsterPacks();
+mk('wboss',WBA.x,WBA.y-40,0,WBA.r-40);
 const sharedBosses=mons.filter(monster=>monster.d.boss);
 
 // Nearby packs start with cactus soldiers and get tougher deeper into the desert.
@@ -1166,7 +1171,7 @@ function withArenaCombat(arena,fn){
   ctx=world.ctx;PV=world.PV;combatArena=null;
  }
 }
-function update(dt){T+=dt;if(P.recall){if(P.dead||Math.hypot(P.x-P.recall.x,P.y-P.recall.y)>6){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
+function update(dt){T+=dt;if(P.recall){if(P.dead||Math.hypot(P.x-P.recall.x,P.y-P.recall.y)>6){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;if(!P.dead){P.ptT=(P.ptT||0)-dt;if(P.ptT<=0){if(Math.hypot(P.x-WBP.x,P.y-WBP.y)<34){if(S.lv<WB_LV){if(lockT<=0){toast('월드 보스는 Lv.'+WB_LV+'부터 입장할 수 있어요');lockT=2.5}}else{P.x=WBA.x;P.y=WBA.y+WBA.r-150;P.ptT=1.2;showBanner('월드 보스','태초의 거신')}}else if(Math.hypot(P.x-WBA.x,P.y-(WBA.y+WBA.r-70))<34){P.x=BASE.x;P.y=BASE.y+120;P.ptT=1.2;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}}}}
  // player
  if(P.dead){P.respT-=dt;if(P.respT<=0){P.dead=false;P.x=BASE.x;P.y=BASE.y+120;P.hp=ST.maxhp}}
  else{
@@ -1272,7 +1277,7 @@ function drawGround(x0,y0,x1,y1){
   ctx.save();ctx.clip(ZC[i].path);for(const pl of PATH[i])pathLine(pl,120,lt(ZS[i].path,-.12));for(const pl of PATH[i])pathLine(pl,104,ZS[i].path);ctx.restore();
   ctx.setLineDash([26,18]);ctx.strokeStyle='rgba(224,85,74,.75)';ctx.lineWidth=5;ctx.beginPath();ctx.arc(b.x,b.y,b.r-30,0,TAU);ctx.stroke();{const b2=ZB[i][2],r2=Math.min(b.r,260);ctx.fillStyle='rgba(60,30,30,.10)';ctx.beginPath();ctx.arc(b2.x,b2.y,r2-8,0,TAU);ctx.fill();ctx.beginPath();ctx.arc(b2.x,b2.y,r2-30,0,TAU);ctx.stroke()}ctx.setLineDash([])}
  ctx.lineCap='butt';
- drawWalls();
+ drawWalls();drawWB();
  blobs([BASEC],0,pat('tile_base')||'#f2d9a0');featherBase();if(!AI('tile_base')){ctx.save();blobPath([BASEC]);ctx.clip();texture(1,BASE.x-BASEC.r,BASE.y-BASEC.r,BASE.x+BASEC.r,BASE.y+BASEC.r);ctx.restore()}
  ctx.setLineDash([30,22]);ctx.lineWidth=6;ctx.strokeStyle=S.built.fire?'#5fd06f':'#d9c491';ctx.beginPath();ctx.arc(BASE.x,BASE.y,BASE.ring,T*.15,T*.15+TAU);ctx.stroke();ctx.setLineDash([]);
  ctx.lineWidth=2.2;ctx.strokeStyle=OLC;
@@ -1301,6 +1306,12 @@ const NKC={};function neckAdj(h){if(NKC[h.k]!==undefined)return NKC[h.k];const h
 // 두 마디 팔 IK: 어깨(sx,sy)에서 손(tx,ty)까지, 팔꿈치는 아래쪽으로
 function IK(sx,sy,tx,ty,l1,l2){const dx=tx-sx,dy=ty-sy,d=Math.min(Math.hypot(dx,dy),l1+l2-.01),base=Math.atan2(dy,dx),A=Math.acos(clamp((l1*l1+d*d-l2*l2)/(2*l1*d),-1,1));
  let best=null;for(const sg of[1,-1]){const a1=base+sg*A,ex=sx+Math.cos(a1)*l1,ey=sy+Math.sin(a1)*l1;if(!best||ey>best[2])best=[a1,Math.atan2(ty-ey,tx-ex)-a1,ey]}return best}
+function drawWB(){WBP.x=BASE.x-230;WBP.y=BASE.y+170;const A=WBA;
+ ctx.save();ctx.fillStyle='#1b1430';ctx.beginPath();ctx.arc(A.x,A.y,A.r+46,0,TAU);ctx.fill();const pt=pat('tile_5')||'#5a3a4a';ctx.fillStyle=pt;ctx.beginPath();ctx.arc(A.x,A.y,A.r,0,TAU);ctx.fill();
+ ctx.globalAlpha=.35;ctx.fillStyle='#2a1440';ctx.beginPath();ctx.arc(A.x,A.y,A.r,0,TAU);ctx.fill();ctx.globalAlpha=1;
+ ctx.lineWidth=10;ctx.strokeStyle='#8a6bd8';ctx.beginPath();ctx.arc(A.x,A.y,A.r,0,TAU);ctx.stroke();ctx.setLineDash([26,18]);ctx.lineWidth=5;ctx.strokeStyle='rgba(224,85,74,.8)';ctx.beginPath();ctx.arc(A.x,A.y,A.r-60,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+ const portal=(x,y,t)=>{ctx.save();const g=ctx.createRadialGradient(x,y,4,x,y,44);g.addColorStop(0,'#fff');g.addColorStop(.35,'#c79bff');g.addColorStop(1,'rgba(120,70,220,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,y,44+Math.sin(T*4)*3,26,0,0,TAU);ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#e8d6ff';ctx.beginPath();ctx.ellipse(x,y,36,20,T,0,TAU);ctx.stroke();ctx.restore();label(t,x,y-34,15,'#ffe066')};
+ portal(WBP.x,WBP.y,S.lv>=WB_LV?'월드 보스':'월드 보스 (Lv.'+WB_LV+')');portal(A.x,A.y+A.r-70,'기지로');ctx.lineWidth=2.2;ctx.strokeStyle=OLC}
 function drawWalls(){for(let L=0;L<NZ;L++){if(zoneOpen(L))continue;ctx.save();ctx.clip(ZC[L].path);
   const st=(w,c,d)=>{ctx.lineWidth=w;ctx.strokeStyle=c;ctx.setLineDash(d||[]);for(let O=0;O<NZ;O++)if(zoneOpen(O))ctx.stroke(ZC[O].path);ctx.beginPath();ctx.arc(BASE.x,BASE.y,BASEC.r-14,0,TAU);ctx.stroke()};
   ctx.lineJoin='round';st(34,'#3a2c22');st(28,'#8a6a4a');st(20,'#b08a5e',[22,6]);st(6,'rgba(255,255,255,.18)',[22,6]);ctx.setLineDash([]);ctx.restore()}
@@ -1627,6 +1638,11 @@ const BOX={
 BOX.attc={n:'출석 보상 상자',img:'shop_chest2',fb:'mon_chest6'};
 function today(){return new Date().toDateString()}
 const SUPT=4*3600e3,ATT=[{gold:1000},{gem:90},{cry:90},{orb:9},{gem:180},{scr:30},{wpn:4}];
+function offRw(sec){const z=topZone(),fg=ZS[z].m.reduce((a,k)=>a+MT[k].gold,0)/ZS[z].m.length,h=sec/3600;return{gold:Math.round(fg*60*h),shard:Math.floor(h)}}
+function showOffline(){if(!S.offPend||document.getElementById('offp'))return;const sec=S.offPend,r=offRw(sec),hh=Math.floor(sec/3600),mm=Math.floor(sec%3600/60);const d=document.createElement('div');d.id='offp';d.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(15,12,29,.72);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
+ d.innerHTML=`<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:22px 20px;width:min(86vw,320px);text-align:center;color:#fff"><div style="font-size:24px;color:#ffe066">오프라인 보상</div><div style="color:#cfc8ee;margin:6px 0 14px">${hh}시간 ${mm}분 동안 모았어요 (최대 8시간)</div><div style="font-size:20px;line-height:1.7">금화 <b style="color:#ffd23c">${fmt(r.gold)}</b>${r.shard?`<br>영웅 파편 <b style="color:#c79bff">${r.shard}개</b>`:''}</div><button id="offok" style="margin-top:16px;font:inherit;font-size:20px;padding:10px 34px;border:3px solid #1c1830;border-radius:14px;background:linear-gradient(#7be36a,#3fae3a);color:#fff">받기</button></div>`;
+ document.body.appendChild(d);d.querySelector('#offok').onclick=()=>{const r2=offRw(S.offPend||0);S.gold+=r2.gold;const got={};for(let i=0;i<r2.shard;i++){const pool=HERO.filter(h=>h.k!=='adv'),h=pool[Math.floor(Math.random()*pool.length)];S.shards[h.k]=(S.shards[h.k]||0)+1;got[h.n]=(got[h.n]||0)+1}S.offPend=0;save();d.remove();toast('금화 '+fmt(r2.gold)+(r2.shard?' · 파편 '+Object.entries(got).map(([n,c])=>n+' '+c).join(', '):''))}}
+setTimeout(showOffline,1500);
 function topZone(){let z=0;for(let i=0;i<6;i++)if(zoneOpen(i))z=i;return z}
 function supRw(){const z=topZone(),G=[1.5,6,22,91,330,990];return{gold:Math.round(G[z]*350),cry:8+4*z,scr:2+z}}
 function attRw(i){return {...ATT[i]}}
@@ -1817,7 +1833,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0634 (방어전 대기실·하루 10회)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0700 (오프라인 보상·월드 보스)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');
  if(k==='challengeTower'){window.TOWER?.open();return}
  if(k==='challengeDefense'){window.DEFENSE?.open();return}
