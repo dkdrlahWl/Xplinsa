@@ -1994,7 +1994,9 @@ setTimeout(mkClaim,4000);
 function cur(list){$('mcur').innerHTML=list.map(k=>`<div class="pill" data-reward-kind="${k}">${IC[k]}<span>${fmt(S[k])}</span></div>`).join('')}
 function upTabs(on){return '<div class="tabs">'+[['base','기본 능력'],['sp','특수 능력']].concat(ch2Open()?[['aw','각성']]:[]).map(([k,n])=>'<div class="tab'+(k===on?' on':'')+'" '+(k===on?'':'data-a="upt:'+k+'"')+'>'+n+'</div>').join('')+'</div>'}
 function costBtn(c,act,ok,extra){return `<button class="btn ${ok?'':'no'}" data-a="${act}">${c.scr?`<span>${IC.scr}${c.scr}</span>`:''}${c.rb?`<span>${IC.rb}${c.rb}</span>`:''}${c.orb?`<span>${IC.orb}${c.orb}</span>`:''}${c.cry?`<span>${IC.cry}${c.cry}</span>`:''}${c.scl?`<span>${IC.scl}${c.scl}</span>`:''}${c.gold!=null?`<span>${IC.gold}${fmt(c.gold)}</span>`:''}${extra||''}</button>`}
-function open(p){if(p!=='home')window.SFX&&SFX.play('open',{v:.5});
+const PBACK=[],SUBP=new Set(['heroes','pets','heroDetail','heroEffects','merge','collection','tasks','market','rank']);
+function mxBack(){while(PBACK.length){const p=PBACK.pop();if(p&&p!==panel){window.SFX&&SFX.play('close',{v:.45});closePop();panel=p;mergeSel=null;draw();return}}close()}
+function open(p){PBACK.length=0;if(p!=='home')window.SFX&&SFX.play('open',{v:.5});
  if(p==='att'){panel='att';draw();$('modal').className='open';return}
  if(p==='home'){if(P.dead)return;if(Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand){toast('이미 기지에 있어요');return}P.recall={t:2,x:P.x,y:P.y};window.SFX&&SFX.play('recall',{v:.6});toast('기지로 귀환 중… (움직이면 취소)');return}
  if(p==='tower'){panel='challenges';$('modal').className='open challenges';draw();return}
@@ -2207,8 +2209,8 @@ function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
   calc();qev('craft',null,n);if(window.SFX){SFX.play('anvil',{v:.8});if(lastGot.some(k=>+k.split('_')[1]>=3))setTimeout(()=>SFX.play('fanfare',{v:.6,fixed:1}),250)}save();draw();return}
  else if(k==='reset'){if(!window.IS_ADMIN)return;if(!resetArm){resetArm=true}else{S=fresh();calc();P.hp=ST.maxhp;P.x=BASE.x;P.y=BASE.y+120;drops.length=0;save();close();toast('처음부터 다시 시작합니다');return}}
  draw()}
-$('modal').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b){window.SFX&&SFX.play('click',{v:.35,gap:.05});act(b.dataset.a)}});
-$('mx').addEventListener('click',close);
+$('modal').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b){window.SFX&&SFX.play('click',{v:.35,gap:.05});const was=panel;act(b.dataset.a);if(panel&&was&&panel!==was&&SUBP.has(panel)){if(PBACK[PBACK.length-1]!==was)PBACK.push(was)}else if(panel&&!SUBP.has(panel))PBACK.length=0}});
+$('mx').addEventListener('click',mxBack);
 $('gacha').addEventListener('click',e=>{if(!GA)return;const b=e.target.closest('button[data-g]');if(b){const a=b.dataset.g;if(a==='skip'){gSkip();return}const id=GA.id,n=GA.n;GA=null;$('gacha').className='';$('gacha').innerHTML='';if(a==='again')buyBox(id,n);else draw();return}if(GA.ph==='drop'||GA.ph==='wait'){GA.tap=1;gOpen()}else if(GA.ph==='reveal')gRevealNext(true)});
 function gSkip(){if(!GA)return;if(!GA.shown){GA.shown=1;const ch=$('gchest');if(ch)ch.style.opacity='0';['ghint','gstep'].forEach(i=>{const e=$(i);if(e)e.style.display='none'});showResults()}GA.ph='reveal';gRevealNext(true)}
 $('pop').addEventListener('click',e=>{const b=e.target.closest('[data-pa]');if(!b){if(e.target.id==='pop')closePop();return}const a=b.dataset.pa,si=popSi,k=popK;
