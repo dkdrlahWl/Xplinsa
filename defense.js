@@ -1,7 +1,12 @@
 'use strict';
 
 const WIDTH = 1920, HEIGHT = 2560, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
-const HEAL_RADIUS = 34;
+const HEAL_RADIUS = 34, DAILY_LIMIT = 10;
+const dayKey = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+const REWARDS = Array.from({ length: 5 }, (_, i) => ({
+  first: { gold: 6000 * (i + 1), scr: 4 * (i + 1) },
+  repeat: { gold: 1200 * (i + 1), scr: i + 1 }
+}));
 const ENTRIES = {
   north: [CENTER_X, 60], east: [WIDTH - 54, CENTER_Y],
   south: [CENTER_X, HEIGHT - 60], west: [54, CENTER_Y]
@@ -19,6 +24,13 @@ module.exports = function createDefense(clients, send, markDirty) {
   const rooms = new Map(), memberships = new Map();
   const watchers = new Set();
   let sequence = 0;
+
+  function daily(user, day = dayKey()) {
+    return user.defenseDaily?.day === day ? user.defenseDaily : { day, used: 0, wins: 0 };
+  }
+  function allowance(user) {
+    return { remaining: Math.max(0, DAILY_LIMIT - daily(user).used), limit: DAILY_LIMIT };
+  }
 
   function roomList() {
     return [...rooms.values()].filter(room => room.phase === 'lobby').map(room => ({
@@ -52,7 +64,7 @@ module.exports = function createDefense(clients, send, markDirty) {
     };
     for (const id of room.players.keys()) {
       const client = clients.get(id);
-      if (client) send(client.sock, { ...packet, best: client.u.defenseBest || 0 });
+      if (client) send(client.sock, { ...packet, ...allowance(client.u), best: client.u.defenseBest || 0, reward: room.players.get(id)?.reward });
     }
   }
 
@@ -97,10 +109,11 @@ module.exports = function createDefense(clients, send, markDirty) {
     switch (message.action) {
       case 'info':
         watchers.add(id);
-        send(client.sock, { t: 'defenseInfo', best: client.u.defenseBest || 0, rooms: roomList() });
+        send(client.sock, { t: 'defenseInfo', best: client.u.defenseBest || 0, ...allowance(client.u), rewards: REWARDS, rooms: roomList() });
         return;
       case 'create': {
         if (room) { sendRoom(room); return; }
+        if (!allowance(client.u).remaining) return error('오늘 도전 횟수를 모두 사용했어요.');
         const stage = Number(message.stage);
         if (!Number.isInteger(stage) || stage < 1 || stage > WAVES.length || stage > (client.u.defenseBest || 0) + 1) {
           return error('이전 단계를 먼저 클리어해 주세요.');
@@ -115,6 +128,7 @@ module.exports = function createDefense(clients, send, markDirty) {
       }
       case 'join': {
         if (room) { sendRoom(room); return; }
+        if (!allowance(client.u).remaining) return error('오늘 도전 횟수를 모두 사용했어요.');
         const target = rooms.get(String(message.code));
         if (!target || target.phase !== 'lobby') return error('대기 중인 방을 찾을 수 없어요.');
         if (target.players.size >= 4) return error('이 방은 4명이 꽉 찼어요.');
@@ -139,6 +153,15 @@ module.exports = function createDefense(clients, send, markDirty) {
       } else if (message.action === 'start' && room.host === id) {
         const players = [...room.players.values()];
         if (players.some(p => !p.attack || (p.id !== id && !p.ready))) return error('모두 준비 완료한 뒤 시작할 수 있어요.');
+        const day = dayKey();
+        const users = players.map(p => clients.get(p.id)?.u);
+        if (users.some(user => !user || daily(user, day).used >= DAILY_LIMIT)) return error('오늘 도전 횟수를 모두 사용한 참가자가 있어요.');
+        for (const user of users) {
+          const attempts = daily(user, day);
+          attempts.used++;
+          user.defenseDaily = attempts;
+        }
+        markDirty();
         room.lanes = LANES[players.length];
         room.campMax = room.camp = 750 + 250 * players.length;
         room.phase = 'prepare'; room.timer = 5;
@@ -230,10 +253,14 @@ module.exports = function createDefense(clients, send, markDirty) {
           room.phase = 'cleared';
           for (const id of room.players.keys()) {
             const client = clients.get(id);
-            if (client && room.stage === (client.u.defenseBest || 0) + 1) {
-              client.u.defenseBest = room.stage;
-              markDirty();
-            }
+            if (!client) continue;
+            const day = daily(client.u);
+            const first = day.wins === 0;
+            room.players.get(id).reward = { ...REWARDS[room.stage - 1][first ? 'first' : 'repeat'], first };
+            day.wins++;
+            client.u.defenseDaily = day;
+            if (room.stage === (client.u.defenseBest || 0) + 1) client.u.defenseBest = room.stage;
+            markDirty();
           }
         }
       }

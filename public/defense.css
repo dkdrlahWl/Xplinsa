@@ -22,3 +22,21 @@
 #defense-stage-select{border:1px solid #94ad86;border-radius:8px;padding:9px;background:#1d2637;color:#fff;font:inherit}
 
 #defense-screen.defense-lobby{overflow-y:auto}.defense-lobby .defense-card{margin-top:5vh;margin-bottom:16px}#defense-rooms{max-height:36vh;overflow-y:auto}#defense-rooms li{align-items:center}#defense-rooms li b{flex:1;text-align:left}#defense-rooms li button{flex:none}
+.defense-browser{margin-inline:12px;padding:14px;gap:10px}
+.defense-section{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+.defense-section>span,.defense-attempt-note{color:#c8d4bc;font-size:11px}
+.defense-attempts{background:#172939;color:#e4efd0;border-radius:12px;padding:5px 8px;white-space:nowrap;font-size:12px}
+.defense-attempts b{color:#f4d58b}
+.defense-stages{display:grid;gap:5px}
+#defense-screen .defense-stage-tile,.defense-room-banner{background-color:#263944;background-image:linear-gradient(90deg,#151e2dce,#18213933),var(--stage-art);background-size:cover;background-position:center}
+#defense-screen .defense-stage-tile{display:grid;grid-template-columns:44px 1fr auto;align-items:center;text-align:left;gap:7px;min-height:46px;border-color:#88989b;padding:5px 9px}
+.defense-stage-tile span{font-size:13px}.defense-stage-tile small{font-size:11px;background:#182437c4;border-radius:6px;padding:4px 5px}
+#defense-screen .defense-stage-tile[aria-pressed=true]{border:2px solid #ffdc8a;box-shadow:0 0 0 1px #96743f}
+.defense-stage-art-1{--stage-art:url('assets/defense_stage_1.webp')}.defense-stage-art-2{--stage-art:url('assets/defense_stage_2.webp')}.defense-stage-art-3{--stage-art:url('assets/defense_stage_3.webp')}.defense-stage-art-4{--stage-art:url('assets/defense_stage_4.webp')}.defense-stage-art-5{--stage-art:url('assets/defense_stage_5.webp')}
+.defense-room-banner{padding:15px;border:1px solid #a5bda5;border-radius:11px;text-align:left;text-shadow:0 2px 3px #19162a}
+.defense-prizes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.defense-prizes>div{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:5px;background:#192638;border:1px solid #516673;border-radius:9px;padding:7px 3px}
+.defense-prizes b{width:100%;color:#f6dfa2;font-size:12px}
+.defense-prizes span,.defense-earned span{display:inline-flex;align-items:center;gap:2px;font-size:13px}
+.defense-prizes :is(svg,img),.defense-earned :is(svg,img){width:18px;height:18px;object-fit:contain}
+.defense-earned{display:flex;justify-content:center;gap:10px}

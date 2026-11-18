@@ -21,6 +21,8 @@ window.DEFENSE = (() => {
   }
   const swings = new Map();
   let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0, rooms = [];
+  let rewards = [], remaining = null, selectedStage = 1;
+  const stageNames = ['숲길 초소','사막 관문','마력 수풀','서리 전초기지','화산 방벽'];
 
   const button = (action, label, disabled = false) =>
     '<button type="button" data-defense="' + action + '" ' + (disabled ? 'disabled' : '') + '>' + label + '</button>';
@@ -30,6 +32,20 @@ window.DEFENSE = (() => {
       ready, hero: S.hero, weapon: S.slots[0], attack: ST.atk, hp: ST.maxhp, speed: ST.spd,
       leech: ST.ls
     });
+  }
+
+  function rewardItems(reward){
+    return '<span>'+IC.gold+' '+Number(reward.gold).toLocaleString('ko-KR')+'</span><span>'+IC.scr+' '+reward.scr+'장</span>';
+  }
+
+  function rewardPreview(stage){
+    const reward=rewards[stage-1];
+    return reward?'<div class="defense-prizes"><div><b>오늘 첫 클리어</b>'+rewardItems(reward.first)+'</div>'+
+      '<div><b>반복 클리어</b>'+rewardItems(reward.repeat)+'</div></div>':'';
+  }
+
+  function attemptLabel(){
+    return '<small class="defense-attempts">오늘 남은 도전 <b>'+(remaining??'…')+' / 10</b></small>';
   }
 
   function showRooms() {
@@ -52,8 +68,8 @@ window.DEFENSE = (() => {
       join.type = 'button';
       join.dataset.defense = 'join';
       join.dataset.room = room.code;
-      join.disabled = room.count >= 4;
-      join.textContent = join.disabled ? '만석' : '입장';
+      join.disabled = room.count >= 4 || remaining===0;
+      join.textContent = room.count >= 4 ? '만석' : '입장';
       row.append(label, count, join);
       list.appendChild(row);
     }
@@ -63,11 +79,16 @@ window.DEFENSE = (() => {
     root.className = state && state.phase !== 'lobby' ? 'defense-arena' : 'defense-lobby';
     if (!state) {
       root.innerHTML = '<header>캠프 방어전' + button('exit', '닫기') + '</header>' +
-        '<div class="defense-card"><h2>모닥불을 지켜라</h2><p>최대 4명 · 5단계</p>' +
-        '<label for="defense-stage-select">방 만들 단계</label><select id="defense-stage-select">'+
-        [1,2,3,4,5].map(stage=>'<option value="'+stage+'" '+(stage>best+1?'disabled':stage===Math.min(5,best+1)?'selected':'')+'>'+stage+'단계'+(stage>best+1?' · 잠김':stage<=best?' · 클리어':'')+'</option>').join('')+
-        '</select>'+button('create', '방 만들기') +
-        '<h3>대기 중인 방</h3><ul id="defense-rooms"></ul><p id="defense-error" role="status"></p></div>';
+        '<div class="defense-card defense-browser"><div class="defense-section"><h2>방 만들기</h2>'+attemptLabel()+'</div>'+
+        '<div class="defense-stages" aria-label="단계 선택">'+stageNames.map((name,index)=>{
+          const stage=index+1,locked=stage>best+1,selected=stage===selectedStage;
+          return '<button type="button" class="defense-stage-tile defense-stage-art-'+stage+'" data-defense="stage" data-stage="'+stage+
+            '" aria-pressed="'+selected+'" '+(locked?'disabled':'')+'><b>'+stage+'단계</b><span>'+name+'</span><small>'+
+            (locked?'잠김':stage<=best?'클리어':selected?'선택됨':'선택')+'</small></button>';
+        }).join('')+'</div>'+rewardPreview(selectedStage)+
+        button('create',selectedStage+'단계 방 만들기',remaining===null||remaining===0)+
+        '<small class="defense-attempt-note">전투 시작 시 참가자마다 1회 차감 · 한국 시간 00시 초기화</small>'+
+        '<div class="defense-section"><h3>대기 중인 방</h3><span>최대 4명</span></div><ul id="defense-rooms"></ul><p id="defense-error" role="status"></p></div>';
       showRooms();
       return;
     }
@@ -76,7 +97,8 @@ window.DEFENSE = (() => {
       const names = state.players.map((p, i) => '<li><b id="defense-member-' + i + '"></b><span>' +
         (p.id === state.host ? '방장' : p.ready ? '준비 완료' : '대기 중') + '</span></li>').join('');
       root.innerHTML = '<header>캠프 방어전 대기실' + button('exit', '나가기') + '</header>' +
-        '<div class="defense-card"><h2>'+state.stage+'단계 · 대기실 ' + state.players.length + '/4</h2><ul>' + names +
+        '<div class="defense-card"><div class="defense-room-banner defense-stage-art-'+state.stage+'"><h2>'+state.stage+'단계 · '+stageNames[state.stage-1]+'</h2>'+
+        '<p>대기실 '+state.players.length+'/4</p></div>'+attemptLabel()+rewardPreview(state.stage)+'<ul>' + names +
         '</ul>' +
         (host ? button('start', '시작', !statsSent || state.players.some(p => p.id !== state.host && !p.ready)) :
           button('ready', me?.ready ? '준비 취소' : '준비 완료')) + '<p id="defense-error" role="status"></p></div>';
@@ -115,11 +137,12 @@ window.DEFENSE = (() => {
     $('defense-meter').value = state.camp / state.campMax * 100;
     const notice = $('defense-notice'), me = state.players.find(p => p.id === NET.me());
     if (state.phase === 'cleared' || state.phase === 'failed') {
-      const clear = state.phase === 'cleared', available = clear && S.defenseClaim !== calendarKey();
+      const clear=state.phase==='cleared', reward=state.reward;
+      const available=clear&&reward&&S.defenseResultClaim!==state.resultId;
       const unlock = clear && state.stage === best && best < 5 ? '<p>'+(best+1)+'단계 방을 만들 수 있어요.</p>' : '';
       notice.className = 'defense-result';
       notice.innerHTML = '<h2>' + (clear ? state.stage+'단계 방어 성공!' : '방어 실패') + '</h2>' +
-        (clear ? '<p>' + (available ? '오늘 첫 클리어 · 골드 '+fmt(6000*state.stage)+' · 주문서 '+4*state.stage : '오늘 첫 클리어 보상 수령 완료') + '</p>' : '') +
+        (clear&&reward?'<p>'+(available?(reward.first?'오늘 첫 클리어 보상':'반복 클리어 보상'):'보상 수령 완료')+'</p><div class="defense-earned">'+rewardItems(reward)+'</div>':'') +
         unlock + (available ? button('claim', '보상 받기') : '') + button('exit', '캠프로 돌아가기');
     } else {
       notice.className = '';
@@ -132,7 +155,8 @@ window.DEFENSE = (() => {
   function receive(message) {
     if (!visible) return;
     if (message.t === 'defenseInfo') {
-      best = message.best; rooms = message.rooms || [];
+      best=message.best; rooms=message.rooms||[]; rewards=message.rewards||[]; remaining=message.remaining;
+      selectedStage=Math.min(5,best+1);
       if (!state) screen();
       return;
     }
@@ -147,7 +171,7 @@ window.DEFENSE = (() => {
       return;
     }
     const previous = state;
-    state = message; best = state.best;
+    state=message; best=state.best; remaining=state.remaining;
     if (!previous || previous.phase === 'lobby' || !$('defense-canvas')) screen();
     if (state.phase === 'lobby' && !statsSent) { statsSent = true; loadout(false); }
     if (state.phase !== 'lobby') {
@@ -168,7 +192,7 @@ window.DEFENSE = (() => {
     if (!window.NET?.on()) { toast('서버에 연결된 후 입장할 수 있어요'); return; }
     if (P.dead) { toast('부활한 뒤 입장할 수 있어요'); return; }
     close();
-    visible = true; root.hidden = false; statsSent = false; state = null; rooms = [];
+    visible = true; root.hidden = false; statsSent = false; state = null; rooms = []; remaining=null;
     joy.on = false; joy.x = joy.y = 0;
     P.moving = false; P.recall = null;
     for (const boss of sharedBosses) boss.agg = false;
@@ -188,14 +212,15 @@ window.DEFENSE = (() => {
     if (!clicked || clicked.disabled) return;
     const action = clicked.dataset.defense;
     if (action === 'exit') return exit();
-    if (action === 'create') return NET.defense('create', { stage: Number($('defense-stage-select').value) });
+    if(action==='stage'){selectedStage=Number(clicked.dataset.stage);screen();return}
+    if (action === 'create') return NET.defense('create', { stage: selectedStage });
     if (action === 'join') return NET.defense('join', { code: clicked.dataset.room });
     if (action === 'start') return NET.defense('start');
     if (action === 'ready') return loadout(!state.players.find(p => p.id === NET.me())?.ready);
-    if (action === 'claim' && state?.phase === 'cleared' && S.defenseClaim !== calendarKey()) {
-      S.defenseClaim = calendarKey();
+    if(action==='claim'&&state?.phase==='cleared'&&state.reward&&S.defenseResultClaim!==state.resultId){
+      S.defenseResultClaim=state.resultId;
       markRewardOrigin(clicked);
-      give({ gold: 6000 * state.stage, scr: 4 * state.stage });
+      give({gold:state.reward.gold,scr:state.reward.scr});
       save();
       updateHud();
     }
