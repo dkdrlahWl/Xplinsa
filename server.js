@@ -94,7 +94,7 @@ const server = http.createServer(async (req, res) => {
     const u = byToken(b.token);
     if (!u) return send(res, 401, { err: '다른 곳에서 로그인되어 접속이 끊겼어요', kick: 1 });
     if (p === '/api/rank') { // 전투력·탑 랭킹
-      const all = Object.values(db.users).filter(x => x.nick && x.save);
+      const all = Object.values(db.users).filter(x => x.nick && x.save && x.id !== 'ehgus'); // 관리자 계정은 랭킹에서 제외
       const top = f => all.map(x => ({ n: x.nick, v: f(x.save) || 0, me: x.id === u.id })).filter(r => r.v > 0).sort((a, b) => b.v - a.v);
       const cut = l => { const i = l.findIndex(r => r.me); return { list: l.slice(0, 50), my: i >= 0 ? { rank: i + 1, ...l[i] } : null }; };
       return send(res, 200, { pow: cut(top(s => s.pow)), tower: cut(top(s => s.tower && s.tower.clear)) });
