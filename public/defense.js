@@ -1,5 +1,5 @@
 window.DEFENSE = (() => {
-  const WIDTH = 960, HEIGHT = 1280, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
+  const WIDTH = 1920, HEIGHT = 2560, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
   const root = document.createElement('section');
   root.id = 'defense-screen';
   root.hidden = true;
