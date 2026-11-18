@@ -43,7 +43,7 @@ window.PET = (() => {
   const MAXLV = 50, MAXST = 5, DUPGEM = [5, 10, 20, 40, 100];
   const PN = { mag: '줍는 범위', spd: '이동 속도', gold: '금화 획득', xp: '경험치 획득', hp: '체력', regen: '체력 회복', atk: '공격력', crit: '치명타 확률', critd: '치명타 피해', ls: '흡혈', dr: '받는 피해 감소' };
   const AN = { bite: '달려들어 물기', shot: '원거리 공격', chain: '연쇄 번개', nova: '주변 충격파', aura: '냉기 오라(적 느려짐)', breath: '화염 브레스', bolt: '번개 낙하' };
-  const HATCH = { field: [30, 35, 22, 10, 3], elite: [55, 30, 12, 3, 0], raid: [0, 25, 45, 22, 8] };
+  const HATCH = { field: [35, 35, 20, 8, 2], elite: [55, 30, 12, 3, 0], raid: [0, 30, 45, 20, 5] };
 
   function st() { S.pets = S.pets || {}; if (!Array.isArray(S.petEggs)) S.petEggs = [0, 0, 0, 0, 0]; return S.pets }
   const own = k => st()[k];
@@ -106,8 +106,8 @@ window.PET = (() => {
   function egg(src, x, y) { st(); const g = pickGrade(HATCH[src]); S.petEggs[g]++; if (x != null) num(x, y, GN[g] + ' 펫 알 획득!', GC[g], true); else toast(GN[g] + ' 펫 알 획득!'); window.SFX && SFX.play('gem', { v: .6 }); return g }
   function onKill(m) { // 필드 몬스터 처치 시 알 드롭
     if (combatArena) return; const d = m.d, c2 = (typeof CHAP !== 'undefined' && CHAP === 2) ? 1.5 : 1;
-    if (d.boss && !d.world && Math.random() < .06 * c2) egg('field', m.x, m.y - d.r * 2 - 50);
-    else if (d.elite && Math.random() < .004 * c2) egg('elite', m.x, m.y - d.r * 2 - 50);
+    if (d.boss && !d.world && Math.random() < .025 * c2) egg('field', m.x, m.y - d.r * 2 - 50);
+    else if (d.elite && Math.random() < .002 * c2) egg('elite', m.x, m.y - d.r * 2 - 50);
   }
 
   // ---------- 따라다니기 ----------
@@ -223,7 +223,7 @@ window.PET = (() => {
     h += '<div class="note">같은 펫이 또 나오면 별이 올라가요 (최대 5성, 이후엔 보석). 보유 효과: 펫 ' + ownN + '/30 · 공격력 +' + (Math.round(ownBonus() * 1000) / 10) + '%</div>';
     h += '<div class="petEggs">' + eggs.map((n, g) => '<div class="petEgg ' + (n ? '' : 'none') + '" ' + (n ? 'data-a="pegg:' + g + '"' : '') + '><img src="' + eggURL(g) + '" alt=""><b style="color:' + GC[g] + '">' + GN[g] + '</b><span>' + n + '개</span>' + (n ? '<i>부화</i>' : '') + '</div>').join('') + '</div>';
     h += '<div class="petGrid">' + PETS.map(q => { const qo = own(q.k); return '<div class="petCell' + (q.k === fk ? ' sel' : '') + (qo ? '' : ' lock') + '" data-a="pfocus:' + q.k + '" style="border-color:' + GC[q.g] + '"><img src="' + url(q.k) + '" alt="">' + (S.pet === q.k ? '<i class="pon">장착</i>' : '') + '<b>' + q.n + '</b><span>' + (qo ? 'Lv.' + qo.lv + ' ' + '★' + qo.st : GN[q.g]) + '</span></div>' }).join('') + '</div>';
-    h += '<div class="note">펫 알은 상점 <b>펫 알 상자</b>, 필드 보스(6%), 보스 레이드 클리어 보상으로 얻어요.</div><button class="btn eq" data-a="back" style="width:100%;margin-top:6px">장비로 돌아가기</button>';
+    h += '<div class="note">펫 알은 상점 <b>펫 알 상자</b>, 필드 보스(2.5%), 보스 레이드 하루 첫 클리어 보상으로 얻어요.</div><button class="btn eq" data-a="back" style="width:100%;margin-top:6px">장비로 돌아가기</button>';
     return h;
   }
   function act(k, v) {
