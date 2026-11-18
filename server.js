@@ -94,10 +94,12 @@ const server = http.createServer(async (req, res) => {
 /* ---------------- WebSocket (직접 구현) ---------------- */
 const clients = new Map(); // id -> {sock, u, st}
 // 몬스터: 체력·죽음·리스폰·때린 사람 목록은 서버가 정함. 움직임은 쫓기는 사람(주인) 폰이 계산해서 보냄
+// Stable IDs of the two shared bosses in each region. Match the client spawn table.
+const SHARED_BOSSES = new Set([105, 106, 213, 214, 321, 322, 429, 430, 537, 538, 645, 646]);
 const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
 function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } else if (mx > 1 && m.max !== mx) { const fraction = m.max > 0 ? m.hp / m.max : 1; m.max = mx; if (!m.dead) m.hp = Math.max(1, Math.round(mx * fraction)); } return m; }
 const MONS_FILE = path.join(DATA, 'mons.json');
-try { for (const [i, g] of Object.entries(JSON.parse(fs.readFileSync(MONS_FILE, 'utf8')))) if (g.rt > Date.now()) mons.set(+i, { hp: 0, max: g.max, dead: true, hit: new Set(), own: null, last: 0, resp: g.resp, rt: g.rt }); } catch (e) {}
+try { for (const [i, g] of Object.entries(JSON.parse(fs.readFileSync(MONS_FILE, 'utf8')))) if (SHARED_BOSSES.has(+i) && g.rt > Date.now()) mons.set(+i, { hp: 0, max: g.max, dead: true, hit: new Set(), own: null, last: 0, resp: g.resp, rt: g.rt }); } catch (e) {}
 function saveMons() { const o = {}; for (const [i, g] of mons) if (g.dead && g.rt > Date.now() && g.resp >= 60) o[i] = { max: g.max, resp: g.resp, rt: g.rt }; fs.writeFile(MONS_FILE, JSON.stringify(o), () => {}); }
 function release(id) { for (const [i, m] of mons) if (m.own === id) { m.own = null; broadcast({ t: 'mo', i, o: null }); } }
 function wsSend(sock, obj) {
@@ -162,13 +164,14 @@ function onMsg(c, m) {
     c.dirty = true;
     if (Array.isArray(m.mp)) { const mp = []; for (let k = 0; k + 2 < m.mp.length && k < 300; k += 3) { const g = mons.get(m.mp[k] | 0); if (g && g.own === c.u.id && !g.dead) mp.push(m.mp[k] | 0, n(m.mp[k + 1]), n(m.mp[k + 2])); } c.st.mp = mp; }
   } else if (m.t === 'h') { // 몬스터 때림
-    const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || i < 0 || i > 5000) return;
+    const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || !SHARED_BOSSES.has(i)) return;
     const g = mon(i, mx, +m.rs); if (g.dead) return;
     g.hp -= d; g.hit.add(c.u.id); g.last = Date.now();
     if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: g.resp }); saveMons(); g.hit.clear(); }
     else broadcast({ t: 'mh', i, hp: g.hp });
   } else if (m.t === 'c') { // 몬스터 주인 요청
-    const i = m.i | 0, g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs);
+    const i = m.i | 0; if (!SHARED_BOSSES.has(i)) return;
+    const g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs);
     if (!g.dead && (!g.own || !clients.has(g.own))) { g.own = c.u.id; broadcast({ t: 'mo', i, o: g.own }); }
   } else if (m.t === 'r') { const g = mons.get(m.i | 0); if (g && g.own === c.u.id) { g.own = null; broadcast({ t: 'mo', i: m.i | 0, o: null }); } }
   else if (m.t === 'p') wsSend(c.sock, { t: 'p', k: m.k });

@@ -16,15 +16,15 @@ function connect(){if(kicked)return;
  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
   if(m.t==='kick')return kick();
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
-   for(const g of mons){g.own=null;if(g.dead){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy}}
-   for(const[i,hp,dead,own,left]of m.ms){const g=mons[i];if(!g)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
-  else if(m.t==='mh'){const g=mons[m.i];if(g&&!g.dead)g.hp=Math.max(1,m.hp)}
-  else if(m.t==='mo'){const g=mons[m.i];if(g){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
-  else if(m.t==='mk'){const g=mons[m.i];if(g&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
-  else if(m.t==='mr'){const g=mons[m.i];if(g){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
-  else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[o.mp[k]];if(g&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
+   for(const g of sharedBosses){g.own=null;if(g.dead){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy}}
+   for(const[i,hp,dead,own,left]of m.ms){const g=mons[i];if(!g?.d.boss)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
+  else if(m.t==='mh'){const g=mons[m.i];if(g?.d.boss&&!g.dead)g.hp=Math.max(1,m.hp)}
+  else if(m.t==='mo'){const g=mons[m.i];if(g?.d.boss){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
+  else if(m.t==='mk'){const g=mons[m.i];if(g?.d.boss&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
+  else if(m.t==='mr'){const g=mons[m.i];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
+  else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[o.mp[k]];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
- ws.onclose=()=>{others.clear();ME=null;for(const g of mons)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
+ ws.onclose=()=>{others.clear();ME=null;for(const g of sharedBosses)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
 }
 function upd(o){const now=performance.now();let r=others.get(o.id);
  if(!r){r={id:o.id,buf:[],x:o.x,y:o.y,d:o.d,walk:0,swingT:0,sw:.3,sc:o.sc,trail:[],scarf:[],hitT:0,flS:1};others.set(o.id,r)}
@@ -37,7 +37,7 @@ function tick(dt){if(kicked)return;
  // 내 휘두르기 감지
  if(P.swingT>lastSw+.001)sc++;lastSw=P.swingT;
  sendT-=dt;if(sendT<=0&&ws&&ws.readyState===1){sendT=1/20;
-  const mp=[];for(const g of mons){if(g.dead)continue;
+  const mp=[];for(const g of sharedBosses){if(g.dead)continue;
    if(g.agg&&!g.own&&(g.claimT||0)<=0){g.claimT=.5;ws.send(JSON.stringify({t:'c',i:g.i,mx:g.d.hp,rs:g.d.resp}))}
    if(g.own===ME){if(!g.agg){g.own=null;ws.send(JSON.stringify({t:'r',i:g.i}))}else mp.push(g.i,Math.round(g.x),Math.round(g.y))}}
   ws.send(JSON.stringify({t:'s',mp,x:P.x,y:P.y,d:P.dir,mv:P.moving,sc,sw:P.sw,w:S.slots[0],h:S.hero,hp:P.hp/ST.maxhp,lv:S.lv,rank:promotionRank(),dead:P.dead}))}
@@ -48,7 +48,7 @@ function tick(dt){if(kicked)return;
    else{const c=b[b.length-1];x=c.x;y=c.y;d=c.d}}
   const dist=Math.hypot(x-r.x,y-r.y);r.walk+=dist*.09;r.moving=r.mv&&dist>.05||dist>.6;
   if(dist>400){r.walk=0}r.x=x;r.y=y;r.d=d;if(r.swingT>0)r.swingT=Math.max(0,r.swingT-dt)}
- for(const g of mons){if(g.claimT>0)g.claimT-=dt;if(g.dead&&g.respT>0&&on())g.respT-=dt}
+ for(const g of sharedBosses){if(g.claimT>0)g.claimT-=dt;if(g.dead&&g.respT>0&&on())g.respT-=dt}
  saveT-=dt;if(saveDirty&&saveT<=0)pushSave()}
 
 // 다른 플레이어 그리기: 내 캐릭터 그리는 함수를 그대로 빌려 씀 (스킬·이펙트·보조무기 없음)
@@ -59,9 +59,9 @@ function draw(r){if(r.dead)return;const sv={};for(const k of KEYS)sv[k]=P[k];con
  window.REM=r;try{drawPlayer()}catch(e){}window.REM=null;
  for(const k of KEYS)P[k]=sv[k];S.slots[0]=s0;S.hero=hero;S.lv=lv}
 function on(){return !!(ws&&ws.readyState===1&&ME)}
-function hit(m,d){if(on())ws.send(JSON.stringify({t:'h',i:m.i,d,mx:m.d.hp,rs:m.d.resp}))}
+function hit(m,d){if(m.d.boss&&on())ws.send(JSON.stringify({t:'h',i:m.i,d,mx:m.d.hp,rs:m.d.resp}))}
 // 다른 사람이 쫓고 있는 몬스터: 받은 위치로 부드럽게 이동만
-function remote(m,dt){if(!on()||!m.own||m.own===ME)return false;m.ph+=dt*6;if(m.rx!==undefined){const k=Math.min(1,dt*10);m.x+=(m.rx-m.x)*k;m.y+=(m.ry-m.y)*k}m.agg=false;return true}
+function remote(m,dt){if(!m.d.boss||!on()||!m.own||m.own===ME)return false;m.ph+=dt*6;if(m.rx!==undefined){const k=Math.min(1,dt*10);m.x+=(m.rx-m.x)*k;m.y+=(m.ry-m.y)*k}m.agg=false;return true}
 function list(){return others.values()}
 
 // 서버 저장
