@@ -40,3 +40,5 @@
 .defense-prizes span,.defense-earned span{display:inline-flex;align-items:center;gap:2px;font-size:13px}
 .defense-prizes :is(svg,img),.defense-earned :is(svg,img){width:18px;height:18px;object-fit:contain}
 .defense-earned{display:flex;justify-content:center;gap:10px}
+
+.defense-stage-art-6{--stage-art:url('assets/tile2_0.webp')}.defense-stage-art-7{--stage-art:url('assets/tile2_1.webp')}.defense-stage-art-8{--stage-art:url('assets/tile2_2.webp')}.defense-stage-art-9{--stage-art:url('assets/tile2_4.webp')}.defense-stage-art-10{--stage-art:url('assets/tile2_5.webp')}

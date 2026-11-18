@@ -22,7 +22,7 @@ window.DEFENSE = (() => {
   const swings = new Map();
   let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0, rooms = [];
   let rewards = [], remaining = null, selectedStage = 1;
-  const stageNames = ['숲길 초소','사막 관문','마력 수풀','서리 전초기지','화산 방벽'];
+  const stageNames = ['숲길 초소','사막 관문','마력 수풀','서리 전초기지','화산 방벽','해안 부두','버섯 늪 둑','수정 갱도','하늘 성벽','용의 관문'];
 
   const button = (action, label, disabled = false) =>
     '<button type="button" data-defense="' + action + '" ' + (disabled ? 'disabled' : '') + '>' + label + '</button>';
@@ -132,14 +132,14 @@ window.DEFENSE = (() => {
   function updateHud() {
     const stage = $('defense-stage');
     if (!stage) return;
-    stage.textContent = state.stage + '/5단계 · ' + state.lanes.map(d => directions[d]).join('·') + ' · ' + state.timer + '초';
+    stage.textContent = state.stage + '/' + stageNames.length + '단계 · ' + state.lanes.map(d => directions[d]).join('·') + ' · ' + state.timer + '초';
     $('defense-hp').textContent = '모닥불 ' + state.camp + ' / ' + state.campMax;
     $('defense-meter').value = state.camp / state.campMax * 100;
     const notice = $('defense-notice'), me = state.players.find(p => p.id === NET.me());
     if (state.phase === 'cleared' || state.phase === 'failed') {
       const clear=state.phase==='cleared', reward=state.reward;
       const available=clear&&reward&&S.defenseResultClaim!==state.resultId;
-      const unlock = clear && state.stage === best && best < 5 ? '<p>'+(best+1)+'단계 방을 만들 수 있어요.</p>' : '';
+      const unlock = clear && state.stage === best && best < stageNames.length ? '<p>'+(best+1)+'단계 방을 만들 수 있어요.</p>' : '';
       notice.className = 'defense-result';
       notice.innerHTML = '<h2>' + (clear ? state.stage+'단계 방어 성공!' : '방어 실패') + '</h2>' +
         (clear&&reward?'<p>'+(available?(reward.first?'오늘 첫 클리어 보상':'반복 클리어 보상'):'보상 수령 완료')+'</p><div class="defense-earned">'+rewardItems(reward)+'</div>':'') +
@@ -156,7 +156,7 @@ window.DEFENSE = (() => {
     if (!visible) return;
     if (message.t === 'defenseInfo') {
       best=message.best; rooms=message.rooms||[]; rewards=message.rewards||[]; remaining=message.remaining;
-      selectedStage=Math.min(5,best+1);
+      selectedStage=Math.min(stageNames.length,best+1);
       if (!state) screen();
       return;
     }
@@ -218,7 +218,7 @@ window.DEFENSE = (() => {
     if (action === 'start') return NET.defense('start');
     if (action === 'ready') return loadout(!state.players.find(p => p.id === NET.me())?.ready);
     if(action==='claim'&&state?.phase==='cleared'&&state.reward&&S.defenseResultClaim!==state.resultId){
-      S.defenseResultClaim=state.resultId;
+      S.defenseResultClaim=state.resultId;trackTask('defense');
       markRewardOrigin(clicked);
       give({gold:Math.round(state.reward.gold*defGoldMult()),scr:state.reward.scr});
       save();

@@ -83,6 +83,7 @@ window.RAID = (() => {
     if (!prev || prev.phase === 'lobby' || state.phase === 'lobby' && prev.phase !== 'lobby' || state.phase !== 'lobby' && !$('raid-canvas')) screen();
     else if (state.phase === 'lobby') screen();
     if (state.phase === 'lobby' && !statsSent) { statsSent = true; loadout(false); }
+    if (state.phase === 'cleared' && S.raidSeen !== state.resultId) { S.raidSeen = state.resultId; const bk = collectionState(); bk.monsters['raid' + state.boss] = (bk.monsters['raid' + state.boss] || 0) + 1; S.bossKills = S.bossKills || {}; S.bossKills['raid' + state.boss] = (S.bossKills['raid' + state.boss] || 0) + 1; trackTask('raid'); trackTask('boss'); save(); }
     if (state.phase !== 'lobby') {
       if (!arena || prev?.phase === 'lobby') resetCombat();
       const b = state.b;

@@ -3,9 +3,10 @@
 const WIDTH = 1920, HEIGHT = 2560, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
 const HEAL_RADIUS = 34, DAILY_LIMIT = 10;
 const dayKey = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
-const REWARDS = Array.from({ length: 5 }, (_, i) => ({
-  first: { gold: 3000 * (i + 1), scr: 2 * (i + 1) },
-  repeat: { gold: 600 * (i + 1), scr: Math.ceil((i + 1) / 2) }
+// 1~5단계: 챕터 1 · 6~10단계: 챕터 2 몬스터 (금화는 클라이언트에서 지역 금화 배율을 곱함)
+const REWARDS = Array.from({ length: 10 }, (_, i) => ({
+  first: { gold: 3000 * (i + 1) * (i >= 5 ? 3 : 1), scr: 2 * (i + 1) },
+  repeat: { gold: 600 * (i + 1) * (i >= 5 ? 3 : 1), scr: Math.ceil((i + 1) / 2) }
 }));
 const ENTRIES = {
   north: [CENTER_X, 60], east: [WIDTH - 54, CENTER_Y],
@@ -17,8 +18,14 @@ const WAVES = [
   { type: 'cactus', count: 7, hp: 4700 },
   { type: 'toxic', count: 9, hp: 6500 },
   { type: 'yeti', count: 10, hp: 8500 },
-  { type: 'magma', count: 11, hp: 9500 }
+  { type: 'magma', count: 11, hp: 9500 },
+  { type: 'c2crab', count: 10, hp: 4e6, dmg: 2e4 },
+  { type: 'c2frog', count: 11, hp: 1e7, dmg: 5e4 },
+  { type: 'c2gem', count: 11, hp: 2.5e7, dmg: 1e5 },
+  { type: 'c2ghost', count: 12, hp: 4e7, dmg: 2e5 },
+  { type: 'c2drake', count: 12, hp: 8e7, dmg: 4e5 }
 ];
+const BOSSES = { 5: { type: 'volc', hp: 38000, dmg: 2100 }, 10: { type: 'c2dragon', hp: 1.5e9, dmg: 1.6e6 } };
 
 module.exports = function createDefense(clients, send, markDirty) {
   const rooms = new Map(), memberships = new Map();
@@ -95,11 +102,10 @@ module.exports = function createDefense(clients, send, markDirty) {
     const wave = WAVES[room.stage - 1];
     room.queue = [];
     for (let i = 0; i < wave.count; i++) {
-      for (const lane of room.lanes) room.queue.push({ lane, type: wave.type, hp: wave.hp, boss: false, at: i * 1.15 });
+      for (const lane of room.lanes) room.queue.push({ lane, type: wave.type, hp: wave.hp * (1 + .35 * (room.lanes.length - 1)), boss: false, at: i * 1.15, dmg: wave.dmg });
     }
-    if (room.stage === WAVES.length) {
-      room.queue.push({ lane: room.lanes[0], type: 'volc', hp: 38000 * (1 + .65 * (room.lanes.length - 1)), boss: true, at: 14 });
-    }
+    const B = BOSSES[room.stage];
+    if (B) room.queue.push({ lane: room.lanes[0], type: B.type, hp: B.hp * (1 + .65 * (room.lanes.length - 1)), boss: true, at: 14, dmg: B.dmg });
     room.waveTime = 0;
   }
 
@@ -142,8 +148,8 @@ module.exports = function createDefense(clients, send, markDirty) {
     const player = room.players.get(id);
     if (room.phase === 'lobby') {
       if (message.action === 'loadout') {
-        player.attack = clamp(message.attack, 8, 15000);
-        player.maxHp = clamp(message.hp, 100, 60000);
+        player.attack = clamp(message.attack, 8, 5e7);
+        player.maxHp = clamp(message.hp, 100, 5e9);
         player.leech = clamp(message.leech, 0, .35);
         player.speed = clamp(message.speed, 155, 265);
         player.hero = String(message.hero || 'adv').slice(0, 20);
@@ -236,7 +242,7 @@ module.exports = function createDefense(clients, send, markDirty) {
             e.cooldown = e.boss ? 1.45 : 1.2;
             if (!target) room.camp = Math.max(0, room.camp - (e.boss ? 55 : 9 + room.stage * 2));
             else {
-              target.hp = Math.max(0, target.hp - (e.boss ? 2100 : 360 + room.stage * 130));
+              target.hp = Math.max(0, target.hp - (e.dmg || (e.boss ? 2100 : 360 + room.stage * 130)));
               if (target.hp === 0) target.revive = 6;
             }
           }
