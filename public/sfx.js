@@ -39,7 +39,8 @@ window.SFX = (() => {
   }
   // 화면 밖·먼 소리는 작게, 같은 소리가 너무 자주 겹치지 않게
   function play(name, o = {}) {
-    if (!ctx || !on.sfx || document.hidden) return;
+    // 소리 장치가 멈춰 있으면(폰 화면 꺼짐·탭 전환·첫 터치 전) 요청을 쌓지 말고 버림 → 나중에 한꺼번에 터지는 일 방지
+    if (!ctx || !on.sfx || document.hidden || ctx.state !== 'running') return;
     const now = ctx.currentTime, gap = o.gap ?? (name.startsWith('hit') ? .11 : name.startsWith('sw_') ? .13 : name === 'coin' ? .07 : name === 'explode' || name === 'skill' ? .6 : .06);
     if (last[name] && now - last[name] < gap) return; last[name] = now;
     if (live > 8) return;
@@ -48,6 +49,7 @@ window.SFX = (() => {
     const arr = LIST[name] || [name], n = arr[Math.floor(Math.random() * arr.length)], b = buf[n];
     if (!b) { load(n); return; }
     const s = ctx.createBufferSource(), g = ctx.createGain();
+    if (o.x !== undefined && window.P && Math.hypot(o.x - P.x, o.y - P.y) > 900) return;
     s.buffer = b; s.playbackRate.value = (o.rate || 1) * (o.fixed ? 1 : .94 + Math.random() * .12);
     g.gain.value = v; s.connect(g);
     if (o.x !== undefined && ctx.createStereoPanner && window.P) { const p = ctx.createStereoPanner(); p.pan.value = Math.max(-.7, Math.min(.7, (o.x - P.x) / 600)); g.connect(p); p.connect(sfxGain); } else g.connect(sfxGain);
