@@ -23,3 +23,5 @@
 .feature-progress i{border-radius:3px}
 #pop .px{background:url(assets/ui2_close.webp) center/contain no-repeat!important;border:0!important;box-shadow:none!important;font-size:0!important;color:transparent!important}
 #pop .px *{display:none}
+.map-pin{min-width:0!important;min-height:0!important;padding:2px 6px!important;font-size:11px!important;white-space:nowrap;border-radius:7px!important;line-height:1.1!important}
+.map-pin small{font-size:9.5px!important;margin-top:1px!important}
