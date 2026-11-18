@@ -1,4 +1,4 @@
-// 링구 RPG 멀티 서버 — 외부 패키지 없이 Node만으로 동작
+// 링구 HERO 멀티 서버 — 외부 패키지 없이 Node만으로 동작
 // 정적 파일 + 회원가입/로그인/저장 API + 실시간 WebSocket(/ws)
 'use strict';
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
@@ -197,4 +197,4 @@ setInterval(() => {
   for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
 }, 50);
 
-server.listen(PORT, () => console.log('링구 RPG 서버 실행 중: 포트 ' + PORT));
+server.listen(PORT, () => console.log('링구 HERO 서버 실행 중: 포트 ' + PORT));
