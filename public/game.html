@@ -322,8 +322,9 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .reward-alert::after{content:'!';position:absolute;right:-4px;top:-5px;width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #fff4dc;font:bold 13px/1 sans-serif;box-shadow:0 2px 4px #0006;pointer-events:none;z-index:5}
 .task-ready,.activity-rewards>button.task-ready{background:linear-gradient(#9be845,#43a522)!important;color:#fff!important;border-color:#b6f16b!important;box-shadow:inset 0 -3px 0 #267719;text-shadow:0 1px 2px #34651c}
 .activity-total{margin:8px 0 14px;padding:10px 12px;background:#211c38;border-radius:10px;color:#fff4dc}.activity-total>div:first-child{display:flex;justify-content:space-between;font-size:12px}.activity-total .feature-progress{height:13px;margin-top:8px}.activity-total .feature-progress i{background:linear-gradient(#a7ed62,#46b43b);transition:width .25s}
+.vip-benefits{background:#2e2944;border:1px solid #b28b45;border-radius:12px;padding:18px;margin:14px 0;line-height:1.6}.vip-benefits h3{color:#ffd36a}.vip-benefits p{font-size:14px;margin:10px 0}.vip-benefits small{font-size:11px;color:#c8c0d8}
 </style>
-<link rel="stylesheet" href="tower.css?v=1">
+<link rel="stylesheet" href="tower.css?v=2">
 </head>
 <body>
 <div id="game">
@@ -764,8 +765,16 @@ function exchangeOffers(){
  const gold=Math.max(1,Math.floor(ST.bag))*3;
  return [['gold',gold,0],['gold',gold*5,20],['gold',gold*27,100],['orb',2,0],['orb',10,20],['orb',54,100],['rb',1,0],['rb',5,20],['rb',27,100]];
 }
+const VIP_PRICE=3000,VIP_DURATION=30*24*3600e3;
+function vipActive(){return Number(S.vipUntil||0)>Date.now()}
+function vipRemaining(){return Math.max(0,Math.ceil((Number(S.vipUntil||0)-Date.now())/86400000))}
+function benefitsPanel(){
+ const end=vipActive()?new Date(S.vipUntil).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'';
+ return '<div class="feature-head"><img src="assets/adventurer_rank_5.webp" alt="VIP"><div><b>VIP 30일권</b><small>탑 보상 2배 받기 · 매일 최대 3회<br>'+(vipActive()?'이용 중 · '+vipRemaining()+'일 남음':'구매 즉시 30일간 적용')+'</small></div></div><div class="vip-benefits"><h3>VIP 특전</h3><p>탑 승리·소탕 보상을 하루 3회까지 무료로 2배 받을 수 있어요.</p><p>골드·보석·주문서 보상에 적용됩니다.</p><p>추가 구매하면 남은 기간에 30일이 더해져요.</p>'+(end?'<small>만료: '+end+' (한국 시간)</small>':'')+'</div><button class="growth-button" data-a="buyvip" '+(S.gem<VIP_PRICE?'disabled':'')+'>'+IC.gem+' 보석 '+fmt(VIP_PRICE)+' · '+(vipActive()?'30일 연장':'30일 구매')+'</button>';
+}
 function shopTabs(exchange=false){
- return '<div class="tabs"><button class="tab '+(!exchange?'on':'')+'" data-a="goshop">상자</button><button class="tab '+(exchange?'on':'')+'" data-a="exchangego">교환</button></div>';
+ const tab=exchange===true?'exchange':exchange||'shop';
+ return '<div class="tabs">'+[['shop','상자','goshop'],['exchange','교환','exchangego'],['benefits','특전','benefits']].map(([key,label,action])=>'<button class="tab '+(tab===key?'on':'')+'" data-a="'+action+'">'+label+'</button>').join('')+'</div>';
 }
 function exchangePanel(){
  const rows=exchangeOffers();
@@ -823,6 +832,8 @@ function featureAct(action,value){
   const i=+value;if(!Number.isInteger(i)||i<0||i>=6||!stageClear(i)||(S.stageClaimed||{})[i])return true;
   S.stageClaimed=S.stageClaimed||{};S.stageClaimed[i]=true;S.gem+=STAGE_GEMS[i];save();toast('스테이지 '+(i+1)+' · 보석 '+STAGE_GEMS[i]+'개 획득!');
  }
+ else if(action==='benefits'){panel='benefits'}
+ else if(action==='buyvip'){if(S.gem<VIP_PRICE){toast('보석이 부족해요');return true}S.gem-=VIP_PRICE;S.vipUntil=Math.max(Date.now(),Number(S.vipUntil)||0)+VIP_DURATION;save();toast('VIP 30일 적용!');panel='benefits'}
  else if(action==='exchangego'){panel='exchange'}
  else if(action==='exchange'){
   const list=exchangeOffers(),entry=list[+value];
@@ -1572,6 +1583,7 @@ function close(){closePop();swapKey=null;mergeSel=null;panel=null;lastGot=[];res
 function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'),F=$('mfoot');F.innerHTML='';
  if(panel==='collection'||panel==='collectionDetail'){$('mtitle').textContent='도감';cur(['gem']);B.innerHTML=panel==='collection'?collectionPanel():collectionDetail();F.innerHTML=collectionClaimButton()+'<div class="tabs">'+['weapon','monster'].map(k=>'<button class="tab '+(bookTab===k?'on':'')+'" data-a="booktab:'+k+'">'+(k==='weapon'?'무기':'몬스터')+'</button>').join('')+'</div>'}
  else if(panel==='tasks'){$('mtitle').textContent=taskTab==='weekly'?'주간 임무':'일일 임무';cur(['gem']);B.innerHTML=tasksPanel();F.innerHTML='<div class="tabs"><button class="tab" data-a="goatt">출석</button><button class="tab '+(taskTab==='daily'?'on':'')+'" data-a="tasktab:daily">일일</button><button class="tab '+(taskTab==='weekly'?'on':'')+'" data-a="tasktab:weekly">주간</button></div>'}
+ else if(panel==='benefits'){$('mtitle').textContent='상점 · 특전';cur(['gem']);B.innerHTML=benefitsPanel();F.innerHTML=shopTabs('benefits')}
  else if(panel==='exchange'){$('mtitle').textContent='상점 · 교환';cur(['gem']);B.innerHTML=exchangePanel();F.innerHTML=shopTabs(true)}
  else if(panel==='up'){$('mtitle').textContent='강화';cur(['rb','orb','gold']);
   if(window.UPT==='sp'){const sp=S.sp||{};B.innerHTML=promotionPanel()+`<div class="note">특수 능력은 <b style="color:#ff8a2b">오브</b>로만 강화할 수 있어요. 오브는 정예 몬스터와 보스가 떨어뜨려요.</div>`+Object.keys(SPU).map(k=>{const u=SPU[k],l=sp[k]||0,mx=l>=SPMAX,c=spCost(l);
@@ -1641,7 +1653,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   for(const a of L){if(a.g!==g){g=a.g;h+=`<div class="note" style="color:#ffd23c;padding:10px 0 4px;text-align:left">${g}</div>`}const u=AURL[a.n];h+=`<div class="row arow"><div class="ric">${u?`<img src="${u}">`:'<span style="font-size:11px;color:#777196">기본</span>'}</div><div class="rin"><h4 style="font-size:14px">${a.d}</h4><p>${a.n}.png · ${a.sz}${BAKED[a.n]&&!LOCAL[a.n]?' · 게임에 들어감':LOCAL[a.n]?' · 이 기기에만':''}</p></div><label class="btn eq upl" style="min-width:60px;padding:6px 6px 9px">넣기<input type="file" accept="image/*" data-up="${a.n}"></label>${LOCAL[a.n]?`<button class="btn no" data-a="adel:${a.n}" style="min-width:48px;padding:6px 4px 9px">빼기</button>`:''}</div>`}
   B.innerHTML=h}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0420 (도전의 탑·활동도 알림)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">주간 활동</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1118-0440 (탑 확장·VIP 특전)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(featureAct(k,v))return;if(k==='adm'&&!window.IS_ADMIN)return;
  if(k==='goatt'){panel='att'}else if(k==='goshop'){panel='shop'}
  else if(k==='soon'){toast('준비 중이에요');return}
@@ -1730,6 +1742,6 @@ function frame(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;if(window.TOWER
 window.__G={WW,WH,CX,CY,gz,ZC,buyBox,BOX,useSkill,openPop,renderPop,gptGuide,AI,setAsset,assetSlots,attack,HERO,sqG,worldMap,BLD,subPos,zoneOpen,inStage,walk,ZB,obs,S:()=>S,P,ST,mons,drops,update,render,hud,open,act,close,joy,calc};
 qlv();loadAssets();requestAnimationFrame(frame);
 </script>
-<script src="tower.js?v=1"></script>
+<script src="tower.js?v=2"></script>
 </body>
 </html>
