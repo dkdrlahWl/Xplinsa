@@ -71,7 +71,7 @@ module.exports = function createDefense(clients, send, markDirty) {
   function join(client, room) {
     const id = client.u.id;
     room.players.set(id, { id, nick: client.u.nick, ready: false, x: CENTER_X, y: CENTER_Y,
-      hp: 1, maxHp: 1, dir: 0, moving: false, swing: 0, dx: 0, dy: 0, attackIn: 0, inputAge: 0, revive: 0 });
+      hp: 1, maxHp: 1, dir: 0, moving: false, swing: 0, dx: 0, dy: 0, inputAge: 0, revive: 0 });
     memberships.set(id, room);
     sendRoom(room);
     publishRooms();
@@ -130,8 +130,7 @@ module.exports = function createDefense(clients, send, markDirty) {
       if (message.action === 'loadout') {
         player.attack = clamp(message.attack, 8, 15000);
         player.maxHp = clamp(message.hp, 100, 60000);
-        player.rate = clamp(message.rate, .55, 2.7);
-        player.multiplier = clamp(message.multiplier, .5, 2);
+        player.leech = clamp(message.leech, 0, .35);
         player.speed = clamp(message.speed, 155, 265);
         player.hero = String(message.hero || 'adv').slice(0, 20);
         player.weapon = String(message.weapon || 'sword_0').slice(0, 20);
@@ -153,6 +152,16 @@ module.exports = function createDefense(clients, send, markDirty) {
         sendRoom(room);
         publishRooms();
       }
+    } else if (message.action === 'hit' && room.phase === 'battle') {
+      const enemy = room.enemies.find(e => e.id === message.enemy && e.hp > 0);
+      if (!enemy || player.hp <= 0 || Math.hypot(player.x - CENTER_X, player.y - CENTER_Y) <= HEAL_RADIUS) return;
+      if (Math.hypot(player.x - enemy.x, player.y - enemy.y) > 470) return;
+      const damage = clamp(message.damage, 0, player.attack * 18);
+      enemy.hp -= damage;
+      player.hp = Math.min(player.maxHp, player.hp + damage * player.leech);
+    } else if (message.action === 'swing' && room.phase === 'battle' && player.hp > 0) {
+      player.dir = clamp(message.dir, -Math.PI, Math.PI);
+      player.swing++;
     } else if (message.action === 'move' && (room.phase === 'battle' || room.phase === 'prepare')) {
       const dx = clamp(message.x, -1, 1), dy = clamp(message.y, -1, 1);
       const scale = Math.max(1, Math.hypot(dx, dy));
@@ -191,19 +200,6 @@ module.exports = function createDefense(clients, send, markDirty) {
           const offset = (Math.random() - .5) * 54;
           room.enemies.push({ ...next, id: ++sequence, x: x + (x === CENTER_X ? offset : 0),
             y: y + (y === CENTER_Y ? offset : 0), maxHp: next.hp, cooldown: .8 });
-        }
-        for (const p of room.players.values()) {
-          if (p.hp <= 0 || Math.hypot(p.x - CENTER_X, p.y - CENTER_Y) <= HEAL_RADIUS) continue;
-          p.attackIn -= dt;
-          if (p.attackIn > 0) continue;
-          const nearby = room.enemies.filter(e => e.hp > 0 && Math.hypot(p.x - e.x, p.y - e.y) <= 100);
-          nearby.sort((a, b) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(p.x - b.x, p.y - b.y));
-          const target = nearby[0];
-          if (!target) continue;
-          p.dir = Math.atan2(target.y - p.y, target.x - p.x);
-          p.swing++; p.attackIn = 1 / p.rate;
-          target.hp -= p.attack * p.multiplier;
-          for (const e of nearby.slice(1, 4)) if (Math.hypot(e.x - target.x, e.y - target.y) < 65) e.hp -= p.attack * .35;
         }
         room.enemies = room.enemies.filter(e => e.hp > 0);
         for (const e of room.enemies) {

@@ -8,7 +8,14 @@ window.DEFENSE = (() => {
   background.src = 'assets/defense_camp.webp';
   const directions = { north: '북', east: '동', south: '남', west: '서' };
   const arrows = { north: [360, 63, '↓'], east: [658, 480, '←'], south: [360, 901, '↑'], west: [62, 480, '→'] };
-  const positions = new Map();
+  const positions = new Map(), targets = new Map();
+  let arena = null;
+  function resetCombat(){
+    arena = {player:{...P,atkCd:0,swingT:0,pend:null,s2:null,sk:[0,0,0,0,0,0],sub:{},extraT:0,trail:[],scarf:[]},
+      enemies:[],shots:[],nums:[],fxs:[],timers:[],
+      hit(enemy,damage){NET.defense('hit',{enemy:enemy.i,damage})}};
+    targets.clear();
+  }
   const swings = new Map();
   let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = 0, rooms = [];
 
@@ -16,11 +23,9 @@ window.DEFENSE = (() => {
     '<button type="button" data-defense="' + action + '" ' + (disabled ? 'disabled' : '') + '>' + label + '</button>';
 
   function loadout(ready) {
-    const weapon = WT[wType()];
     NET.defense('loadout', {
       ready, hero: S.hero, weapon: S.slots[0], attack: ST.atk, hp: ST.maxhp, speed: ST.spd,
-      rate: ST.aspd / weapon.cd,
-      multiplier: weapon.m * (weapon.hits || weapon.pel || 1)
+      leech: ST.ls
     });
   }
 
@@ -137,7 +142,18 @@ window.DEFENSE = (() => {
     state = message; best = state.best;
     if (!previous || previous.phase === 'lobby' || !$('defense-canvas')) screen();
     if (state.phase === 'lobby' && !statsSent) { statsSent = true; loadout(false); }
-    if (state.phase !== 'lobby') updateHud();
+    if (state.phase !== 'lobby') {
+      if (!arena || previous?.phase === 'lobby') resetCombat();
+      for (const target of targets.values()) target.dead = true;
+      arena.enemies = state.enemies.map(enemy=>{
+        const target=targets.get(enemy.id)||{i:enemy.id,z:0,type:enemy.type,ph:0,hitT:0,spawnT:0};
+        Object.assign(target,{x:enemy.x,y:enemy.y,hp:enemy.hp,dead:false,d:{...MT[enemy.type],hp:enemy.maxHp,boss:enemy.boss}});
+        targets.set(enemy.id,target);
+        return target;
+      });
+      for(const [id,target] of targets)if(target.dead)targets.delete(id);
+      updateHud();
+    }
   }
 
   function open() {
@@ -148,7 +164,7 @@ window.DEFENSE = (() => {
     joy.on = false; joy.x = joy.y = 0;
     P.moving = false; P.recall = null;
     for (const boss of sharedBosses) boss.agg = false;
-    positions.clear(); swings.clear();
+    positions.clear(); swings.clear(); arena=null;
     screen();
     NET.defense('info');
     NET.defense('resume');
@@ -156,7 +172,7 @@ window.DEFENSE = (() => {
 
   function exit() {
     NET.defense('leave');
-    visible = false; root.hidden = true; state = null; pointer = null;
+    visible = false; root.hidden = true; state = null; pointer = null; arena=null;
   }
 
   root.addEventListener('click', e => {
@@ -202,63 +218,96 @@ window.DEFENSE = (() => {
     if (canvas.width !== Math.round(w * dp) || canvas.height !== Math.round(h * dp)) {
       canvas.width = Math.round(w * dp); canvas.height = Math.round(h * dp);
     }
-    const g = canvas.getContext('2d'), scale = Math.min(w / WIDTH, h / HEIGHT) * dp;
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.clearRect(0, 0, canvas.width, canvas.height);
-    g.setTransform(scale, 0, 0, scale, (canvas.width - WIDTH * scale) / 2, (canvas.height - HEIGHT * scale) / 2);
-    if (background.complete && background.naturalWidth) g.drawImage(background, 0, 0, WIDTH, HEIGHT);
-    else { g.fillStyle = '#507643'; g.fillRect(0, 0, WIDTH, HEIGHT); }
-    g.beginPath(); g.arc(360, 480, 34, 0, Math.PI * 2);
-    g.fillStyle = '#94f8a849'; g.fill(); g.strokeStyle = '#b7ffba'; g.lineWidth = 2; g.stroke();
-    const camp = AI('bld_fire');
-    if (camp) g.drawImage(camp, 340, 440, 40, 44);
-    const time = performance.now();
-    const alive = new Set();
-    function smooth(key, entity) {
+    const g = canvas.getContext('2d'), zoom=w/430, scale=zoom*dp;
+    const time=performance.now(), alive=new Set();
+    function smooth(key, entity){
       alive.add(key);
-      const p = positions.get(key) || { x: entity.x, y: entity.y };
-      const t = Math.min(1, dt * 13);
-      p.x += (entity.x - p.x) * t; p.y += (entity.y - p.y) * t;
-      positions.set(key, p);
+      const p=positions.get(key)||{x:entity.x,y:entity.y};
+      const amount=Math.min(1,dt*17);
+      p.x+=(entity.x-p.x)*amount;p.y+=(entity.y-p.y)*amount;
+      positions.set(key,p);
       return p;
     }
-    const scene = [
-      ...state.enemies.map(e => ({ entity: e, pos: smooth('e' + e.id, e), monster: true })),
-      ...state.players.filter(p => p.hp > 0).map(p => ({ entity: p, pos: smooth('p' + p.id, p), monster: false }))
-    ].sort((a, b) => a.pos.y - b.pos.y);
-    const me = scene.find(item => !item.monster && item.entity.id === NET.me());
-    if (me) {
-      g.beginPath(); g.arc(me.pos.x, me.pos.y, 100, 0, Math.PI * 2);
-      g.strokeStyle = '#ffffff75'; g.stroke();
-    }
-    for (const item of scene) {
-      const { entity, pos, monster } = item;
-      let marker = pos.y - 68;
-      if (monster) {
-        const sprite = AI('mon_' + entity.type), width = entity.boss ? 112 : 52;
-        const height = sprite ? width * sprite.height / sprite.width : width;
-        if (sprite) g.drawImage(sprite, pos.x - width / 2, pos.y - height, width, height);
-        else { g.fillStyle = '#b55d31'; g.fillRect(pos.x - 14, pos.y - 26, 28, 26); }
-        marker = pos.y - height - 7;
-      } else {
-        drawHero(entity, pos, g, time);
-        g.font = 'bold 21px sans-serif'; g.textAlign = 'center';
-        g.lineWidth = 4; g.strokeStyle = '#29202d'; g.strokeText(entity.nick || '모험가', pos.x, marker - 7);
-        g.fillStyle = '#fff'; g.fillText(entity.nick || '모험가', pos.x, marker - 7);
+    const you=state.players.find(p=>p.id===NET.me());
+    if(!you||!arena)return;
+    const focus=smooth('p'+you.id,you),viewW=w/zoom,viewH=h/zoom;
+    const follow=(value,size,view)=>view>=size?size/2:clamp(value,view/2,size-view/2);
+    const camX=follow(focus.x,WIDTH,viewW),camY=follow(focus.y-20,HEIGHT,viewH);
+    g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,canvas.width,canvas.height);
+    g.setTransform(scale,0,0,scale,canvas.width/2-camX*scale,canvas.height/2-camY*scale);
+    if(background.complete&&background.naturalWidth)g.drawImage(background,0,0,WIDTH,HEIGHT);
+    else{g.fillStyle='#507643';g.fillRect(0,0,WIDTH,HEIGHT)}
+    g.beginPath();g.arc(360,480,34,0,Math.PI*2);
+    g.fillStyle='#94f8a849';g.fill();g.strokeStyle='#b7ffba';g.lineWidth=2;g.stroke();
+    const camp=AI('bld_fire');
+    if(camp){const size=90;g.drawImage(camp,360-size/2,500-size*camp.height/camp.width,size,size*camp.height/camp.width)}
+    withArenaCombat(arena,()=>{
+      ctx=g;PV=0;
+      const scene=arena.enemies.map(enemy=>({y:enemy.y,draw(){
+        const pos=smooth('e'+enemy.i,enemy);
+        drawMon({...enemy,x:pos.x,y:pos.y});
+      }}));
+      for(const player of state.players){
+        if(player.hp<=0)continue;
+        const pos=player.id===you.id?focus:smooth('p'+player.id,player);
+        scene.push({y:pos.y,draw(){
+          if(player.id===you.id){
+            const x=P.x,y=P.y;P.x=pos.x;P.y=pos.y;
+            try{drawPlayer()}finally{P.x=x;P.y=y}
+          }else{
+            drawHero(player,pos,g,time);
+            g.font='bold 15px sans-serif';g.textAlign='center';
+            g.strokeStyle='#211a35';g.lineWidth=3;g.strokeText(player.nick||'모험가',pos.x,pos.y-65);
+            g.fillStyle='#fff';g.fillText(player.nick||'모험가',pos.x,pos.y-65);
+          }
+        }});
       }
-      g.fillStyle = '#2b2434'; g.fillRect(pos.x - 23, marker, 46, 7);
-      g.fillStyle = monster ? '#ff6461' : '#89ed71';
-      g.fillRect(pos.x - 21, marker + 1, 42 * entity.hp / entity.maxHp, 5);
+      scene.sort((a,b)=>a.y-b.y);
+      for(const item of scene)item.draw();
+      drawCombatEffects();
+    });
+    for(const key of positions.keys())if(!alive.has(key))positions.delete(key);
+    if(pointer){
+      const bounds=canvas.getBoundingClientRect();
+      const x=pointer.ox-bounds.left,y=pointer.oy-bounds.top;
+      g.setTransform(dp,0,0,dp,0,0);
+      g.fillStyle='#1c183059';g.beginPath();g.arc(x,y,44,0,Math.PI*2);g.fill();
+      g.fillStyle='#ffffffcc';g.beginPath();g.arc(x+pointer.x*36,y+pointer.y*36,19,0,Math.PI*2);g.fill();
     }
-    for (const key of positions.keys()) if (!alive.has(key)) positions.delete(key);
     if (state.phase === 'prepare') {
-      g.font = 'bold 54px sans-serif'; g.textAlign = 'center';
+      g.setTransform(dp,0,0,dp,0,0);
+      g.font = 'bold 32px sans-serif'; g.textAlign = 'center';
       g.fillStyle = '#fff0a1'; g.strokeStyle = '#403055'; g.lineWidth = 6;
       for (const lane of state.lanes) {
-        const [x, y, symbol] = arrows[lane];
-        g.strokeText(symbol, x, y + 20); g.fillText(symbol, x, y + 20);
+        const symbol=arrows[lane][2];
+        const x=lane==='east'?w-25:lane==='west'?25:w/2;
+        const y=lane==='north'?119:lane==='south'?h-42:h/2;
+        g.strokeText(symbol,x,y);g.fillText(symbol,x,y);
       }
     }
+  }
+
+  function fight(dt){
+    const me=state.players.find(p=>p.id===NET.me());
+    if(!arena||!me)return;
+    withArenaCombat(arena,()=>{
+      T+=dt;
+      if(me.hp<P.hp&&me.hp>0){P.hitT=.2;num(me.x,me.y-56,'-'+fmt(P.hp-me.hp),'#ff6b6b')}
+      Object.assign(P,{x:me.x,y:me.y,hp:me.hp,dead:me.hp<=0,moving:me.moving});
+      if(P.swingT<=0&&me.moving)P.dir=me.dir;
+      if(P.moving)P.walk+=dt*11*Math.min(1.5,ST.spd/190);
+      if(state.phase==='battle'&&!P.dead&&Math.hypot(P.x-360,P.y-480)>34){
+        const prior=P.pend;
+        stepPlayerCombat(dt);
+        if(P.pend&&P.pend!==prior)NET.defense('swing',{dir:P.dir});
+        stepCombatShots(dt);
+      }else{
+        P.pend=null;P.s2=null;P.extraT=0;P.swingT=0;
+        arena.timers.length=0;arena.shots.length=0;
+      }
+      for(const enemy of arena.enemies){enemy.ph+=dt*6;enemy.hitT-=dt}
+      stepCombatEffects(dt);
+    });
   }
 
   function tick(dt) {
@@ -267,11 +316,13 @@ window.DEFENSE = (() => {
       sendWait -= dt;
       if (sendWait <= 0) {
         sendWait = .07;
-        const x = pointer?.x ?? (Number(keys.d || keys.arrowright || false) - Number(keys.a || keys.arrowleft || false));
-        const y = pointer?.y ?? (Number(keys.s || keys.arrowdown || false) - Number(keys.w || keys.arrowup || false));
+        const stick = pointer && Math.hypot(pointer.x,pointer.y)>.075 ? pointer : null;
+        const x = stick?.x ?? (Number(keys.d || keys.arrowright || false) - Number(keys.a || keys.arrowleft || false));
+        const y = stick?.y ?? (Number(keys.s || keys.arrowdown || false) - Number(keys.w || keys.arrowup || false));
         NET.defense('move', { x, y });
       }
     }
+    if(['prepare','battle'].includes(state.phase))fight(dt);
     draw(dt);
   }
 
