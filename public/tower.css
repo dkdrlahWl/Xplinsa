@@ -3,3 +3,4 @@
 
 .tw-ready{position:absolute;inset:0;display:grid;place-items:center;font-size:68px;font-weight:bold;color:#fff4ae;text-shadow:0 4px 0 #1a2d42;pointer-events:none}.tw-ready[hidden]{display:none}.tw-actions button:disabled small{opacity:1;color:#fff}
 .tw-currencies{gap:5px}.tw-currencies>span{flex:1;min-width:0;padding:3px 4px;font-size:12px;gap:2px;white-space:nowrap}.tw-currencies img{width:20px;height:20px;flex:none}
+.tw-floor-up,.tw-floor-down{z-index:8}.tw-floor-up{top:8.6%!important}.tw-floor small{position:absolute;left:50%;transform:translateX(-50%);top:-22px;white-space:nowrap;z-index:2}
