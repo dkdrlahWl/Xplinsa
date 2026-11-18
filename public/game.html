@@ -1969,6 +1969,8 @@ function eqFree(k){return 0}
 const MK={tab:'buy',list:[],sel:null,cur:'gold',grade:-1,me:null,busy:false};
 function mkApi(a,o){return fetch('/api/market',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({token:localStorage.getItem('xp_token'),a},o||{}))}).then(r=>r.json())}
 function addWq(k,q){addW(k);const a=S.wq[k];a[a.length-1]=q}
+function giftCheck(){fetch('/api/gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),a:'claim'})}).then(r=>r.json()).then(j=>{for(const g of j.gifts||[]){const rw={};for(const k of['gold','gem','cry','orb','scr','myth','scl'])if(g[k])rw[k]=g[k];const t=give(rw);save();toast('🎁 '+(g.msg||'선물')+' · '+t)}}).catch(()=>{})}
+setTimeout(giftCheck,2500);
 function mkLoad(){mkApi('list').then(j=>{MK.list=j.list||[];MK.me=j.me;if(j.mail)mkClaim();if(panel==='market')draw()}).catch(()=>{})}
 function mkClaim(){mkApi('claim').then(j=>{const m=j.mail||[];if(!m.length)return;const g={gold:0,gem:0};for(const x of m){g.gold+=x.gold||0;g.gem+=x.gem||0}const rw={};if(g.gold)rw.gold=g.gold;if(g.gem)rw.gem=g.gem;toast('거래소 판매 대금 '+m.length+'건 · '+give(rw));save();if(panel==='market')draw()}).catch(()=>{})}
 function mkSpare(){return Object.keys(S.weapons).filter(k=>S.weapons[k]-eqCount(k)>0).sort((a,b)=>(+b.split('_')[1]-+a.split('_')[1])||(a<b?-1:1))}

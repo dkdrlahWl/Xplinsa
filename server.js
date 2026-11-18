@@ -29,6 +29,10 @@ const nickTaken = n => Object.values(db.users).some(u => u.nick && u.nick.toLowe
 /* ---------------- 거래소 ---------------- */
 // 무기를 금화·보석으로 사고팖. 판매 대금(수수료 10% 제외)은 판매자 우편함에 쌓였다가 접속 시 받음
 const MK_FILE = path.join(DATA, 'market.json');
+// 운영자 선물: id를 새로 추가하면 모든 유저가 다음 접속 때 1번 받음
+const GIFTS = [
+  { id: 'test-season-1', gem: 50000, msg: '테스트 시즌 선물' },
+];
 let mk = { list: [], mail: {}, seq: 0 };
 try { mk = Object.assign(mk, JSON.parse(fs.readFileSync(MK_FILE, 'utf8'))); } catch (e) {}
 const saveMk = () => { const t = MK_FILE + '.tmp'; fs.writeFile(t, JSON.stringify(mk), e => { if (!e) fs.rename(t, MK_FILE, () => {}); }); };
@@ -98,6 +102,11 @@ const server = http.createServer(async (req, res) => {
       const top = f => all.map(x => ({ n: x.nick || x.id, v: (x.save && f(x.save)) || 0, me: x.id === u.id })).sort((a, b) => b.v - a.v);
       const cut = l => { const i = l.findIndex(r => r.me); return { list: l.slice(0, 50), my: i >= 0 ? { rank: i + 1, ...l[i] } : null }; };
       return send(res, 200, { pow: cut(top(s => s.pow)), tower: cut(top(s => s.tower && s.tower.clear)) });
+    }
+    if (p === '/api/gift') { // 운영자 선물 (모든 유저 1번씩)
+      u.gifts = u.gifts || {}; const got = GIFTS.filter(g => !u.gifts[g.id]);
+      if (b.a === 'claim') { for (const g of got) u.gifts[g.id] = Date.now(); if (got.length) markDirty(); }
+      return send(res, 200, { gifts: got });
     }
     if (p === '/api/market') return market(u, b, res);
     if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus' });
