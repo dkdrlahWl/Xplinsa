@@ -234,7 +234,8 @@ setInterval(() => {
   const now = Date.now();
   for (const [i, g] of mons) {
     if (g.dead && now >= g.rt) { g.dead = false; g.hp = g.max; g.hit.clear(); broadcast({ t: 'mr', i }); }
-    else if (!g.dead && g.hp < g.max && !g.own && now - g.last > 8000) { g.hp = g.max; g.hit.clear(); broadcast({ t: 'mh', i, hp: g.hp }); }
+    // 원 안에 쫓는 사람이 없으면(주인 없음) 1.5초 뒤부터 빠르게 회복 (약 2.5초에 가득)
+    else if (!g.dead && g.hp < g.max && !g.own && now - g.last > 1500) { g.hp = Math.min(g.max, g.hp + g.max * .02); if (g.hp >= g.max) g.hit.clear(); if (g.hp >= g.max || (now / 50 | 0) % 4 === 0) broadcast({ t: 'mh', i, hp: g.hp }); }
   }
   for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); raid.leave(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
 }, 50);
