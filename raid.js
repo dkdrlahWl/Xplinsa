@@ -6,7 +6,7 @@ const dayKey = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 1
 // 레벨별 보스 능력치 (참가 인원에 따라 체력 증가). 하루 3시간 성장 기준으로 맞춤
 const bossHp = (lv, n) => Math.round(4.5e7 * Math.pow(1.22, lv - 1) * (1 + .75 * (n - 1)));
 const bossAtk = lv => Math.round(1e5 * Math.pow(1.15, lv - 1));
-const reward = lv => ({ myth: 3 + Math.floor(lv / 2), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
+const reward = lv => ({ myth: 2 + Math.floor(lv / 3), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
 
 module.exports = function createRaid(clients, send, markDirty) {
   const rooms = new Map(), memberships = new Map(), watchers = new Set();

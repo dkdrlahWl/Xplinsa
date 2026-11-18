@@ -8,8 +8,9 @@ window.RAID = (() => {
   let arena = null, localPosition = null, sentX = 0, sentY = 0, bossT = null;
   let state = null, visible = false, pointer = null, sendWait = 0, statsSent = false, best = [0, 0, 0, 0], rooms = [], remaining = null, selBoss = 0, selLv = 1;
   const btn = (a, label, dis = false, extra = '') => '<button type="button" data-raid="' + a + '" ' + extra + (dis ? ' disabled' : '') + '>' + label + '</button>';
+  const ui = (k, e) => AURL[k] ? '<img src="' + AURL[k] + '" style="width:20px;height:20px;vertical-align:-4px" alt="">' : e;
   const topGold = () => MT[ZS[topZone()].m[0]].gold;
-  const rw = lv => ({ myth: 3 + Math.floor(lv / 2), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
+  const rw = lv => ({ myth: 2 + Math.floor(lv / 3), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
   const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>';
   const bossImg = b => { const k = 'mon_raid' + b, al = ALIAS[k]; return AURL[k] ? '<img src="' + AURL[k] + '" alt="">' : al && AURL[al[0]] ? '<img src="' + AURL[al[0]] + '" style="filter:hue-rotate(' + al[1] + 'deg)" alt="">' : '' };
   function resetCombat() {
@@ -31,7 +32,7 @@ window.RAID = (() => {
     root.className = state && state.phase !== 'lobby' ? 'raid-arena' : 'raid-lobby';
     if (!state) {
       const mx = (best[selBoss] || 0) + 1; selLv = clamp(selLv, 1, mx);
-      root.innerHTML = '<header>보스 레이드' + btn('exit', '닫기') + '</header><div class="defense-card defense-browser"><div class="defense-section"><h2>방 만들기</h2><small class="defense-attempts">오늘 남은 보상 <b>' + (remaining ?? '…') + ' / 3</b></small></div>' +
+      root.innerHTML = '<header>' + (AURL.raid_banner ? '<span style="background:url(' + AURL.raid_banner + ') center/100% 100% no-repeat;padding:6px 26px 10px;color:#fff">보스 레이드</span>' : '보스 레이드') + btn('exit', '닫기') + '</header><div class="defense-card defense-browser"><div class="defense-section"><h2>방 만들기</h2><small class="defense-attempts">오늘 남은 보상 <b>' + (remaining ?? '…') + ' / 3</b></small></div>' +
         '<div class="raid-bosses">' + NAMES.map((n, i) => '<button type="button" data-raid="boss" data-b="' + i + '" aria-pressed="' + (i === selBoss) + '">' + bossImg(i) + '<b>' + n + '</b><small>최고 Lv.' + (best[i] || 0) + '</small></button>').join('') + '</div>' +
         '<div class="raid-lv">' + btn('lvm', '－', selLv <= 1) + '<b>Lv.' + selLv + '</b>' + btn('lvp', '＋', selLv >= mx) + '</div>' +
         '<div class="defense-prizes"><div><b>클리어 보상 (하루 3번)</b>' + items(rw(selLv)) + '</div></div>' +
@@ -42,9 +43,9 @@ window.RAID = (() => {
     }
     if (state.phase === 'lobby') {
       const host = state.host === NET.me(), me = state.players.find(p => p.id === NET.me());
-      root.innerHTML = '<header>보스 레이드 대기실' + btn('exit', '나가기') + '</header><div class="defense-card"><div class="raid-banner">' + bossImg(state.boss) + '<div><h2>' + NAMES[state.boss] + ' Lv.' + state.lv + '</h2><p>대기실 ' + state.players.length + '/4 · 방 번호 ' + state.code + '</p></div></div>' +
+      root.innerHTML = '<header>보스 레이드 대기실' + btn('exit', '나가기') + '</header><div class="defense-card"><div class="raid-banner" style="' + (AURL.raid_card ? 'background:url(' + AURL.raid_card + ') center/100% 100% no-repeat;padding:14px 16px' : '') + '">' + bossImg(state.boss) + '<div><h2>' + NAMES[state.boss] + ' Lv.' + state.lv + '</h2><p>대기실 ' + state.players.length + '/4 · 방 번호 ' + state.code + '</p></div></div>' +
         '<small class="defense-attempts">오늘 남은 보상 <b>' + (state.remaining ?? '…') + ' / 3</b></small><div class="defense-prizes"><div><b>클리어 보상</b>' + items(rw(state.lv)) + '</div></div><ul>' +
-        state.players.map((p, i) => '<li><b id="raid-m-' + i + '"></b><span>⚡ ' + fmt(p.pow || 0) + ' · ' + (p.id === state.host ? '👑 방장' : p.ready ? '✅ 준비 완료' : '대기 중') + '</span></li>').join('') + '</ul>' +
+        state.players.map((p, i) => '<li><b id="raid-m-' + i + '"></b><span>⚡ ' + fmt(p.pow || 0) + ' · ' + (p.id === state.host ? ui('raid_crown', '👑') + ' 방장' : p.ready ? ui('raid_ready', '✅') + ' 준비 완료' : '대기 중') + '</span></li>').join('') + '</ul>' +
         (host ? btn('start', '시작', !statsSent || state.players.some(p => p.id !== state.host && !p.ready)) : btn('ready', me?.ready ? '준비 취소' : '준비 완료')) + '<p id="raid-error" role="status"></p></div>';
       state.players.forEach((p, i) => { $('raid-m-' + i).textContent = p.nick || '모험가'; });
       return;

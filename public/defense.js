@@ -35,7 +35,7 @@ window.DEFENSE = (() => {
   }
 
   function rewardItems(reward){
-    return '<span>'+IC.gold+' '+Number(reward.gold).toLocaleString('ko-KR')+'</span><span>'+IC.scr+' '+reward.scr+'장</span>';
+    return '<span>'+IC.gold+' '+fmt(Math.round(reward.gold*defGoldMult()))+'</span><span>'+IC.scr+' '+reward.scr+'장</span>';
   }
 
   function rewardPreview(stage){
@@ -220,7 +220,7 @@ window.DEFENSE = (() => {
     if(action==='claim'&&state?.phase==='cleared'&&state.reward&&S.defenseResultClaim!==state.resultId){
       S.defenseResultClaim=state.resultId;
       markRewardOrigin(clicked);
-      give({gold:state.reward.gold,scr:state.reward.scr});
+      give({gold:Math.round(state.reward.gold*defGoldMult()),scr:state.reward.scr});
       save();
       updateHud();
     }

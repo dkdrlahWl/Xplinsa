@@ -26,6 +26,38 @@ const hashPw = (pw, salt) => crypto.scryptSync(pw, salt, 32).toString('hex');
 const byToken = t => { if (!t) return null; for (const id in db.users) if (db.users[id].token === t) return db.users[id]; return null; };
 const nickTaken = n => Object.values(db.users).some(u => u.nick && u.nick.toLowerCase() === n.toLowerCase());
 
+/* ---------------- 거래소 ---------------- */
+// 무기를 금화·보석으로 사고팖. 판매 대금(수수료 10% 제외)은 판매자 우편함에 쌓였다가 접속 시 받음
+const MK_FILE = path.join(DATA, 'market.json');
+let mk = { list: [], mail: {}, seq: 0 };
+try { mk = Object.assign(mk, JSON.parse(fs.readFileSync(MK_FILE, 'utf8'))); } catch (e) {}
+const saveMk = () => { const t = MK_FILE + '.tmp'; fs.writeFile(t, JSON.stringify(mk), e => { if (!e) fs.rename(t, MK_FILE, () => {}); }); };
+const MK_LIMIT = { gold: 1e15, gem: 1e6 }, MK_FEE = .1, MK_MAX = 10;
+function market(u, b, res) {
+  const mail = mk.mail[u.id] || [];
+  if (b.a === 'list') return send(res, 200, { list: mk.list.slice(-300).reverse(), mail: mail.length, me: u.id });
+  if (b.a === 'sell') {
+    const key = String(b.key || ''), q = Math.round(Number(b.q) * 100) / 100, price = Math.floor(Number(b.price)), cur = b.cur === 'gem' ? 'gem' : 'gold';
+    if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-6]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
+    if (!(price >= 1 && price <= MK_LIMIT[cur])) return send(res, 400, { err: '가격을 확인해 주세요' });
+    if (mk.list.filter(l => l.seller === u.id).length >= MK_MAX) return send(res, 400, { err: '한 사람당 ' + MK_MAX + '개까지 등록할 수 있어요' });
+    const l = { id: ++mk.seq, seller: u.id, nick: u.nick || '모험가', key, q, price, cur, t: Date.now() };
+    mk.list.push(l); saveMk(); return send(res, 200, { ok: 1, l });
+  }
+  if (b.a === 'buy' || b.a === 'cancel') {
+    const i = mk.list.findIndex(l => l.id === (b.id | 0));
+    if (i < 0) return send(res, 400, { err: '이미 팔렸거나 내려간 물건이에요' });
+    const l = mk.list[i];
+    if (b.a === 'cancel') { if (l.seller !== u.id) return send(res, 403, { err: '내 물건만 내릴 수 있어요' }); mk.list.splice(i, 1); saveMk(); return send(res, 200, { ok: 1, key: l.key, q: l.q }); }
+    if (l.seller === u.id) return send(res, 400, { err: '내 물건은 살 수 없어요' });
+    mk.list.splice(i, 1);
+    (mk.mail[l.seller] = mk.mail[l.seller] || []).push({ [l.cur]: Math.floor(l.price * (1 - MK_FEE)), key: l.key, buyer: u.nick || '모험가' });
+    saveMk(); return send(res, 200, { ok: 1, key: l.key, q: l.q, price: l.price, cur: l.cur });
+  }
+  if (b.a === 'claim') { delete mk.mail[u.id]; if (mail.length) saveMk(); return send(res, 200, { mail }); }
+  return send(res, 404, { err: 'no' });
+}
+
 /* ---------------- HTTP ---------------- */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 function send(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); }
@@ -67,6 +99,7 @@ const server = http.createServer(async (req, res) => {
       const cut = l => { const i = l.findIndex(r => r.me); return { list: l.slice(0, 50), my: i >= 0 ? { rank: i + 1, ...l[i] } : null }; };
       return send(res, 200, { pow: cut(top(s => s.pow)), tower: cut(top(s => s.tower && s.tower.clear)) });
     }
+    if (p === '/api/market') return market(u, b, res);
     if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus' });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
