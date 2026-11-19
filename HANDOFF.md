@@ -117,3 +117,4 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 - 패키지: S.packs. 스테이지 패키지는 보스 처치 순서대로 1회씩, 주간 패키지는 주 1회.
 - VIP: 탑 입장권 +1장(하루 3장)으로 '2배 3회'가 실제로 가능.
 - 이미지 키(없으면 기존 이미지로 대체): shop_vip, pack_stage, pack_upgrade, pack_weekly, icon_key, shop_banner_special/daily/exchange.
+- 기본 능력 10레벨 돌파: 공격력·가방·체력·체력회복이 10,20,30…레벨에 오를 때 금화 2배 + 오브(2+floor(l/40)). game.html의 BRK_K/upBrk. 시뮬(s10.py)상 챕터 진행 일수 변화 없음, 남던 오브 1.7만 → 5천.

@@ -708,6 +708,9 @@ const UP={
  aspd:{n:'공격 속도',d:'공격 속도를 증가시킵니다.',ic:'up',max:55,val:l=>Math.round((100+3.3*l)*10)/10,cost:l=>({gold:Math.round(15600*Math.pow(1.2,l)/100)*100}),f:v=>v+'%'},
  dbl:{n:'이중 공격',d:'이중 공격 확률을 강화합니다.',ic:'crit',max:20,val:l=>Math.round(3.5*l*10)/10,cost:l=>({gold:Math.round(6000*Math.pow(1.2,l)/100)*100,rb:1}),f:v=>v+'%'}
 };
+// 10레벨 돌파: 공격력·가방·체력·체력 회복은 10, 20, 30… 레벨에 오를 때 금화 2배 + 오브가 들어요
+const BRK_K=['atk','bag','hp','regen'];function upBrk(k,l){return BRK_K.includes(k)&&(l+1)%10===0}
+for(const k of BRK_K){const c0=UP[k].cost;UP[k].cost=l=>{const c=Object.assign({},c0(l));if(upBrk(k,l)){c.gold*=2;c.orb=2+Math.floor(l/40)}return c}}
 // 능력 해금 레벨: 기본(공격·체력·가방)은 처음부터, 나머지는 레벨이 되어야 강화 가능
 const UPLV={regen:3,crit:8,spd:12,aspd:20,dbl:28,critd:36,triple:44};
 function upOpen(k){return S.lv>=(UPLV[k]||1)}
@@ -2226,7 +2229,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
     return `<div class="row"><div class="ric">${IC[u.ic]}</div><div class="rin"><h4>${u.n}</h4><p>${u.d}</p><div class="v">${specialPercent(l,k)}%${mx?'':` &gt; <em>${specialPercent(l+1,k)}%</em>`}</div><div class="l">레벨 ${l} / ${cap}</div></div>${mx&&specialUnlocked(k)?'<button class="btn no" disabled>최대</button>':`<button class="btn ${S.orb>=c&&specialUnlocked(k)?'':'no'}" data-a="spu:${k}" ${specialUnlocked(k)?'':'disabled'}><span>${specialUnlocked(k)?IC.orb+c:(SPU[k].rank+'차 승급 필요')}</span></button>`}</div>`}).join('');
    F.innerHTML=upTabs('sp')}else{
   B.innerHTML=`<div class="note" style="padding:6px">주요 임무 · 챕터 1${bossCollection()}지역 대장보스를 격파하고 지도에서 보석을 받으세요.</div>`+Object.keys(UP).map(k=>{const u=UP[k],l=S.up[k],mx=l>=u.max,c=mx?null:u.cost(l);
-   return `<div class="row"><div class="ric">${IC[u.ic]}</div><div class="rin"><h4>${u.n}</h4><p>${u.d}</p><div class="v">${u.f(u.val(l))}${mx?'':` &gt; <em>${u.f(u.val(l+1))}</em>`}</div><div class="l">레벨 ${l} / ${u.max}</div></div>${mx?'<button class="btn no">MAX</button>':!upOpen(k)?'<button class="btn no" disabled>🔒 Lv.'+UPLV[k]+' 해금</button>':(k==='triple'&&S.up.dbl<20?'<button class="btn no" disabled>이중 공격 Lv.20</button>':costBtn(c,'up:'+k,afford(c)))}</div>`}).join('');
+   return `<div class="row"><div class="ric">${IC[u.ic]}</div><div class="rin"><h4>${u.n}</h4><p>${u.d}</p><div class="v">${u.f(u.val(l))}${mx?'':` &gt; <em>${u.f(u.val(l+1))}</em>`}</div><div class="l">레벨 ${l} / ${u.max}${!mx&&upBrk(k,l)?' · <b style="color:#ff8a2b">'+(l+1)+'레벨 돌파</b>':''}</div></div>${mx?'<button class="btn no">MAX</button>':!upOpen(k)?'<button class="btn no" disabled>🔒 Lv.'+UPLV[k]+' 해금</button>':(k==='triple'&&S.up.dbl<20?'<button class="btn no" disabled>이중 공격 Lv.20</button>':costBtn(c,'up:'+k,afford(c)))}</div>`}).join('');
   F.innerHTML=upTabs('base')}}
  else if(panel==='wpn'){$('mtitle').textContent='장비';cur(['scr','gold']);const n=slotCount();
   const pos=[[10,34],[null,34],[10,112],[null,112],[10,190],[null,190]];
