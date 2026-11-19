@@ -160,22 +160,26 @@ function saveMons() { const o = {}; for (const [i, g] of mons) if (g.dead && g.r
 // 월드 보스: 매일 12시·18시·22시(한국 시간)에 등장
 function nextWorld() { const now = Date.now(), H = [12, 18, 22]; for (let d = 0; d < 2; d++) for (const h of H) { const k = new Date(now + 9 * 3600e3); k.setUTCHours(h, 0, 0, 0); const t = k.getTime() - 9 * 3600e3 + d * 86400e3; if (t > now + 60e3) return t; } return now + 6 * 3600e3; }
 function release(id) { for (const [i, m] of mons) if (m.own === id) { m.own = null; broadcast({ t: 'mo', i, o: null }); } }
-function wsSend(sock, obj) {
-  if (sock.destroyed) return;
+function wsFrame(obj) {
   const data = Buffer.from(JSON.stringify(obj));
   let head;
   if (data.length < 126) head = Buffer.from([0x81, data.length]);
   else if (data.length < 65536) { head = Buffer.alloc(4); head[0] = 0x81; head[1] = 126; head.writeUInt16BE(data.length, 2); }
   else { head = Buffer.alloc(10); head[0] = 0x81; head[1] = 127; head.writeBigUInt64BE(BigInt(data.length), 2); }
-  sock.write(Buffer.concat([head, data]));
+  return Buffer.concat([head, data]);
 }
+function wsSend(sock, obj) { if (!sock.destroyed) sock.write(wsFrame(obj)); }
+const pendingBossHp = new Map();
 function wsClose(sock) { try { sock.write(Buffer.from([0x88, 0])); } catch (e) {} sock.destroy(); }
 function kickUser(id) {
   const c = clients.get(id); if (!c) return;
   wsSend(c.sock, { t: 'kick' }); clients.delete(id); setTimeout(() => wsClose(c.sock), 50);
   broadcast({ t: 'leave', id }); release(id);
 }
-function broadcast(obj, except) { for (const [id, c] of clients) if (id !== except) wsSend(c.sock, obj); }
+function broadcast(obj, except) {
+  const frame = wsFrame(obj);
+  for (const [id, c] of clients) if (id !== except && !c.sock.destroyed) c.sock.write(frame);
+}
 
 server.on('upgrade', (req, sock) => {
   const url = new URL(req.url, 'http://x');
@@ -219,7 +223,7 @@ function onMsg(c, m) {
   if (!m || typeof m !== 'object') return;
   if (m.t === 'defense') { defense.handle(c, m); return; }
   if (m.t === 'raid') { raid.handle(c, m); return; }
-  if (m.t === 'admboss' && c.u.id === 'ehgus') { for (const [i, g] of mons) { g.dead = false; g.hp = g.max; g.hit.clear(); g.rt = 0; broadcast({ t: 'mr', i }); } saveMons(); return; } // 관리자: 모든 공유 보스 즉시 재생성
+  if (m.t === 'admboss' && c.u.id === 'ehgus') { for (const [i, g] of mons) { pendingBossHp.delete(i); g.dead = false; g.hp = g.max; g.hit.clear(); g.rt = 0; broadcast({ t: 'mr', i }); } saveMons(); return; } // 관리자: 모든 공유 보스 즉시 재생성
   if (m.t === 's') { // 내 상태
     const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
     c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), pt: String(m.pt || '').slice(0, 20), mt: String(m.mt || '').slice(0, 20), sl: Array.isArray(m.sl) ? m.sl.slice(0, 5).map(k => String(k || '').slice(0, 12)) : [], hp: n(m.hp), lv: m.lv | 0, ch: m.ch === 2 ? 2 : 1, rank: Math.max(0, Math.min(5, m.rank | 0)), dead: m.dead ? 1 : 0 };
@@ -229,8 +233,8 @@ function onMsg(c, m) {
     const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || !SHARED_BOSSES.has(i)) return;
     const g = mon(i, mx, +m.rs); if (g.dead) return;
     g.hp -= d; g.hit.add(c.u.id); g.last = Date.now();
-    if (g.hp <= 0) { g.dead = true; g.own = null; g.rt = m.w ? nextWorld() : Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: Math.round((g.rt - Date.now()) / 1000) }); saveMons(); g.hit.clear(); }
-    else broadcast({ t: 'mh', i, hp: g.hp });
+    if (g.hp <= 0) { pendingBossHp.delete(i); g.dead = true; g.own = null; g.rt = m.w ? nextWorld() : Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: Math.round((g.rt - Date.now()) / 1000) }); saveMons(); g.hit.clear(); }
+    else pendingBossHp.set(i, g.hp);
   } else if (m.t === 'c') { // 몬스터 주인 요청
     const i = m.i | 0; if (!SHARED_BOSSES.has(i)) return;
     const g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs);
@@ -241,6 +245,8 @@ function onMsg(c, m) {
 
 // 1초에 20번 묶어서 보냄
 setInterval(() => {
+  for (const [i, hp] of pendingBossHp) broadcast({ t: 'mh', i, hp });
+  pendingBossHp.clear();
   const ups = [];
   for (const c of clients.values()) if (c.dirty && c.st) { c.dirty = false; ups.push({ id: c.u.id, n: c.u.nick, ...c.st }); }
   if (ups.length) for (const c of clients.values()) { const l = ups.filter(o => o.id !== c.u.id); if (l.length) wsSend(c.sock, { t: 'u', l }); }

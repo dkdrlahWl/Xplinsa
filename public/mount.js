@@ -143,15 +143,15 @@ window.MOUNT = (() => {
     ctx.lineCap = 'round';
     for (let i = 0; i < (m.g === 4 ? 4 : 3); i++) {
       const angle = clock + i * TAU / (m.g === 4 ? 4 : 3);
-      for (let t = 0; t < 10; t++) {
-        const a = angle - t * .048, b = a - .05;
-        if ((Math.sin(a) >= 0) !== front || (Math.sin(b) >= 0) !== front) continue;
-        const tail = 1 - t / 10;
-        ctx.globalAlpha = (front ? .58 : .36) * tail;
+      const phase = ((angle % TAU) + TAU) % TAU;
+      const min = front ? 0 : Math.PI, max = front ? Math.PI : TAU;
+      const end = Math.min(phase, max), start = Math.max(phase - .48, min);
+      if (end > start) {
+        ctx.globalAlpha = front ? .48 : .29;
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1 + 2.8 * tail;
+        ctx.lineWidth = front ? 2.8 : 1.9;
         ctx.beginPath();
-        ctx.ellipse(x, cy, rx, ry, 0, b, a);
+        ctx.ellipse(x, cy, rx, ry, 0, start, end);
         ctx.stroke();
       }
       if ((Math.sin(angle) >= 0) !== front) continue;
@@ -179,7 +179,7 @@ window.MOUNT = (() => {
     const m = cur(); if (!riding() || !m) { F.ghosts.length = 0; return }
     if (P.moving) {
       F.gT -= dt;
-      if (m.g >= 4 && F.gT <= 0) { F.gT = .06; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, l: 1 }) }
+      if (m.g >= 4 && F.gT <= 0) { F.gT = .13; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, l: 1 }) }
       const n = dt * [10, 14, 18, 24, 30][m.g], col = FXC[m.fx] || '#ffffff';
       if (Math.random() < n) F.parts.push({ x: P.x - Math.cos(P.dir) * 26 + rnd(-10, 10), y: P.y + rnd(-4, 4), vx: -Math.cos(P.dir) * rnd(20, 60), vy: rnd(-30, -6), l: rnd(.35, .6), c: col, r: m.g >= 2 ? rnd(2.5, 4.5) : rnd(4, 7), glow: m.g >= 2, fx: m.fx, spin: rnd(-4, 4) })
     }
