@@ -56,9 +56,9 @@ window.PET = (() => {
   const fastCost = i => Math.max(1, Math.ceil(incLeft(i) / 60000 / 3));
   function tfmt(ms) { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sc = t % 60; return h ? h + '시간 ' + m + '분' : m ? m + '분 ' + sc + '초' : sc + '초' }
   const mfmt = m => (m >= 60 ? Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + m % 60 + '분' : '') : m + '분');
-  function incPut(g) { st(); if (!(S.petEggs[g] > 0)) return toast('그 등급 알이 없어요'); const i = S.inc.findIndex(o => !o); if (i < 0) return toast('부화기 자리가 없어요'); S.petEggs[g]--; S.inc[i] = { g, t0: Date.now(), d: INC_MIN[g] * 60000 }; save(); window.SFX && SFX.play('merge', { v: .5 }); toast(GN[g] + ' 알을 넣었어요 · ' + mfmt(INC_MIN[g]) + ' 뒤 부화') }
+  function incPut(g) { st(); if (!S.built || !S.built.incubator) return toast('기지에 부화기를 먼저 지어주세요'); if (!(S.petEggs[g] > 0)) return toast('그 등급 알이 없어요'); const i = S.inc.findIndex(o => !o); if (i < 0) return toast('부화기 자리가 없어요'); S.petEggs[g]--; let dur = INC_MIN[g] * 60000; if (S.tutEgg === 1 && g === 0) { S.tutEgg = 2; dur = 60000 } S.inc[i] = { g, t0: Date.now(), d: dur }; qev('incput', null, 1); save(); window.SFX && SFX.play('merge', { v: .5 }); toast(GN[g] + ' 알을 넣었어요 · ' + tfmt(dur) + ' 뒤 부화') }
   function incFast(i) { if (!S.inc[i] || incReady(i)) return; const c = fastCost(i); if (S.gem < c) return toast('보석이 부족해요 (보석 ' + c + ')'); S.gem -= c; S.inc[i].t0 = Date.now() - S.inc[i].d; save(); window.SFX && SFX.play('gem', { v: .5 }) }
-  function incHatch(i) { if (!incReady(i)) return; const g = S.inc[i].g; S.inc[i] = null; const res = [rollOf(g)]; calc(); save(); const ret = panel; close(); startGacha('egg' + g, 1, res); if (GA) GA.ret = ret || 'pets' }
+  function incHatch(i) { if (!incReady(i)) return; const g = S.inc[i].g; S.inc[i] = null; const res = [rollOf(g)]; qev('hatch', null, 1); calc(); save(); const ret = panel; close(); startGacha('egg' + g, 1, res); if (GA) GA.ret = ret || 'pets' }
   function incBuy() { st(); if (S.incN >= INC_MAX) return; const c = INC_COST[S.incN]; if (S.gem < c) return toast('보석이 부족해요 (보석 ' + c + ')'); S.gem -= c; S.incN++; st(); save(); toast('부화기 자리 ' + S.incN + '칸!') }
   const own = k => st()[k];
   const lvOf = k => (own(k) || {}).lv || 1, starOf = k => (own(k) || {}).st || 1;
@@ -179,13 +179,15 @@ window.PET = (() => {
   let incIn = 0, incTick = 0;
   function incWorld(dt) {
     const d = Math.hypot(P.x - IX(), P.y - IY());
-    if (d < 52 && !incIn && !panel && !P.dead) { incIn = 1; open('pets') } else if (d > 95) incIn = 0;
+    if (S.built && S.built.incubator && d < 52 && !incIn && !panel && !P.dead) { incIn = 1; open('pets') } else if (d > 95) incIn = 0;
     incTick -= dt; if (incTick > 0) return; incTick = .5;
     for (let i = 0; i < S.inc.length; i++) { const o = S.inc[i]; if (o && !o.nt && incReady(i)) { o.nt = 1; toast(GN[o.g] + ' 알이 부화할 준비가 됐어요! 펫 화면에서 부화하세요'); window.SFX && SFX.play('levelup', { v: .4 }) } }
     if (panel === 'pets') { let redo = false; document.querySelectorAll('.incT').forEach(e => { const i = +e.dataset.i, l = incLeft(i); if (l <= 0) redo = true; e.textContent = tfmt(l) }); document.querySelectorAll('.incBar i').forEach(e => { const i = +e.dataset.i, o = S.inc[i]; if (o) e.style.width = Math.round((1 - incLeft(i) / o.d) * 100) + '%' }); if (redo) draw() }
   }
   function drawInc() {
     const x = IX(), y = IY(), im = AI('bld_incubator');
+    if (!S.built || !S.built.incubator) { if (S.lv < 4 || !S.built || !S.built.smith) return; if (im) { const w = 150, h = w * im.height / im.width; ctx.globalAlpha = .4; ctx.drawImage(im, x - w / 2, y + 16 - h, w, h); ctx.globalAlpha = 1 }
+      label('부화기 터', x, y - 34, 15, '#fff'); mini('gold', x - 18, y - 16); label(fmt(Math.ceil(150 - (S.bp.incubator || 0))), x + 4, y - 11, 14, '#ffe066'); return }
     shadow(x, y + 6, 58);
     let ey0 = y - 18, gap = 24; if (im) { const w = 150, h = w * im.height / im.width; ctx.drawImage(im, x - w / 2, y + 16 - h, w, h); ey0 = y + 16 - h * .3; gap = 22 }
     else { ell(x, y - 2, 60, 24, '#8d8a9c'); ell(x, y - 10, 56, 21, '#b7b3c6'); ctx.save(); ctx.lineWidth = 3; for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; ctx.strokeStyle = i % 2 ? '#c9953f' : '#e8bf62'; ctx.beginPath(); ctx.ellipse(x, y - 16, 46 + (i % 3) * 3, 17 + (i % 3), 0, a, a + .7); ctx.stroke() } ctx.restore(); ell(x, y - 16, 38, 13, '#7a5226', 1) }
@@ -259,6 +261,7 @@ window.PET = (() => {
   function atkTxt(p) { const a = p.at; return AN[a.k] + (a.hits ? ' ' + a.hits + '연타' : '') + (a.n ? ' (' + a.n + '명)' : '') + (a.aoe ? ' · 폭발' : '') + (a.pierce ? ' · 관통' : '') + (a.heal ? ' · 체력 회복' : '') + ' · ' + a.cd.toFixed(1) + '초' }
   function incHTML() {
     st(); const free = S.inc.some(o => !o);
+    if (!S.built || !S.built.incubator) return '<div class="incW"><div class="incH"><b>🥚 부화기</b><span>알 가방 ' + bagN() + '/' + EGG_CAP + '</span></div><div class="note">기지 왼쪽 아래 <b>부화기 터</b>에 금화 150개를 넣어 부화기를 지어주세요 (Lv.4부터)</div></div>';
     let h = '<div class="incW"><div class="incH"><b>🥚 부화기</b><span>알 가방 ' + bagN() + '/' + EGG_CAP + '</span></div><div class="incS">';
     for (let i = 0; i < INC_MAX; i++) {
       if (i >= S.incN) { h += i === S.incN ? '<div class="incSl lock" data-a="pincbuy"><b>🔒</b><span>칸 열기</span><i>' + IC.gem + INC_COST[i] + '</i></div>' : '<div class="incSl lock dim"><b>🔒</b></div>'; continue }

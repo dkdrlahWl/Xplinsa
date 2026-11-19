@@ -4,16 +4,16 @@
 window.MOUNT = (() => {
   // 키, 이름, 등급, 색, 이동속도+, 효과
   const L = [
-    ['pony', '갈색 조랑말', 0, '#a8744a', .40, 'dust'],
-    ['boar', '아기 멧돼지', 0, '#9a6a5a', .40, 'dust'],
-    ['wolf', '초원 늑대', 1, '#9aa4b0', .55, 'dust2'],
-    ['tortoise', '거대 거북', 1, '#6aa860', .55, 'leaf'],
-    ['camel', '사막 낙타', 2, '#d8b070', .70, 'sand'],
-    ['whitehorse', '백마', 2, '#f4f0ea', .70, 'shine'],
-    ['reindeer', '얼음 순록', 3, '#8fd8ff', .90, 'frost'],
-    ['lion', '화염 사자', 3, '#ff8a3a', .90, 'fire'],
-    ['griffin', '황금 그리핀', 4, '#ffc83c', 1.10, 'gold'],
-    ['kirin', '번개 기린', 4, '#4ad8c8', 1.10, 'storm'],
+    ['pony', '갈색 조랑말', 0, '#a8744a', 250, 'dust'],
+    ['boar', '아기 멧돼지', 0, '#9a6a5a', 250, 'dust'],
+    ['wolf', '초원 늑대', 1, '#9aa4b0', 290, 'dust2'],
+    ['tortoise', '거대 거북', 1, '#6aa860', 290, 'leaf'],
+    ['camel', '사막 낙타', 2, '#d8b070', 340, 'sand'],
+    ['whitehorse', '백마', 2, '#f4f0ea', 340, 'shine'],
+    ['reindeer', '얼음 순록', 3, '#8fd8ff', 400, 'frost'],
+    ['lion', '화염 사자', 3, '#ff8a3a', 400, 'fire'],
+    ['griffin', '황금 그리핀', 4, '#ffc83c', 480, 'gold'],
+    ['kirin', '번개 기린', 4, '#4ad8c8', 480, 'storm'],
   ];
   const MS = L.map(([k, n, g, c, sp, fx]) => ({ k, n, g, c, sp, fx }));
   const BY = Object.fromEntries(MS.map(m => [m.k, m]));
@@ -24,8 +24,9 @@ window.MOUNT = (() => {
   const own = k => st()[k];
   const cur = () => { const k = S.mount; return k && own(k) && BY[k] ? BY[k] : null };
   const riding = () => !!(S.riding && cur() && !combatArena);
-  const spd = m => m.sp + .03 * (((own(m.k) || {}).st || 1) - 1);
-  function apply(ST) { if (riding()) ST.spd *= 1 + spd(cur()) }
+  const spd = m => Math.round(m.sp * (1 + .04 * (((own(m.k) || {}).st || 1) - 1)));
+  function apply(ST) { RAW = ST.spd; if (riding()) ST.spd = spd(cur()) }
+  let RAW = 190;
   function give(k) { const o = own(k); if (!o) { st()[k] = { st: 1 }; if (!S.mount) S.mount = k; return { nw: 1 } } if (o.st < MAXST) { o.st++; return { up: o.st } } const gm = DUPGEM[BY[k].g]; S.gem += gm; return { gem: gm } }
   function rollOf(g) { const pool = MS.filter(m => m.g === g), m = pool[Math.floor(Math.random() * pool.length)]; return { m, g, ...give(m.k) } }
   function pickGrade(odds) { let r = Math.random() * odds.reduce((a, v) => a + v, 0), g = 0; while (g < 4 && r >= odds[g]) { r -= odds[g]; g++ } return g }
@@ -106,9 +107,9 @@ window.MOUNT = (() => {
   function panelHTML() {
     st(); const fk = focus && BY[focus] ? focus : (cur() ? S.mount : MS[0].k), m = BY[fk], o = own(fk), on = S.mount === fk;
     let h = '<div class="petTop" style="border-color:' + GC[m.g] + '"><div class="petPic ' + (o ? '' : 'lock') + '" style="background:radial-gradient(circle at 50% 60%,' + GC[m.g] + '55,transparent 70%);width:120px"><img src="' + url(fk) + '" style="width:112px;height:84px" alt=""></div><div class="petInfo"><b style="color:' + GC[m.g] + '">' + GN[m.g] + '</b><h3>' + m.n + '</h3>' +
-      (o ? '<div>' + stars(o.st) + '</div>' : '<div style="color:#9a94c0">미보유</div>') + '<div class="petAb">탈 때 이동 속도 +' + Math.round((o ? spd(m) : m.sp) * 100) + '%</div><div class="petAb2">타는 동안 공격 불가 · 이동만</div></div></div>';
+      (o ? '<div>' + stars(o.st) + '</div>' : '<div style="color:#9a94c0">미보유</div>') + '<div class="petAb">탈 때 이동 속도 ' + (o ? spd(m) : m.sp) + ' <span style="color:#cfc8ee">(걸을 때 ' + Math.round(RAW) + ')</span></div><div class="petAb2">타는 동안 공격 불가 · 이동만</div></div></div>';
     if (o) h += '<div class="petBtns">' + (on ? '<button class="btn no" disabled>사용 중</button>' : '<button class="btn" data-a="mequip:' + fk + '">이 탈것 쓰기</button>') + '<button class="btn eq" data-a="mride">' + (riding() ? '내리기' : '타기') + '</button></div>';
-    h += '<div class="note">같은 탈것이 또 나오면 별 +1 (별마다 이동 속도 +3%, 최대 5성, 이후 보석). 얻는 곳: 상점 <b>탈것 상자</b>, 보스 첫 처치 보상.</div>';
+    h += '<div class="note">같은 탈것이 또 나오면 별 +1 (별마다 이동 속도 +4%, 최대 5성, 이후 보석). 탈것을 타면 내 이동 속도 강화와 상관없이 탈것 속도로 달려요. 얻는 곳: 상점 <b>탈것 상자</b>, 보스 첫 처치 보상.</div>';
     h += '<div class="petGrid">' + MS.map(q => { const qo = own(q.k); return '<div class="petCell' + (q.k === fk ? ' sel' : '') + (qo ? '' : ' lock') + '" data-a="mfocus:' + q.k + '" style="border-color:' + GC[q.g] + '"><img src="' + url(q.k) + '" style="width:54px;height:40px" alt="">' + (S.mount === q.k ? '<i class="pon">사용</i>' : '') + '<b>' + q.n + '</b><span>' + (qo ? '★' + qo.st : GN[q.g]) + '</span></div>' }).join('') + '</div>';
     return h;
   }
