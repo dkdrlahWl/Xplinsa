@@ -3,19 +3,21 @@
    그림: assets/mount_<키>.webp (오른쪽 보는 옆모습, 등에 안장). 없으면 임시 그림. */
 window.MOUNT = (() => {
   // 키, 이름, 등급, 색, 이동속도+, 효과
+  // 키, 이름, 등급, 색, 이동속도(고정), 효과, 등급 안 확률 가중치(빠를수록 드묾)
   const L = [
-    ['pony', '갈색 조랑말', 0, '#a8744a', 250, 'dust'],
-    ['boar', '아기 멧돼지', 0, '#9a6a5a', 250, 'dust'],
-    ['wolf', '초원 늑대', 1, '#9aa4b0', 290, 'dust2'],
-    ['tortoise', '거대 거북', 1, '#6aa860', 290, 'leaf'],
-    ['camel', '사막 낙타', 2, '#d8b070', 340, 'sand'],
-    ['whitehorse', '백마', 2, '#f4f0ea', 340, 'shine'],
-    ['reindeer', '얼음 순록', 3, '#8fd8ff', 400, 'frost'],
-    ['lion', '화염 사자', 3, '#ff8a3a', 400, 'fire'],
-    ['griffin', '황금 그리핀', 4, '#ffc83c', 480, 'gold'],
-    ['kirin', '번개 기린', 4, '#4ad8c8', 480, 'storm'],
+    ['donkey', '꼬마 당나귀', 0, '#9a9088', 230, 'dust', 35], ['sheep', '복슬 양', 0, '#f2ece0', 235, 'dust', 35], ['boar', '아기 멧돼지', 0, '#9a6a5a', 240, 'dust', 30],
+    ['goat', '뿔 산양', 0, '#d8cbb0', 245, 'dust', 28], ['pony', '갈색 조랑말', 0, '#a8744a', 250, 'dust', 25], ['shiba', '큰 시바견', 0, '#e8a050', 260, 'dust', 18], ['ostrich', '달리기 타조', 0, '#6a5a6a', 270, 'dust', 12],
+    ['tortoise', '거대 거북', 1, '#6aa860', 280, 'leaf', 30], ['bear', '갈색 곰', 1, '#8a5a3a', 285, 'dust2', 28], ['wolf', '초원 늑대', 1, '#9aa4b0', 295, 'dust2', 24],
+    ['elk', '숲 사슴', 1, '#b07a4a', 300, 'leaf', 22], ['zebra', '얼룩말', 1, '#e8e8e8', 310, 'dust2', 16], ['panther', '검은 표범', 1, '#3a3a4a', 315, 'dust2', 13], ['raptor', '초록 랩터', 1, '#5ab45a', 320, 'leaf', 10],
+    ['rhino', '철갑 코뿔소', 2, '#8a8a9a', 330, 'sand', 28], ['mammoth', '아기 매머드', 2, '#a07050', 335, 'frost', 26], ['camel', '사막 낙타', 2, '#d8b070', 340, 'sand', 24],
+    ['bigfrog', '왕개구리', 2, '#4ac860', 345, 'leaf', 20], ['whitehorse', '백마', 2, '#f4f0ea', 350, 'shine', 18], ['saber', '검치호', 2, '#e8a040', 360, 'sand', 13], ['goldstag', '황금뿔 수사슴', 2, '#c8963a', 365, 'shine', 10],
+    ['crystalbear', '수정 곰', 3, '#9ad0ff', 400, 'frost', 28], ['frostwolf', '서리 늑대', 3, '#d8f0ff', 405, 'frost', 25], ['reindeer', '얼음 순록', 3, '#8fd8ff', 410, 'frost', 22],
+    ['lion', '화염 사자', 3, '#ff8a3a', 410, 'fire', 22], ['nightmare', '그림자 말', 3, '#5a3a8a', 420, 'shine', 16], ['lavadrake', '용암 도마뱀', 3, '#ff5a2a', 425, 'fire', 12], ['pegasus', '페가수스', 3, '#ffffff', 430, 'shine', 9],
+    ['whitetiger', '백호왕', 4, '#f4f4ff', 480, 'storm', 25], ['stardeer', '별빛 사슴', 4, '#a8b8ff', 485, 'gold', 22], ['kirin', '번개 기린', 4, '#4ad8c8', 490, 'storm', 20],
+    ['phoenixsteed', '불사조 말', 4, '#ff7a2a', 495, 'fire', 15], ['griffin', '황금 그리핀', 4, '#ffc83c', 500, 'gold', 12], ['seraph', '천상의 천마', 4, '#fff6d8', 510, 'gold', 8], ['dragon', '붉은 용', 4, '#e83a3a', 520, 'fire', 6],
   ];
-  const MS = L.map(([k, n, g, c, sp, fx]) => ({ k, n, g, c, sp, fx }));
+
+  const MS = L.map(([k, n, g, c, sp, fx, w]) => ({ k, n, g, c, sp, fx, w }));
   const BY = Object.fromEntries(MS.map(m => [m.k, m]));
   const GN = ['일반', '희귀', '레어', '에픽', '전설'], GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c'];
   const MAXST = 5, DUPGEM = [5, 10, 20, 40, 100], UNLOCK = 10;
@@ -28,7 +30,7 @@ window.MOUNT = (() => {
   function apply(ST) { RAW = ST.spd; if (riding()) ST.spd = spd(cur()) }
   let RAW = 190;
   function give(k) { const o = own(k); if (!o) { st()[k] = { st: 1 }; if (!S.mount) S.mount = k; return { nw: 1 } } if (o.st < MAXST) { o.st++; return { up: o.st } } const gm = DUPGEM[BY[k].g]; S.gem += gm; return { gem: gm } }
-  function rollOf(g) { const pool = MS.filter(m => m.g === g), m = pool[Math.floor(Math.random() * pool.length)]; return { m, g, ...give(m.k) } }
+  function rollOf(g) { const pool = MS.filter(m => m.g === g); let r = Math.random() * pool.reduce((a, m) => a + m.w, 0), m = pool[0]; for (const q of pool) { if ((r -= q.w) <= 0) { m = q; break } } return { m, g, ...give(m.k) } }
   function pickGrade(odds) { let r = Math.random() * odds.reduce((a, v) => a + v, 0), g = 0; while (g < 4 && r >= odds[g]) { r -= odds[g]; g++ } return g }
   function rollBox() { const bx = BOX.mount; S.pity = S.pity || {}; let g = pickGrade(bx.odds);
     for (const [pg, pn] of bx.pity) { const key = 'mount_' + pg; S.pity[key] = (S.pity[key] || 0) + 1; if (g < pg && S.pity[key] >= pn) g = pg }
@@ -53,6 +55,9 @@ window.MOUNT = (() => {
     griffin: { fl: [.66, .84], bl: [.27, .84], leg: .30, seat: [.38, .46], fly: 1, wing: [.40, .40], wl: 1.05 },
     kirin: { fl: [.64, .86], bl: [.25, .86], leg: .44, seat: [.40, .58], amp: .55 },
   };
+  const QUAD = { fl: [.66, .84], bl: [.26, .84], leg: .36, seat: [.40, .45], amp: .6 };
+  for (const m of MS) if (!RIG[m.k]) RIG[m.k] = Object.assign({}, QUAD, { ostrich: { fl: [.48, .84], bl: [.40, .84], leg: .55, seat: [.40, .40], amp: .7, biped: 1 }, raptor: { fl: [.50, .84], bl: [.38, .84], leg: .42, seat: [.40, .40], amp: .7, biped: 1 }, sheep: { leg: .26 }, mammoth: { leg: .32, amp: .4 }, bigfrog: { leg: .26, amp: .45 }, bear: { leg: .30 }, rhino: { leg: .30 }, crystalbear: { leg: .30 },
+    pegasus: { fly: 1, wing: [.40, .40], wl: 1 }, seraph: { fly: 1, wing: [.40, .40], wl: 1.05 }, dragon: { fly: 1, wing: [.42, .38], wl: 1.15, leg: .30 } }[m.k] || {});
 
   const PH = {};
   function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v + (k < 0 ? v * k : (255 - v) * k)))); return 'rgb(' + f(n >> 16) + ',' + f(n >> 8 & 255) + ',' + f(n & 255) + ')' }
@@ -92,7 +97,7 @@ window.MOUNT = (() => {
     const flap = mv ? Math.sin(T * 13) : Math.sin(T * 4) * .5;
     const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 8 : 0), r.wing[1] * h); ctx.scale(-1, 1); ctx.rotate(-.1 - flap * .6 + (far ? -.15 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .06, -wh * .92, ww, wh); ctx.restore() };
     // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
-    Wg(true); L(r.fl, Math.PI, true); L(r.bl, 0, true);
+    Wg(true); if (!r.biped) { L(r.fl, Math.PI, true); L(r.bl, 0, true) }
     ctx.drawImage(body, 0, 0, W, h);
     L(r.fl, 0, false); L(r.bl, Math.PI, false); Wg(false);
     ctx.restore();

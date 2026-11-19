@@ -1853,7 +1853,7 @@ const BOX={
  hero:{n:'영혼 상자',sub:'<b style="color:#ffd23c">영혼 파편</b> 획득 · 모아서 영웅 제작',cost:150,c10:1350,img:'shop_herobox',fb:'hero_knight_head'}};
 BOX.attc={n:'출석 보상 상자',img:'shop_chest2',fb:'mon_chest6'};
 BOX.pet={n:'펫 알 상자',sub:'<b style="color:#ffd23c">전설</b> 펫 알 획득 가능 · 부화기에서 부화',cost:200,c10:1800,odds:[40,32,18,8,2],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_petbox',fb:'pet_egg4',egg:4,big:1};
-BOX.mount={n:'탈것 상자',sub:'<b style="color:#ffd23c">전설</b> 탈것 획득 가능 · 10종',cost:200,c10:1800,odds:[45,30,16,7,2],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_mountbox',fb:'mount_griffin',big:1};
+BOX.mount={n:'탈것 상자',sub:'<b style="color:#ffd23c">전설</b> 탈것 획득 가능 · 35종',cost:200,c10:1800,odds:[45,30,16,7,2],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_mountbox',fb:'mount_griffin',big:1};
 BOX.mountgift={n:'보스 첫 처치 보상 · 탈것',img:'mount_pony'};
 ['일반','희귀','레어','에픽','전설'].forEach((n,g)=>BOX['egg'+g]={n:n+' 펫 알',img:'pet_egg'+g,egg:g});
 function today(){return new Date().toDateString()}
@@ -2271,7 +2271,7 @@ qlv();loadAssets();requestAnimationFrame(frame);
 <script src="defense.js?v=10"></script>
 <script src="raid.js?v=8"></script>
 <script src="pet.js?v=10"></script>
-<script src="mount.js?v=8"></script>
+<script src="mount.js?v=9"></script>
 <script src="unlock.js?v=1"></script>
 <script src="sfx.js?v=4"></script>
 </body>
