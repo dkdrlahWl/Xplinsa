@@ -630,7 +630,7 @@ if(CHAP===1)for(const zone of ZS){const boss=MT[zone.boss];boss.hp=Math.round(bo
  const BN=[MT.lava,MT.fbat,MT.magma,MT.lava],BE=MT.flamek,BB=MT.volc,BB2=MT.flamel,bossHp=MT.volc.hp*(CHAP===2?1.8:1),bossAtk=MT.volc.atk*(CHAP===2?1.25:1);
  C2.forEach((row,k)=>{const mh=1.5*Math.pow(1.8,k),ma=1.3*Math.pow(1.5,k),mg=1.6*Math.pow(1.55,k),xpn=Math.round(zxp(k)/200);
   row.forEach(([key,n,img,hue],j)=>{const src=MT[img]||MT.lava,base=j<4?BN[j]:j===4?BE:j===5?BB:BB2,d=Object.assign({},src,{n,lv:R[k]+(j<4?j*2:j===4?5:8),img,c2ch:1});
-   d.hp=Math.round((j===5?bossHp:j===6?BB2.hp:base.hp)*mh*(j===5?1.4:j===6?1.1:1));d.atk=Math.round((j===5?bossAtk:base.atk)*ma*2*(j<5?2.8:1));if(j>=5)d.hp=Math.round(d.hp*[2,2.2,1.92,1.42,1.2,.875][k]);d.gold=Math.round(base.gold*mg);
+   d.hp=Math.round((j===5?bossHp:j===6?BB2.hp:base.hp)*mh*(j===5?1.4:j===6?1.1:1));d.atk=Math.round((j===5?bossAtk:base.atk)*ma*2*(j<5?5:1));if(j>=5)d.hp=Math.round(d.hp*[2,2.2,1.92,1.42,1.2,.875][k]);d.gold=Math.round(base.gold*mg);
    d.xp=Math.round(xpn*(j<4?1+j*.15:j===4?8:j===5?60:40));d.resp=base.resp;for(const q of['gem','cry','orb','scr','rb','elite','boss','crown'])d[q]=base[q];
    if(d.boss||d.elite){for(const q of['gem','cry','orb','scr'])if(d[q])d[q]=Math.round(d[q]*(1+.25*k))}
    MT[key]=d;ALIAS['mon_'+key]=['mon_'+img,hue,1.1]});
@@ -639,9 +639,8 @@ if(CHAP===1)for(const zone of ZS){const boss=MT[zone.boss];boss.hp=Math.round(bo
  const dg=MT.c2dragon;MT.wboss2=Object.assign({},MT.wboss,{n:'태고의 용신',lv:100,hp:Math.round(dg.hp*1.7),atk:Math.round(dg.atk*.8),xp:dg.xp*3,gold:MT.wboss.gold*12,gem:300,orb:80,rb:5,cry:150,world:1});ALIAS.mon_wboss2=['mon_wboss',150,1.1];}
 // 보스 레이드 보스 4종 (탑 → 보스 레이드에서만 등장, 능력치는 서버 raid.js가 레벨별로 정함)
 // 1챕 긴장감: 일반·정예 몬스터 공격력 지역별 강화 (보스는 그대로). 2챕 몬스터는 위에서 이미 계산됨
-// 밸런스(1119): 일반·정예 몬스터 공격력 1챕 ×2.5·2챕 ×5 (둘러싸이면 아프게), 흡혈 낮춤, 1챕 후반 보스 체력·공격 낮춰 1챕 약 9일·2챕 약 2주 유지
-[1.3,1.5,1.7,1.9,1.9,1.9].forEach((f,zi)=>{for(const k of new Set(ZS1[zi].m.concat(ZS1[zi].e)))MT[k].atk=Math.round(MT[k].atk*f*1.4);MT['crys'+zi].atk=Math.round(MT['crys'+zi].atk*f)});
-[[1,1],[1,1],[1,1],[.85,.85],[.75,.75],[.65,.7]].forEach(([h,a],zi)=>{for(const k of [ZS1[zi].boss,ZS1[zi].boss2])if(k&&MT[k]){MT[k].hp=Math.round(MT[k].hp*h);MT[k].atk=Math.round(MT[k].atk*a)}});
+// 밸런스(1119): 일반·정예 몬스터 공격력 1챕 ×2.5·2챕 ×5 (둘러싸이면 아프게), 흡혈 낮춤. 보스는 여럿이 잡으니 그대로
+[1.3,1.5,1.7,1.9,1.9,1.9].forEach((f,zi)=>{for(const k of new Set(ZS1[zi].m.concat(ZS1[zi].e)))MT[k].atk=Math.round(MT[k].atk*f*2.5);MT['crys'+zi].atk=Math.round(MT['crys'+zi].atk*f)});
 const RAIDB=[['raid0','빙결 여제','lord',0],['raid1','염옥 마신','volc',0],['raid2','뇌신 골렘','golem',200],['raid3','심연의 괴수','c2kraken',200]];
 RAIDB.forEach(([k,n,src,hue])=>{MT[k]=Object.assign({},MT[src],{n,lv:100,hp:45000000,atk:150000,boss:1,raid:1,world:0,r:78,xp:0,gold:0,gem:0,cry:0,orb:0,rb:0,scr:0,resp:1e9});ALIAS['mon_'+k]=['mon_'+src,hue,1.15]});
 
@@ -684,7 +683,7 @@ function coreUpgradeCost(baseGold,level){
 const UP={
  atk:{n:'공격력',d:'공격력을 강화합니다.',ic:'sword',max:2000,val:l=>5+sumG(l,i=>Math.min(i+1,9)),cost:l=>coreUpgradeCost(2*Math.round(10+24*Math.pow(l,1.2)),l),f:fmt},
  bag:{n:'가방',d:'가방 용량을 늘립니다.',ic:'bag',max:1600,val:l=>160+sumG(l,i=>30+20*i),cost:l=>coreUpgradeCost(2*Math.round(40+50*Math.pow(l,1.23)),l),f:fmt},
- hp:{n:'체력',d:'체력을 강화합니다.',ic:'hp',max:2000,val:l=>100+sumG(l,i=>15+(i<=60?9*i:Math.round(9*Math.sqrt(60*i)))),cost:l=>coreUpgradeCost(2*Math.round(36+45*Math.pow(l,1.2)),l),f:fmt},
+ hp:{n:'체력',d:'체력을 강화합니다.',ic:'hp',max:2000,val:l=>100+sumG(l,i=>15+(i<=60?17*i:Math.round(17*Math.sqrt(60*i)))),cost:l=>coreUpgradeCost(2*Math.round(36+45*Math.pow(l,1.2)),l),f:fmt},
  regen:{n:'체력 회복',d:'체력 회복량을 증가시킵니다.',ic:'regen',max:1000,val:l=>Math.round(1+sumG(l,i=>1+.45*i)),cost:l=>({gold:2*Math.round(60+75*Math.pow(l,1.25))}),f:fmt},
  crit:{n:'치명타 확률',d:'치명타 확률을 강화합니다.',ic:'crit',max:10,val:l=>l*2,cost:l=>({gold:CG[l]}),f:v=>v+'%'},
  spd:{n:'이동 속도',d:'이동 속도를 증가시킵니다.',ic:'spd',max:35,val:l=>50+l,cost:l=>({gold:Math.round(8000*Math.pow(1.24,l)/100)*100}),f:v=>''+v},
