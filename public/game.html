@@ -1467,16 +1467,30 @@ function texture(z,x0,y0,x1,y1){
  const G=180;for(let iy=Math.floor(y0/G);iy<=y1/G;iy++)for(let ix=Math.floor(x0/G);ix<=x1/G;ix++){const h=hsh(ix,iy),h2=hsh(iy+3,ix);ctx.fillStyle='rgba(255,246,215,'+(.16+h*.18)+')';ctx.beginPath();ctx.ellipse(ix*G+h*G,iy*G+h2*G,50+h*60,22+h2*22,h*.6,0,TAU);ctx.fill();ctx.fillStyle='rgba(170,110,40,'+(.08+h2*.08)+')';ctx.beginPath();ctx.ellipse(ix*G+h2*G,iy*G+h*G,30+h2*40,12+h*12,0,0,TAU);ctx.fill()}}
 function pathLine(pl,w,col){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(pl[0].x,pl[0].y);for(let k=1;k<pl.length;k+=2)ctx.quadraticCurveTo(pl[k].x,pl[k].y,pl[k+1].x,pl[k+1].y);ctx.stroke()}
 // 바닥: 안 움직이는 부분은 512칸 조각 그림으로 미리 그려두고(캐시) 매 프레임 조각만 붙임 → 렉 감소
-const GC_={map:new Map(),K:0,sig:'',on:true};const GCS=512;
+const GC_={map:new Map(),K:0,sig:'',on:true,warm:null,generation:0};const GCS=512;
 function groundSig(){let s=CHAP+':';for(let i=0;i<NZ;i++)s+=zoneOpen(i)?1:0;return s}
-function groundClear(){GC_.map.clear()}
+function groundClear(){GC_.map.clear();GC_.generation++}
+function warmGround(cx,cy,K){
+ if(GC_.warm!==null)return;
+ const generation=GC_.generation;
+ const run=deadline=>{
+  GC_.warm=null;
+  if(generation!==GC_.generation||document.hidden||panel||deadline&&deadline.timeRemaining()<5)return;
+  if(!GC_.map.has(cx+','+cy))groundChunk(cx,cy,K);
+ };
+ GC_.warm=window.requestIdleCallback?requestIdleCallback(run):setTimeout(()=>run(null),0);
+}
+function groundIntersects(bb,x0,y0,x1,y1,pad=0){
+ return bb.x1+pad>=x0&&bb.x0-pad<=x1&&bb.y1+pad>=y0&&bb.y0-pad<=y1;
+}
 function groundChunk(cx,cy,K){const key=cx+','+cy;let c=GC_.map.get(key);if(c){GC_.map.delete(key);GC_.map.set(key,c);return c}
  const W=Math.ceil(GCS*K)+2;c=document.createElement('canvas');c.width=W;c.height=W;const g=c.getContext('2d');if(!g)return null;
  g.setTransform(K,0,0,K,-cx*GCS*K+1,-cy*GCS*K+1);g.lineWidth=2.2;g.strokeStyle=OLC;g.lineJoin='round';
  const old=ctx;ctx=g;try{groundStatic(cx*GCS-4,cy*GCS-4,(cx+1)*GCS+4,(cy+1)*GCS+4)}catch(e){console.error(e)}ctx=old;
  GC_.map.set(key,c);while(GC_.map.size>12){GC_.map.delete(GC_.map.keys().next().value)}return c}
 function drawGround(x0,y0,x1,y1){
- ctx.fillStyle=CHAP===2?'#2f78a8':'#393643';ctx.fillRect(x0-10,y0-10,x1-x0+20,y1-y0+20);if(CHAP===2){ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=4;const G=150;for(let gy=Math.floor(y0/G)*G;gy<y1+G;gy+=G)for(let gx=Math.floor(x0/G)*G;gx<x1+G;gx+=G){const h=hsh(gx/G|0,gy/G|0),ox=gx+h*90,oy=gy+((h*7)%1)*90+Math.sin(T*1.5+h*9)*5;ctx.beginPath();ctx.arc(ox,oy,16,Math.PI*1.15,Math.PI*1.85);ctx.stroke();ctx.beginPath();ctx.arc(ox+30,oy,16,Math.PI*1.15,Math.PI*1.85);ctx.stroke()}ctx.lineWidth=2.2;ctx.strokeStyle=OLC}
+ ctx.fillStyle=CHAP===2?'#2f78a8':'#393643';
+ ctx.fillRect(x0-10,y0-10,x1-x0+20,y1-y0+20);
  const m=ctx.getTransform(),K=m.a,sig=groundSig();
  if(GC_.on&&K>0){if(K!==GC_.K||sig!==GC_.sig){groundClear();GC_.K=K;GC_.sig=sig}
   const c0=Math.floor(x0/GCS),c1=Math.floor(x1/GCS),r0=Math.floor(y0/GCS),r1=Math.floor(y1/GCS);
@@ -1485,12 +1499,12 @@ function drawGround(x0,y0,x1,y1){
   ctx.restore();
   // 다음에 보일 주변 조각 1개씩 미리 그리기
   const vx=x0-(GC_.lx??x0),vy=y0-(GC_.ly??y0);GC_.lx=x0;GC_.ly=y0;if(Math.abs(vx)>.01)GC_.dx=Math.sign(vx);if(Math.abs(vy)>.01)GC_.dy=Math.sign(vy);if(Math.abs(vx)<.01&&Math.abs(vy)<.01){GC_.dx=0;GC_.dy=0}
-  if((GC_.dx||GC_.dy)&&(!GC_.pre||T-GC_.pre>.15)){GC_.pre=T;const cand=[];if(GC_.dx)for(let cy=r0;cy<=r1;cy++)cand.push([GC_.dx>0?c1+1:c0-1,cy]);if(GC_.dy)for(let cx=c0;cx<=c1;cx++)cand.push([cx,GC_.dy>0?r1+1:r0-1]);for(const[cx,cy]of cand)if(!GC_.map.has(cx+','+cy)){groundChunk(cx,cy,K);break}}}
+  if((GC_.dx||GC_.dy)&&(!GC_.pre||T-GC_.pre>.15)){GC_.pre=T;const cand=[];if(GC_.dx)for(let cy=r0;cy<=r1;cy++)cand.push([GC_.dx>0?c1+1:c0-1,cy]);if(GC_.dy)for(let cx=c0;cx<=c1;cx++)cand.push([cx,GC_.dy>0?r1+1:r0-1]);for(const[cx,cy]of cand)if(!GC_.map.has(cx+','+cy)){warmGround(cx,cy,K);break}}}
  else groundStatic(x0,y0,x1,y1);
  ctx.setLineDash([30,22]);ctx.lineWidth=6;ctx.strokeStyle=S.built.fire?'#5fd06f':'#d9c491';ctx.beginPath();ctx.arc(BASE.x,BASE.y,BASE.ring,T*.15,T*.15+TAU);ctx.stroke();ctx.setLineDash([]);
  ctx.lineWidth=2.2;ctx.strokeStyle=OLC;
  for(let i=0;i<NZ;i++){if(zoneOpen(i))continue;const c=ZB[i][0];label('스테이지 '+(i+1)+' · '+ZS[i].n,c.x,c.y-14,22,'#cfc9e8');label(lockMsg(i),c.x,c.y+14,18,'#ffe066')}
- for(const m of mons)if(m.d.boss&&m.dead){const t=Math.ceil(m.respT);label('보스 재생성',m.hx,m.hy-12,20,'#fff');label(Math.floor(t/60)+' : '+('0'+t%60).slice(-2),m.hx,m.hy+16,24,'#fff')}
+ for(const m of sharedBosses)if(m.dead&&m.hx>=x0-120&&m.hx<=x1+120&&m.hy>=y0-90&&m.hy<=y1+90){const t=Math.ceil(m.respT);label('보스 재생성',m.hx,m.hy-12,20,'#fff');label(Math.floor(t/60)+' : '+('0'+t%60).slice(-2),m.hx,m.hy+16,24,'#fff')}
 }
 
 function blendRockEdge(x0,y0,x1,y1){
@@ -1518,10 +1532,22 @@ function groundStatic(x0,y0,x1,y1){
   ctx.fillStyle=pat('tile_cliff_rough')||'#393643';
   ctx.fillRect(x0,y0,x1-x0,y1-y0);
  }else{
-  for(let i=0;i<NZ;i++)zfill(i,lt(ZS[i].c,-.55),46,6);
-  for(let i=0;i<NZ;i++)zfill(i,lt(ZS[i].c,-.38),18,6);
+  ctx.fillStyle='#2f78a8';
+  ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  ctx.strokeStyle='rgba(255,255,255,.18)';
+  ctx.lineWidth=4;
+  const gap=150;
+  ctx.beginPath();
+  for(let gy=Math.floor(y0/gap)*gap;gy<y1+gap;gy+=gap)for(let gx=Math.floor(x0/gap)*gap;gx<x1+gap;gx+=gap){
+   const h=hsh(gx/gap|0,gy/gap|0),x=gx+h*90,y=gy+((h*7)%1)*90;
+   ctx.moveTo(x,y);ctx.quadraticCurveTo(x+16,y-7,x+32,y);
+  }
+  ctx.stroke();
+  for(let i=0;i<NZ;i++)if(groundIntersects(ZBB[i],x0,y0,x1,y1,55))zfill(i,lt(ZS[i].c,-.55),46,6);
+  for(let i=0;i<NZ;i++)if(groundIntersects(ZBB[i],x0,y0,x1,y1,55))zfill(i,lt(ZS[i].c,-.38),18,6);
  }
  for(let i=0;i<NZ;i++){
+  if(!groundIntersects(ZBB[i],x0,y0,x1,y1,12))continue;
   if(CHAP===2)zfill(i,lt(ZS[i].c,.18),0,6);
   zfill(i,pat(TILE(i))||ZS[i].c);
  }
@@ -1529,12 +1555,12 @@ function groundStatic(x0,y0,x1,y1){
  featherZones(x0,y0,x1,y1);
  for(let i=0;i<NZ;i++){if(AI(TILE(i)))continue;const bb=ZBB[i];if(bb.x1<x0||bb.x0>x1||bb.y1<y0||bb.y0>y1)continue;ctx.save();ctx.clip(ZC[i].path);texture(i,Math.max(x0,bb.x0),Math.max(y0,bb.y0),Math.min(x1,bb.x1),Math.min(y1,bb.y1));ctx.restore()}
  ctx.lineCap='round';ctx.lineJoin='round';
- for(let i=0;i<NZ;i++){const b=ZB[i][4];ctx.fillStyle='rgba(60,30,30,.12)';ctx.beginPath();ctx.arc(b.x,b.y,b.r-8,0,TAU);ctx.fill();
+ for(let i=0;i<NZ;i++){if(!groundIntersects(ZBB[i],x0,y0,x1,y1,70))continue;const b=ZB[i][4];ctx.fillStyle='rgba(60,30,30,.12)';ctx.beginPath();ctx.arc(b.x,b.y,b.r-8,0,TAU);ctx.fill();
   ctx.save();ctx.clip(ZC[i].path);for(const pl of PATH[i])pathLine(pl,120,lt(ZS[i].path,-.12));for(const pl of PATH[i])pathLine(pl,104,ZS[i].path);ctx.restore();
   ctx.setLineDash([26,18]);ctx.strokeStyle='rgba(224,85,74,.75)';ctx.lineWidth=5;ctx.beginPath();ctx.arc(b.x,b.y,b.r-30,0,TAU);ctx.stroke();{const b2=ZB[i][2],r2=Math.min(b.r,260);ctx.fillStyle='rgba(60,30,30,.10)';ctx.beginPath();ctx.arc(b2.x,b2.y,r2-8,0,TAU);ctx.fill();ctx.beginPath();ctx.arc(b2.x,b2.y,r2-30,0,TAU);ctx.stroke()}ctx.setLineDash([])}
  ctx.lineCap='butt';
  drawBridges();drawWalls();drawWB();
- blobs([BASEC],0,pat(BTILE())||'#f2d9a0');featherBase();if(!AI(BTILE())){ctx.save();blobPath([BASEC]);ctx.clip();texture(1,BASE.x-BASEC.r,BASE.y-BASEC.r,BASE.x+BASEC.r,BASE.y+BASEC.r);ctx.restore()}
+ if(Math.hypot(Math.max(x0-BASE.x,0,BASE.x-x1),Math.max(y0-BASE.y,0,BASE.y-y1))<BASEC.r+130){blobs([BASEC],0,pat(BTILE())||'#f2d9a0');featherBase();if(!AI(BTILE())){ctx.save();blobPath([BASEC]);ctx.clip();texture(1,BASE.x-BASEC.r,BASE.y-BASEC.r,BASE.x+BASEC.r,BASE.y+BASEC.r);ctx.restore()}}
  ctx.lineWidth=2.2;ctx.strokeStyle=OLC;
  for(const d of deco){if(d.x<x0-30||d.x>x1+30||d.y<y0-30||d.y>y1+30||false)continue;const z=d.z,x=d.x,y=d.y,q=d.s;
   if(d.k===0){ctx.fillStyle=['rgba(40,110,50,.38)','rgba(170,120,50,.4)','rgba(60,20,90,.45)','rgba(255,255,255,.8)','rgba(20,70,40,.45)','rgba(40,10,10,.5)'][z];
@@ -2236,7 +2262,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
    B.innerHTML=`<div style="position:relative;text-align:center;margin:2px 0 8px">${U('rank_banner')?`<div class="ts" style="${bg('rank_banner')}padding:10px 0 18px;font-size:20px;color:#fff">${t==='pow'?'전투력 랭킹':'도전의 탑 랭킹'}</div>`:''}</div><div class="feature-head ts" style="${bg('rank_row')}${U('rank_row')?'padding:10px 18px;color:#fff;':''}">${featureImage('rank')}<div><b style="color:#ffe066">${U('rank_banner')?'내 순위':(t==='pow'?'전투력 랭킹':'도전의 탑 랭킹')}</b><small style="color:#fff">${L.my?L.my.rank+'위 · '+fv(L.my.v):'아직 기록이 없어요'}</small></div></div>`+(L.list.length?L.list.map((r,i)=>row(r,i,r.me)).join(''):'<div class="note">아직 기록이 없어요</div>')}}
  else if(panel==='market'){$('mtitle').textContent='거래소';cur(['gem','gold']);B.innerHTML=marketPanel();F.innerHTML='<div class="tabs">'+[['buy','구매'],['sell','판매'],['mine','내 등록']].map(([k,n])=>'<button class="tab '+(MK.tab===k?'on':'')+'" data-a="mkt:'+k+'">'+n+'</button>').join('')+'</div>'}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1119-2032 (밸런스 조정)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1119-2033 (밸런스 조정)</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  if(k==='nickset'){const n=(document.getElementById('nickin')||{}).value?.trim()||'';fetch('/api/nick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),nick:n})}).then(r=>r.json().then(j=>[r.ok,j])).then(([ok,j])=>{if(!ok){toast(j.err||'변경 실패');return}localStorage.setItem('xp_nick',j.nick);if(window.NET)NET.nick=j.nick;toast('닉네임이 '+j.nick+'(으)로 바뀌었어요');draw()}).catch(()=>toast('서버에 연결할 수 없어요'));return}
  if(k==='challengeTower'){window.TOWER?.open();return}
