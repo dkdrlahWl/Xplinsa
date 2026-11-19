@@ -1,4 +1,4 @@
-/* 보스 레이드 (1인용): 탑 → 보스 레이드. 서버 없이 폰 안에서 바로 계산해서 렉 없음.
+/* 보스 레이드 (1인용): 탑 → 보스 레이드. 전투는 기기에서 처리.
    보스 4종 · 레벨제 · 90초 · 하루 보상 3번 · 장판/폭발 패턴은 빨간 원으로 미리 보임 */
 window.RAID = (() => {
   const W = 1400, H = 1900, BX = W / 2, BY = 640, SPAWN_Y = 1600, TIME = 90, DAILY = 3;
@@ -8,6 +8,8 @@ window.RAID = (() => {
   const rw = lv => ({ myth: 2 + Math.floor(lv / 3), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
   const root = document.createElement('section'); root.id = 'raid-screen'; root.hidden = true; $('game').appendChild(root);
   let visible = false, mode = 'lobby', run = null, arena = null, boss = null, pointer = null, selBoss = 0, selLv = 1, floorPat = null, floorKey = '';
+  let surface = null, renderElapsed = 0, hudElapsed = 0;
+  const RENDER_INTERVAL = 1 / 30, HUD_INTERVAL = .1;
   const btn = (a, label, dis = false) => '<button type="button" data-raid="' + a + '"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
   const topGold = () => MT[ZS[topZone()].m[0]].gold;
   const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>' + (window.PET && S.raidEggDay !== today() ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알(오늘 첫 클리어)</span>' : '');
@@ -15,7 +17,7 @@ window.RAID = (() => {
   function st() { const day = calendarKey(); const r = S.raid || (S.raid = { day, wins: 0, best: [0, 0, 0, 0] }); if (r.day !== day) { r.day = day; r.wins = 0; } if (!Array.isArray(r.best)) r.best = [0, 0, 0, 0]; return r; }
   const left = () => Math.max(0, DAILY - st().wins);
   function lobby() {
-    mode = 'lobby'; run = null; root.className = 'raid-lobby'; calc();
+    mode = 'lobby'; run = null; arena = null; surface = null; root.className = 'raid-lobby'; calc();
     const b = st().best, mx = (b[selBoss] || 0) + 1; selLv = clamp(selLv, 1, mx);
     root.innerHTML = '<header>' + (AURL.raid_banner ? '<span style="background:url(' + AURL.raid_banner + ') center/100% 100% no-repeat;padding:6px 26px 10px;color:#fff">보스 레이드</span>' : '보스 레이드') + btn('exit', '닫기') + '</header>' +
       '<div class="defense-card defense-browser"><div class="defense-section"><h2>보스 선택</h2><small class="defense-attempts">오늘 남은 보상 <b>' + left() + ' / ' + DAILY + '</b></small></div>' +
@@ -35,7 +37,11 @@ window.RAID = (() => {
     mode = 'battle'; root.className = 'raid-arena';
     root.innerHTML = '<canvas id="raid-canvas"></canvas><div class="defense-hud"><header><b id="raid-title"></b>' + btn('exit', '나가기') + '</header><div class="raid-bosshp"><span id="raid-bhp"></span><i><em id="raid-bbar"></em></i></div><div class="raid-myhp"><span id="raid-hp"></span></div></div><div id="raid-notice"></div>';
     const c = $('raid-canvas');
-    c.onpointerdown = e => { if (pointer) return; pointer = { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0, radius: 46 }; c.setPointerCapture(e.pointerId); };
+    surface = { canvas: c, ctx: c.getContext('2d', { alpha: false }), title: $('raid-title'), bossHp: $('raid-bhp'), bar: $('raid-bbar'), hp: $('raid-hp') };
+    renderElapsed = RENDER_INTERVAL;
+    hudElapsed = 0;
+    hud();
+    c.onpointerdown = e => { if (pointer) return; const bounds = c.getBoundingClientRect(); pointer = { id: e.pointerId, ox: e.clientX, oy: e.clientY, left: bounds.left, top: bounds.top, x: 0, y: 0, radius: 46 }; c.setPointerCapture(e.pointerId); };
     c.onpointermove = e => { if (!pointer || e.pointerId !== pointer.id) return; const x = e.clientX - pointer.ox, y = e.clientY - pointer.oy, l = Math.max(pointer.radius, Math.hypot(x, y)); pointer.x = x / l; pointer.y = y / l; };
     c.onpointerup = c.onpointercancel = c.onlostpointercapture = e => { if (pointer?.id === e.pointerId) pointer = null; };
   }
@@ -80,33 +86,38 @@ window.RAID = (() => {
       if (arena.nums.length > 24) arena.nums.splice(0, arena.nums.length - 24); if (arena.fxs.length > 50) arena.fxs.splice(0, arena.fxs.length - 50);
     });
     if (b.hp <= 0 && !b.dead) { b.dead = true; b.hp = 0; arena.enemies = []; window.SFX && SFX.play('kill_boss', { v: 1 }); }
-    hud();
-    if (b.dead) finish(true); else if (r.t <= 0) finish(false);
+    hudElapsed += dt;
+    if (b.dead || r.t <= 0) { hud(); draw(); finish(b.dead); }
+    else if (hudElapsed >= HUD_INTERVAL) { hudElapsed %= HUD_INTERVAL; hud(); }
   }
   function hud() {
     const r = run, b = boss, p = arena.player;
-    $('raid-title').textContent = NAMES[r.b] + ' Lv.' + r.lv + ' · ' + (r.prep > 0 ? '준비 ' + Math.ceil(r.prep) : Math.ceil(r.t) + '초');
-    $('raid-bhp').textContent = fmt(Math.max(0, b.hp)) + ' / ' + fmt(b.d.hp); $('raid-bbar').style.width = Math.max(0, b.hp / b.d.hp * 100) + '%';
-    $('raid-hp').textContent = p.dead ? '쓰러짐 · ' + Math.ceil(r.revive) + '초 뒤 부활' : '체력 ' + fmt(Math.max(0, p.hp)) + ' / ' + fmt(ST.maxhp);
+    const setText = (node, val) => { if (node.textContent !== val) node.textContent = val; };
+    setText(surface.title, NAMES[r.b] + ' Lv.' + r.lv + ' · ' + (r.prep > 0 ? '준비 ' + Math.ceil(r.prep) : Math.ceil(r.t) + '초'));
+    setText(surface.bossHp, fmt(Math.max(0, b.hp)) + ' / ' + fmt(b.d.hp));
+    const scale = 'scaleX(' + Math.max(0, b.hp / b.d.hp) + ')';
+    if (surface.bar.style.transform !== scale) surface.bar.style.transform = scale;
+    setText(surface.hp, p.dead ? '쓰러짐 · ' + Math.ceil(r.revive) + '초 뒤 부활' : '체력 ' + fmt(Math.max(0, p.hp)) + ' / ' + fmt(ST.maxhp));
   }
   function draw() {
-    const c = $('raid-canvas'); if (!c || !arena) return;
+    if (!surface?.ctx || !arena) return;
+    const { canvas: c, ctx: g } = surface;
     const w = c.clientWidth, h = c.clientHeight; if (!w || !h) return;
     const dp = Math.min(1.5, devicePixelRatio || 1); if (c.width !== Math.round(w * dp) || c.height !== Math.round(h * dp)) { c.width = Math.round(w * dp); c.height = Math.round(h * dp); }
-    const g = c.getContext('2d'), zoom = w / 470, sc = zoom * dp, p = arena.player, vw = w / zoom, vh = h / zoom;
+    const zoom = w / 470, sc = zoom * dp, p = arena.player, vw = w / zoom, vh = h / zoom;
     const follow = (v, s, view) => view >= s ? s / 2 : clamp(v, view / 2, s - view / 2), cx = follow(p.x, W, vw), cy = follow(p.y - 20, H, vh);
-    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.setTransform(sc, 0, 0, sc, c.width / 2 - cx * sc, c.height / 2 - cy * sc);
+    g.setTransform(sc, 0, 0, sc, c.width / 2 - cx * sc, c.height / 2 - cy * sc);
     const fl = AI('raid_floor_' + run.b);
-    if (fl) { const fk = run.b + ':' + c.width; if (!floorPat || floorKey !== fk) { floorPat = g.createPattern(fl, 'repeat'); floorKey = fk; } g.fillStyle = floorPat; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); } else { g.fillStyle = FLOOR[run.b]; g.fillRect(0, 0, W, H); }
+    if (fl) { const fk = run.b + ':' + c.width; if (!floorPat || floorKey !== fk) { floorPat = g.createPattern(fl, 'repeat'); floorKey = fk; } g.fillStyle = floorPat; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); } else { g.fillStyle = FLOOR[run.b]; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); }
     g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 14; g.strokeRect(0, 0, W, H);
     for (const wn of run.warns) { const q = 1 - wn.t / wn.T; g.globalAlpha = .28; g.fillStyle = '#ff3b2f'; g.beginPath(); g.arc(wn.x, wn.y, wn.r, 0, Math.PI * 2); g.fill(); g.globalAlpha = .5; g.beginPath(); g.arc(wn.x, wn.y, wn.r * Math.min(1, q), 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; g.strokeStyle = '#ff7a6a'; g.lineWidth = 4; g.beginPath(); g.arc(wn.x, wn.y, wn.r, 0, Math.PI * 2); g.stroke(); }
     withArenaCombat(arena, () => {
       ctx = g; PV = 0;
-      const scene = []; if (!boss.dead) scene.push({ y: boss.y, draw() { drawMon(boss); } });
+      const scene = []; if (!boss.dead && Math.abs(boss.x - cx) < vw / 2 + 180 && Math.abs(boss.y - cy) < vh / 2 + 240) scene.push({ y: boss.y, draw() { drawMon(boss); } });
       if (!p.dead) scene.push({ y: p.y, draw() { drawPlayer(); } });
       scene.sort((a, b) => a.y - b.y); for (const it of scene) it.draw(); drawCombatEffects();
     });
-    if (pointer) { const b = c.getBoundingClientRect(), x = pointer.ox - b.left, y = pointer.oy - b.top; g.setTransform(dp, 0, 0, dp, 0, 0); g.fillStyle = '#1c183059'; g.beginPath(); g.arc(x, y, pointer.radius + 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#ffffffcc'; g.beginPath(); g.arc(x + pointer.x * pointer.radius, y + pointer.y * pointer.radius, 19, 0, Math.PI * 2); g.fill(); }
+    if (pointer) { const x = pointer.ox - pointer.left, y = pointer.oy - pointer.top; g.setTransform(dp, 0, 0, dp, 0, 0); g.fillStyle = '#1c183059'; g.beginPath(); g.arc(x, y, pointer.radius + 4, 0, Math.PI * 2); g.fill(); g.fillStyle = '#ffffffcc'; g.beginPath(); g.arc(x + pointer.x * pointer.radius, y + pointer.y * pointer.radius, 19, 0, Math.PI * 2); g.fill(); }
   }
   function open() {
     if (!ch2Open()) { toast('챕터 2가 열리면(화산 군주 처치 + Lv.50) 도전할 수 있어요'); return; }
@@ -114,7 +125,7 @@ window.RAID = (() => {
     close(); visible = true; root.hidden = false; joy.on = false; joy.x = joy.y = 0; P.moving = false; P.recall = null; pointer = null;
     selLv = (st().best[selBoss] || 0) + 1; lobby();
   }
-  function exit() { visible = false; root.hidden = true; root.innerHTML = ''; run = null; arena = null; pointer = null; save(); }
+  function exit() { visible = false; root.hidden = true; root.innerHTML = ''; run = null; arena = null; surface = null; pointer = null; save(); }
   root.addEventListener('click', e => {
     const c = e.target.closest('[data-raid]'); if (!c || c.disabled) return; const a = c.dataset.raid;
     window.SFX && SFX.play('click', { v: .35 });
@@ -125,6 +136,15 @@ window.RAID = (() => {
     else if (a === 'again') lobby();
     else if (a === 'claim' && run?.reward) { const r = run.reward; run.reward = null; markRewardOrigin(c); give({ myth: r.myth, scl: r.scl, gem: r.gem, gold: r.goldK * topGold() }); if (window.PET && S.raidEggDay !== today()) { S.raidEggDay = today(); PET.egg('raid') } save(); c.remove(); }
   });
-  function tick(dt) { if (!visible) return; if (mode === 'battle' && run) step(Math.min(dt, .05)); if (mode === 'battle' || mode === 'result') draw(); }
+  function tick(dt) {
+    if (!visible || mode !== 'battle' || !run) return;
+    step(Math.min(dt, .05));
+    if (mode !== 'battle') return;
+    renderElapsed += dt;
+    if (renderElapsed >= RENDER_INTERVAL) {
+      renderElapsed %= RENDER_INTERVAL;
+      draw();
+    }
+  }
   return { get visible() { return visible; }, open, tick, receive() {}, disconnect() {} };
 })();

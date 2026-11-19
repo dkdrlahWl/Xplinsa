@@ -54,3 +54,5 @@
 .raid-myhp{margin:4px auto 0;max-width:200px;text-align:center;font-size:13px;background:#23273cc0;border-radius:8px;padding:3px}
 .raid-dmg{list-style:none;display:grid;gap:4px;font-size:14px}.raid-dmg li{display:flex;justify-content:space-between;background:#171f326c;border-radius:8px;padding:5px 9px}
 .defense-earned span,.defense-prizes span{display:inline-flex;align-items:center;gap:3px;margin:0 4px}.defense-earned svg,.defense-prizes svg,.defense-earned img,.defense-prizes img{width:18px;height:18px}
+
+#raid-bbar{width:100%;transform-origin:left center}
