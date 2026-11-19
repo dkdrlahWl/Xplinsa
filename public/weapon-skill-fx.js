@@ -1,94 +1,14 @@
 /* Draw one staged effect per cast. Combat hit detection stays in game.html. */
 window.WeaponSkillFX = (() => {
   const TAU = Math.PI * 2;
-  const palette = {
-    4: ['#ffad35', '#fff5ad', '#a95020'],
-  };
   const ease = p => 1 - (1 - p) ** 3;
   const phase = (t, start, length) => Math.max(0, Math.min(1, (t - start) / length));
-  const point = (r, a, y = 1) => [r * Math.cos(a), y * r * Math.sin(a)];
-
-  function path(c, points, color, width = 0) {
-    c.beginPath();
-    c.moveTo(...points[0]);
-    for (const p of points.slice(1)) c.lineTo(...p);
-    if (width) { c.lineWidth = width; c.strokeStyle = color; c.stroke(); }
-    else { c.closePath(); c.fillStyle = color; c.fill(); }
-  }
-
-  function ring(c, r, y, color, width, sides = 0, a = 0) {
-    if (sides) {
-      path(c, Array.from({ length: sides + 1 }, (_, i) => point(r, a + i * TAU / sides, y)), color, width);
-      return;
-    }
-    c.beginPath();
-    c.ellipse(0, 0, r, r * y, 0, 0, TAU);
-    c.lineWidth = width;
-    c.strokeStyle = color;
-    c.stroke();
-  }
-
-  function shape(c, x, y, a, s, draw) {
-    c.save(); c.translate(x, y); c.rotate(a); c.scale(s, s);
-    draw(); c.restore();
-  }
-
-  function blade(c, x, y, a, scale, [color, light, dark]) {
-    shape(c, x, y, a, scale, () => {
-      path(c, [[-58,5],[27,-14],[71,0],[27,14],[-58,10],[-39,0]], dark);
-      path(c, [[-43,6],[28,-10],[71,0],[28,10]], color);
-      path(c, [[-17,3],[36,-4],[71,0],[34,3]], light);
-    });
-  }
-
-  function crescent(c, x, y, a, r, [color, light]) {
-    shape(c, x, y, a, r / 100, () => {
-      c.beginPath(); c.moveTo(-76, -48);
-      c.bezierCurveTo(47, -117, 132, -44, 79, 57);
-      c.quadraticCurveTo(85, -35, -76, -48);
-      c.fillStyle = color; c.fill();
-      c.beginPath(); c.moveTo(-65,-52);
-      c.quadraticCurveTo(86,-122,102,-8);
-      c.lineWidth = 3; c.strokeStyle = light; c.stroke();
-    });
-  }
-
-  function sparks(c, r, t, colors, n) {
-    for (let i = 0; i < n; i++) {
-      const [x, y] = point(r * (.55 + (i % 4) * .15), i * 2.399 + t, .63);
-      shape(c, x, y, i, .5 + .18 * (i % 3), () =>
-        path(c, [[0,-11],[2,-2],[9,0],[2,2],[0,11],[-2,2],[-9,0],[-2,-2]], colors[i % 2]));
-    }
-  }
-
-  const legendary = {
-    dagger(c, f, p, C) {
-      for (let i = 0; i < 2; i++) crescent(c, 0, 0, (i * 2 - 1) * (.9 + p * 2), 46 + p * 28, C);
-    },
-    sword(c, f, p, C) { crescent(c, 240 * ease(p), 0, 1.57, 70 + 20 * p, C); },
-    mace(c, f, p, C) {
-      ring(c, 12 + 146 * ease(p), .52, C[0], 8 * (1 - p) + 1);
-      for (let i = 0; i < 6; i++) {
-        const a = i * TAU / 6;
-        path(c, [[0,0],point(65*p,a,.55),point(135*p,a+.13,.55)], C[1], 2);
-      }
-    },
-    spear(c, f, p, C) { blade(c, 155 * ease(p), 0, 0, 1 + p, C); },
-    axe(c, f, p, C) { crescent(c, 0, 0, p * TAU * 3, 104, C); },
-    bow(c, f, p, C) {
-      for (let i = -2; i <= 2; i++) blade(c, 215 * p, i * 35 * p, i * .14, .42, C);
-    },
-    gun(c, f, p, C) {
-      for (let i = 0; i < 6; i++) {
-        const a = i * TAU / 6 + p * 2, [x,y] = point(48 + 125*p, a);
-        blade(c, x, y, a, .28, C);
-      }
-    },
-    staff(c, f, p, C) { sparks(c, 24 + 100 * ease(p), p, C, 9); },
-  };
 
   const indices = {dagger:0,sword:1,mace:2,spear:3,axe:4,bow:5,gun:6,staff:7};
   const atlases = {};
+  const gold = new Image();
+  gold.src = 'assets/weapon_skill_4.webp?v=1';
+  atlases['4skill'] = gold;
   for (const grade of [5,6]) for (const kind of ['skill','third']) {
     const image = new Image();
     image.src = `assets/weapon_${kind}_${grade}.webp?v=2`;
@@ -105,6 +25,31 @@ window.WeaponSkillFX = (() => {
       -size/2,-size*stretch/2,size,size*stretch);
     c.restore();
     return true;
+  }
+
+  function legendary(c, f, p) {
+    const paint = (x, y, angle, size, alpha = 1) =>
+      sprite(c, f.type, 4, 'skill', x, y, angle, size, alpha);
+    switch (f.type) {
+      case 'dagger':
+        paint(0, -12, -.55 + p * 1.2, 107 + 31 * ease(p));
+        break;
+      case 'mace':
+        paint(0, -27, 0, 115 + 67 * ease(p));
+        break;
+      case 'spear':
+        paint(45 + 143 * ease(p), 0, 0, 150 + 35 * p);
+        break;
+      case 'axe':
+        paint(0, 0, p * TAU * 3, 154);
+        break;
+      case 'staff': {
+        const impact = phase(p, 0, .58);
+        const fade = 1 - phase(p, .58, .42);
+        paint(35 * (1 - impact), -185 * (1 - impact) - 32, 0, 138 + 29 * impact, fade);
+        break;
+      }
+    }
   }
 
   function illustrated(c, f, p) {
@@ -167,6 +112,7 @@ window.WeaponSkillFX = (() => {
   };
 
   function add(fxs, type, grade, player, target, angle, third = false) {
+    if (grade === 4 && ['sword','bow','gun'].includes(type)) return;
     const t=third?(type==='staff'?.56:.38):durations[grade][type];
     if(third) {
       const directed=['sword','spear','bow','gun'].includes(type);
@@ -188,7 +134,7 @@ window.WeaponSkillFX = (() => {
     c.rotate(f.angle);
     c.globalAlpha=Math.min(1,.2+p*12,(1-p)*5)*.9;
     c.lineJoin='round'; c.lineCap='round';
-    if(f.grade===4)legendary[f.type](c,f,p,palette[4]);
+    if(f.grade===4)legendary(c,f,p);
     else illustrated(c,f,p);
     c.restore();
   }
