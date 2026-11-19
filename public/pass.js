@@ -102,7 +102,7 @@
       const m = claim(t, prem); if (m) { toast(m); save(); window.SFX && SFX.play('reward', { v: .6 }) } draw(); return;
     }
     if (k === 'passall') { const got = []; for (const t of TIERS) for (const pr of [false, true]) { const m = claim(t, pr); if (m) got.push(m) } if (got.length) { toast('패스 보상 ' + got.length + '개 받음!'); save(); window.SFX && SFX.play('reward', { v: .7 }) } draw(); return }
-    if (k === 'passbuy') { toast('프리미엄 패스는 운영자에게 ' + PRICE + ' 보내면 바로 열어줘요'); return }
+    if (k === 'passbuy') { toast('김성민!'); num(P.x, P.y - 120, '김성민!', '#ffe066', true); return }
     if (k === 'passgrant') { const n = (document.getElementById('passNick') || {}).value || ''; if (!n.trim()) { toast('닉네임을 적어 주세요'); return } fetchPrem({ a: 'grant', nick: n, on: v === '1' }).then(() => toast('처리했어요')); return }
     return _act.apply(this, arguments);
   };
