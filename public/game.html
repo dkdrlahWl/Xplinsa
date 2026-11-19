@@ -709,8 +709,7 @@ const UP={
  dbl:{n:'이중 공격',d:'이중 공격 확률을 강화합니다.',ic:'crit',max:20,val:l=>Math.round(3.5*l*10)/10,cost:l=>({gold:Math.round(6000*Math.pow(1.2,l)/100)*100,rb:1}),f:v=>v+'%'}
 };
 // 10레벨 돌파: 공격력·가방·체력·체력 회복은 10, 20, 30… 레벨에 오를 때 금화 2배 + 오브가 들어요
-// 흡혈: 실제로 깎은 체력만큼만, 초당 최대 체력의 3%까지 (둘러싸여도 무한 회복 안 됨)
-const LS_CAP=.03;
+// 흡혈: 몹한테 실제로 깎은 체력만큼만 회복 (펫 공격은 흡혈 없음)
 const BRK_K=['atk','bag','hp','regen'];function upBrk(k,l){return BRK_K.includes(k)&&(l+1)%10===0}
 for(const k of BRK_K){const c0=UP[k].cost;UP[k].cost=l=>{const c=Object.assign({},c0(l));if(upBrk(k,l)){c.gold*=2;c.orb=2+Math.floor(l/40)}return c}}
 // 능력 해금 레벨: 기본(공격·체력·가방)은 처음부터, 나머지는 레벨이 되어야 강화 가능
@@ -722,7 +721,7 @@ UP.triple={n:'삼중 공격',d:'이중 공격 Lv.20부터 강화 · 추가 공�
 const AWK={atk:{n:'공격 각성',d:'최종 공격력 +3%씩 (곱연산)',ic:'sword'},hp:{n:'체력 각성',d:'최종 체력 +3%씩 (곱연산)',ic:'hp'}},AWK_MAX=100;
 function awL(k){return clamp(Math.floor(Number((S.awk||{})[k])||0),0,AWK_MAX)}
 function awCost(l){return{gold:Math.round(180000*Math.pow(1.06,l)/1000)*1000,scl:8+l}}
-const SPU={mus:{n:'거대한 근육',d:'추가 공격력 증가',ic:'sword'},bagx:{n:'창고 확장',d:'추가 가방 용량 증가',ic:'bag'},vit:{n:'체력 증가',d:'추가 체력 증가',ic:'hp'},ls:{n:'생명력 흡수',d:'피해를 체력으로 변환 · 초당 최대 체력 3%까지',ic:'regen'},qs:{n:'퀵 스텝',d:'추가 이동 속도 증가',ic:'spd'}},spCost=l=>3+4*l;
+const SPU={mus:{n:'거대한 근육',d:'추가 공격력 증가',ic:'sword'},bagx:{n:'창고 확장',d:'추가 가방 용량 증가',ic:'bag'},vit:{n:'체력 증가',d:'추가 체력 증가',ic:'hp'},ls:{n:'생명력 흡수',d:'피해를 체력으로 변환합니다',ic:'regen'},qs:{n:'퀵 스텝',d:'추가 이동 속도 증가',ic:'spd'}},spCost=l=>3+4*l;
 const Q1=[
 {t:'금화 3개로 모닥불 짓기',type:'build',key:'fire',cost:3,rw:{gold:10}},
 {t:'공격력 강화하기',type:'up',key:'atk',need:1,rw:{gold:38}},
@@ -1292,7 +1291,7 @@ function sqC(){return 1+Math.floor(S.sq.ci/3)}
 function sqCheck(){if(S.sq.g>=sqG()){S.sq.g=0;S.sq.gi++;toast('임무 완료! '+give({gem:5+S.sq.gi*3}))}if(S.sq.c>=sqC()){S.sq.c=0;S.sq.ci++;toast('임무 완료! '+give({cry:5+S.sq.ci*2,scr:2}))}}
 function qlv(){const q=Q[S.q];if(q&&((q.type==='up'&&(S.qp>=q.need||(UP[q.key]&&(S.up[q.key]||0)>=UP[q.key].max)))||(q.type==='lv'&&S.lv>=q.need)||(q.type==='build'&&S.built[q.key])))qdone()}
 function drop(x,y,kind,v){const a=rnd(0,TAU),s=rnd(60,150);drops.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,kind,v})}
-function dmg(m,d,crit,quiet){if(m.dead)return;if(window.SFX&&!quiet){const t=wType();SFX.weapon(t,true,{v:crit?.54:.42,x:m.x,y:m.y})}const h0=m.hp;m.hp-=d;if(ST.ls){const g=Math.min(P.lsB||0,Math.max(0,Math.min(d,h0))*ST.ls);if(g>0){P.lsB-=g;P.hp=Math.min(ST.maxhp,P.hp+g)}}m.hitT=.15;m.agg=true;IF('atk_hit',{x:m.x+rnd(-6,6),y:m.y-m.d.r*1.1+rnd(-6,6),t:.16,s0:16,s1:30,rot:rnd(0,6)});num(m.x,m.y-m.d.r*2-6,fmt(d),crit?'#ffd93c':'#fff',crit);if(combatArena){combatArena.hit(m,d);if(m.hp<=0)m.dead=true;return}if(m.d.boss&&window.NET&&NET.on()){NET.hit(m,d);if(m.hp<1)m.hp=1}else if(m.hp<=0)kill(m)}
+function dmg(m,d,crit,quiet){if(m.dead)return;if(window.SFX&&!quiet){const t=wType();SFX.weapon(t,true,{v:crit?.54:.42,x:m.x,y:m.y})}const h0=m.hp;m.hp-=d;if(ST.ls&&quiet!==1)P.hp=Math.min(ST.maxhp,P.hp+Math.max(0,Math.min(d,h0))*ST.ls);m.hitT=.15;m.agg=true;IF('atk_hit',{x:m.x+rnd(-6,6),y:m.y-m.d.r*1.1+rnd(-6,6),t:.16,s0:16,s1:30,rot:rnd(0,6)});num(m.x,m.y-m.d.r*2-6,fmt(d),crit?'#ffd93c':'#fff',crit);if(combatArena){combatArena.hit(m,d);if(m.hp<=0)m.dead=true;return}if(m.d.boss&&window.NET&&NET.on()){NET.hit(m,d);if(m.hp<1)m.hp=1}else if(m.hp<=0)kill(m)}
 function kill(m){if(m.dead)return;const d=m.d;window.SFX&&SFX.play(d.boss?'kill_boss':'kill',{v:d.boss?1:.5,x:m.x,y:m.y});if(!combatArena&&d.c2ch){const sc=d.boss?6+Math.max(0,ZS.indexOf(ZS[m.z])):d.elite?2:d.chest?3:d.cry===3&&!d.boss&&!d.elite?1:Math.random()<.02?1:0;if(sc){S.scl=(S.scl||0)+sc;num(m.x,m.y-d.r*2-30,'용의 비늘 +'+sc,'#ff8a4a')}}const book=collectionState();book.monsters[m.type]=(book.monsters[m.type]||0)+1;m.dead=true;if(d.boss)refreshBossMapMarker(m);m.respT=d.resp;m.slam=null;fxs.push({x:m.x,y:m.y-d.r,t:.3,r:d.r*2.2,c:'#fff'});
  const n=d.boss?10:d.elite?5:Math.min(3,d.xp);for(let i=0;i<n;i++)drop(m.x,m.y,'xp',d.xp/n*(1+(heroOf().fx.xp||0)+(window.PET?PET.b('xp'):0)));
  const g=d.boss?8:d.elite?4:1;for(let i=0;i<g;i++)drop(m.x,m.y,'gold',d.gold/g*(1+(heroOf().fx.gold||0)+(window.PET?PET.b('gold'):0)));
@@ -1409,7 +1408,7 @@ function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.dead){P.recall=null;toast
   for(const b of BLD){if(S.built[b.k]||(b.need&&!S.built[b.need])||(b.lv&&S.lv<b.lv)||S.gold<=0)continue;S.bp[b.k]=S.bp[b.k]||0;if(Math.hypot(P.x-b.x(),P.y-b.y())>b.r)continue;const amt=Math.min(S.gold,b.cost-S.bp[b.k],Math.max(4,b.cost/1.2)*dt);S.gold-=amt;S.bp[b.k]+=amt;
    if(Math.random()<dt*18)fxs.push({coin:1,x:P.x,y:P.y-20,x1:b.x(),y1:b.y()-10,t:.35});
    if(S.bp[b.k]>=b.cost-.001){S.built[b.k]=true;fxs.push({x:b.x(),y:b.y()-10,t:.6,r:90,c:'#ffe066'});toast(b.n+' 완성!');if(b.k==='incubator'&&window.UNLOCK)UNLOCK.built();const q=Q[S.q];if(q&&q.type==='build'&&q.key===b.k)qdone();save()}}
-  P.lsB=Math.min(ST.maxhp*LS_CAP,(P.lsB||0)+ST.maxhp*LS_CAP*dt);P.hp=Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand?ST.maxhp:Math.min(ST.maxhp,P.hp+ST.regen*dt);
+  P.hp=Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand?ST.maxhp:Math.min(ST.maxhp,P.hp+ST.regen*dt);
   const inBase=Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.ring;
   if(inBase){
    for(const k in S.bi)if(S.bi[k]>0){S[k]+=S.bi[k];S.bi[k]=0}
@@ -1942,7 +1941,8 @@ function hud(){
  let bh='';if(S.bag>=1)bh+='<span>'+IC.gold+fmt(S.bag)+'</span>';for(const k of['cry','gem','orb','rb','scr'])if(S.bi[k]>0)bh+='<span>'+IC[k]+S.bi[k]+'</span>';if(cache.bh!==bh){cache.bh=bh;$('bagc').innerHTML=bh}
  const q=Q[S.q];let qt,qs,qp=0,go=false;
  if(q&&S.qok){qt=q.t;qs='임무 완료!';qp=1;go=true}
- else if(!q){qt='모든 임무 완료!';qs='챕터 2는 준비 중'}
+ else if(!q&&CHAP===1){const vk=!!(S.bossKills||{}).volc;if(ch2Open()){qt='챕터 2로 이동하기';qs='탭해서 새로운 모험 시작!';qp=1;go=true}else{qt='챕터 2 열기';qs=(vk?'화산 군주 ✔':'화산 군주 처치')+' · Lv.'+Math.min(S.lv,50)+'/50';qp=((vk?1:0)+Math.min(1,S.lv/50))/2}}
+ else if(!q){qt='챕터 2 정복 완료!';qs='레이드·탑에서 계속 성장하기'}
  else if(q.type==='build'){qt=q.t;qs=fmt(S.bp[q.key])+'/'+q.cost+' · 금화를 들고 건물 터 위에 서 있기';qp=Math.min(1,S.bp[q.key]/q.cost)}
  else if(q.type==='lv'){qt=q.t;qs='Lv.'+S.lv+' / '+q.need;qp=S.lv/q.need}
  else{qt=q.t;qs=fmt(Math.min(S.qp,q.need))+'/'+fmt(q.need);qp=S.qp/q.need}
@@ -2184,7 +2184,7 @@ const PBACK=[],SUBP=new Set(['heroes','pets','mounts','heroDetail','heroEffects'
 function mxBack(){while(PBACK.length){const p=PBACK.pop();if(p&&p!==panel){window.SFX&&SFX.play('close',{v:.45});closePop();panel=p;mergeSel=null;draw();return}}close()}
 function open(p){PBACK.length=0;if(p!=='home')window.SFX&&SFX.play('open',{v:.5});
  if(p==='att'){panel='att';draw();$('modal').className='open';return}
- if(p==='home'){if(P.dead)return;if(Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand){toast('이미 기지에 있어요');return}P.recall={t:2,x:P.x,y:P.y};window.SFX&&SFX.play('recall',{v:.6});toast('기지로 귀환 중… (움직이면 취소)');return}
+ if(p==='home'){if(P.dead)return;if(Math.hypot(P.x-BASE.x,P.y-BASE.y)<BASE.sand){toast('이미 기지에 있어요');return}P.recall={t:2,x:P.x,y:P.y};window.SFX&&SFX.play('recall',{v:.6});toast('기지로 귀환 중…');return}
  if(p==='tower'){panel='challenges';$('modal').className='open challenges';draw();return}
  if(p==='up'&&!S.built.fire){toast('먼저 모닥불을 지어야 해요');return}
  if(p==='smith'&&!S.built.smith){toast('먼저 대장간을 지어야 해요');return}
@@ -2410,7 +2410,7 @@ $('pop').addEventListener('click',e=>{const b=e.target.closest('[data-pa]');if(!
  if(a==='up'){const l=S.slv[si],c=slotCost(l);if(effLv(si)>=capLv(si)){toast('이 등급의 최대 레벨이에요');return}if(!afford(c)){toast('주문서나 금화가 부족해요');return}S.gold-=c.gold;S.scr-=c.scr;S.slv[si]++;calc();save();const unlocked=LVB.find(b=>b[0]===effLv(si));if(unlocked)toast('Lv.'+unlocked[0]+' · '+unlocked[1]+' +'+unlocked[3]+'% 해금!');renderPop();draw();return}});
 $('mbody').addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.multi){const ok=new Set(assetSlots().map(a=>a.n));let c=0,bad=0;for(const f of e.target.files){const n=f.name.replace(/\.(png|webp|jpe?g|gif)$/i,'').trim();if(!ok.has(n)&&!/^wpn_[a-z]+_[0-4]$/.test(n)){bad++;continue}c++;idbPut(n,f).then(()=>{LOCAL[n]=1;setAsset(n,URL.createObjectURL(f))})}toast(c+'장 넣음'+(bad?' · 이름이 안 맞는 '+bad+'장은 건너뜀':''));return}const n=e.target.dataset&&e.target.dataset.up;if(!n)return;const f=e.target.files&&e.target.files[0];if(!f)return;idbPut(n,f).then(()=>{LOCAL[n]=1;setAsset(n,URL.createObjectURL(f))}).catch(()=>{setAsset(n,URL.createObjectURL(f));toast('이 브라우저에선 저장이 안 돼서 새로고침하면 사라져요')})});
 $('lb').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(b)open(b.dataset.p)});
-$('quests').addEventListener('click',()=>{if(!qclaim())open('quests')});
+$('quests').addEventListener('click',()=>{if(!Q[S.q]&&CHAP===1&&ch2Open()){goChapter(2);return}if(!qclaim())open('quests')});
 $('bar').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(b)open(b.dataset.p)});
 $('menu').addEventListener('click',()=>open('menu'));
 function questTap(){const q=Q[S.q];if(q&&q.type==='build')toast('금화를 들고 건물 터 위에 서 있으면 지어져요')}
