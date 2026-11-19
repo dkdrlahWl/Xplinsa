@@ -23,8 +23,8 @@ function connect(){if(kicked)return;
    for(const[i,hp,dead,own,left]of m.ms){const g=mons[L(i)];if(!g?.d.boss)continue;g.hp=Math.max(1,hp);g.own=own;if(dead){g.dead=true;g.slam=null;g.respT=left||0}}}
   else if(m.t==='mh'){const g=mons[L(m.i)];if(g?.d.boss&&!g.dead)g.hp=Math.max(1,m.hp)}
   else if(m.t==='mo'){const g=mons[L(m.i)];if(g?.d.boss){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
-  else if(m.t==='mk'){const g=mons[L(m.i)];if(g?.d.boss&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}}}
-  else if(m.t==='mr'){const g=mons[L(m.i)];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;if(g.d.world)showBanner('월드 보스 등장!','월드 보스 구역으로 모두 모여요');else if(g.d.boss)showBanner(ZS[g.z].n+'에 보스 등장',g.d.n+' 등장!')}}
+  else if(m.t==='mk'){const g=mons[L(m.i)];if(g?.d.boss&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}refreshBossMapMarker(g)}}
+  else if(m.t==='mr'){const g=mons[L(m.i)];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;announceFieldBoss(g)}}
   else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[L(o.mp[k])];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
  ws.onclose=()=>{window.DEFENSE?.disconnect();window.RAID?.disconnect();others.clear();ME=null;for(const g of sharedBosses)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
