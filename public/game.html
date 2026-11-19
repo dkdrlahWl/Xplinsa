@@ -1884,15 +1884,16 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   const [angle,bend]=IK(bs.x,bs.y,tx,ty,l1,l2);
   seg2(bs.x,bs.y,angle,l1,bend,l2,5,L,HA('arm'));
  };
- const fist=(x,y,w,angle)=>{
-  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+ // back=1: 뒷손은 손잡이를 반대쪽에서 감싸므로 자루 축 기준으로 뒤집어서(엄지 방향 반대) 그림
+ const fist=(x,y,w,angle,back)=>{
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);if(back){ctx.scale(-1,1);ctx.filter='brightness(.88)'}
   HA('hand')?pimg(HA('hand'),0,0,w):ell(0,0,w*.5,w*.5,h.body);
   ctx.restore();
  };
  const drawArm=()=>{
   const hand=seg2(fs.x,fs.y,ua,l1,ea,l2,5.3,L,HA('arm'));
   ctx.save();ctx.translate(hand.x,hand.y);ctx.rotate(wa);drawWeapon(k,gc,gr>=2,gr);ctx.restore();
-  if(two)fist(tx,ty,HI.fist*.92,wa+Math.PI/2);
+  if(two)fist(tx,ty,HI.fist*.92,wa+Math.PI/2,1);
   fist(hand.x,hand.y,HI.fist,wa+Math.PI/2);
   return hand;
  };
