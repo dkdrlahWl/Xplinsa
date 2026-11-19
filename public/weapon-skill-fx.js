@@ -91,7 +91,7 @@ window.WeaponSkillFX = (() => {
   const atlases = {};
   for (const grade of [5,6]) for (const kind of ['skill','third']) {
     const image = new Image();
-    image.src = `assets/weapon_${kind}_${grade}.webp`;
+    image.src = `assets/weapon_${kind}_${grade}.webp?v=2`;
     atlases[grade + kind] = image;
   }
 
