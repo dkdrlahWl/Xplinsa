@@ -658,7 +658,7 @@ if(CHAP===1)for(const zone of ZS){const boss=MT[zone.boss];boss.hp=Math.round(bo
 // 보스 레이드 보스 4종 (탑 → 보스 레이드에서만 등장, 능력치는 서버 raid.js가 레벨별로 정함)
 // 1챕 긴장감: 일반·정예 몬스터 공격력 지역별 강화 (보스는 그대로). 2챕 몬스터는 위에서 이미 계산됨
 // 밸런스(1119): 일반·정예 몬스터 공격력 1챕 ×2.5·2챕 ×5 (둘러싸이면 아프게), 흡혈 낮춤. 보스는 여럿이 잡으니 그대로
-[1.3,1.5,1.7,1.9,1.9,1.9].forEach((f,zi)=>{for(const k of new Set(ZS1[zi].m.concat(ZS1[zi].e)))MT[k].atk=Math.round(MT[k].atk*f*7.5);MT['crys'+zi].atk=Math.round(MT['crys'+zi].atk*f)});
+[1.3,1.5,1.7,1.9,1.9,1.9].forEach((f,zi)=>{for(const k of new Set(ZS1[zi].m.concat(ZS1[zi].e)))MT[k].atk=Math.round(MT[k].atk*f*[1,3,7.5,7.5,7.5,7.5][zi]);MT['crys'+zi].atk=Math.round(MT['crys'+zi].atk*f)});
 const RAIDB=[['raid0','빙결 여제','lord',0],['raid1','염옥 마신','volc',0],['raid2','뇌신 골렘','golem',200],['raid3','심연의 괴수','c2kraken',200]];
 RAIDB.forEach(([k,n,src,hue])=>{MT[k]=Object.assign({},MT[src],{n,lv:100,hp:45000000,atk:150000,boss:1,raid:1,world:0,r:78,xp:0,gold:0,gem:0,cry:0,orb:0,rb:0,scr:0,resp:1e9});ALIAS['mon_'+k]=['mon_'+src,hue,1.15]});
 
