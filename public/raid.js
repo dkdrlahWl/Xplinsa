@@ -13,20 +13,39 @@ window.RAID = (() => {
   const btn = (a, label, dis = false) => '<button type="button" data-raid="' + a + '"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
   const topGold = () => MT[ZS[topZone()].m[0]].gold;
   const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>' + (window.PET && S.raidEggDay !== today() ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알(오늘 첫 클리어)</span>' : '');
-  const bossImg = b => { const k = 'mon_raid' + b, al = ALIAS[k]; return AURL[k] ? '<img src="' + AURL[k] + '" alt="">' : al && AURL[al[0]] ? '<img src="' + AURL[al[0]] + '" style="filter:hue-rotate(' + al[1] + 'deg)" alt="">' : '' };
   function st() { const day = calendarKey(); const r = S.raid || (S.raid = { day, wins: 0, best: [0, 0, 0, 0] }); if (r.day !== day) { r.day = day; r.wins = 0; } if (!Array.isArray(r.best)) r.best = [0, 0, 0, 0]; return r; }
   const left = () => Math.max(0, DAILY - st().wins);
   function lobby() {
+    const previousScroll = root.querySelector('.raid-scroll')?.scrollTop ?? 0;
+    const focused = root.contains(document.activeElement) ? document.activeElement.dataset : null;
     mode = 'lobby'; run = null; arena = null; surface = null; root.className = 'raid-lobby'; calc();
-    const b = st().best, mx = (b[selBoss] || 0) + 1; selLv = clamp(selLv, 1, mx);
-    root.innerHTML = '<header>' + (AURL.raid_banner ? '<span style="background:url(' + AURL.raid_banner + ') center/100% 100% no-repeat;padding:6px 26px 10px;color:#fff">보스 레이드</span>' : '보스 레이드') + btn('exit', '닫기') + '</header>' +
-      '<div class="defense-card defense-browser"><div class="defense-section"><h2>보스 선택</h2><small class="defense-attempts">오늘 남은 보상 <b>' + left() + ' / ' + DAILY + '</b></small></div>' +
-      '<div class="raid-bosses">' + NAMES.map((n, i) => '<button type="button" data-raid="boss" data-b="' + i + '" aria-pressed="' + (i === selBoss) + '">' + bossImg(i) + '<b>' + n + '</b><small>최고 Lv.' + (b[i] || 0) + '</small></button>').join('') + '</div>' +
-      '<div class="raid-lv">' + btn('lvm', '－', selLv <= 1) + '<b>Lv.' + selLv + '</b>' + btn('lvp', '＋', selLv >= mx) + '</div>' +
-      '<div class="raid-banner"><div><b>보스 체력 ' + fmt(bossHp(selLv)) + ' · 공격력 ' + fmt(bossAtk(selLv)) + '</b><br><small>내 공격력 ' + fmt(ST.atk) + ' · 체력 ' + fmt(ST.maxhp) + '</small></div></div>' +
-      '<div class="defense-prizes"><div><b>클리어 보상 (하루 ' + DAILY + '번)</b>' + items(rw(selLv)) + '</div></div>' +
-      btn('start', NAMES[selBoss] + ' Lv.' + selLv + ' 도전') +
-      '<small class="defense-attempt-note">혼자 도전 · 90초 안에 처치 · 빨간 원은 곧 터지는 공격이니 피하세요 · 보상 횟수를 다 써도 연습 가능</small></div>';
+    const best = st().best, max = (best[selBoss] || 0) + 1, remaining = left();
+    selLv = clamp(selLv, 1, max);
+    const cards = NAMES.map((name, i) =>
+      `<button type="button" class="raid-pick raid-pick-${i}" data-raid="boss" data-b="${i}" aria-pressed="${i === selBoss}"><span><b>${name}</b><small>${best[i] ? '최고 Lv.' + best[i] : '미격파'}</small></span></button>`
+    ).join('');
+    root.innerHTML = `<header class="raid-header"><h1>보스 레이드</h1>${btn('exit', '닫기')}</header>
+      <main class="raid-scroll">
+        <div class="raid-layout">
+          <div class="raid-select-title"><h2>보스 선택</h2><span>오늘 보상 <b>${remaining} / ${DAILY}</b></span></div>
+          <div class="raid-bosses">${cards}</div>
+          <section class="raid-stage">
+            <div class="raid-stage-row"><h2>도전 레벨</h2><div class="raid-lv">${btn('lvm', '−', selLv <= 1)}<strong>Lv.${selLv}</strong>${btn('lvp', '+', selLv >= max)}</div></div>
+            <div class="raid-stat-row"><b>보스</b><span>체력 <strong>${fmt(bossHp(selLv))}</strong></span><span>공격 <strong>${fmt(bossAtk(selLv))}</strong></span></div>
+            <div class="raid-stat-row"><b>나</b><span>체력 <strong>${fmt(ST.maxhp)}</strong></span><span>공격 <strong>${fmt(ST.atk)}</strong></span></div>
+          </section>
+          <section class="raid-rewards"><h2>${remaining ? '클리어 보상' : '오늘 보상 소진'}</h2>${remaining ? '<div class="raid-reward-items">' + items(rw(selLv)) + '</div>' : '<p>연습 모드로 계속 도전할 수 있어요.</p>'}</section>
+          <p class="raid-rules">1인 도전 · 제한 시간 ${TIME}초 · 붉은 장판을 피해요</p>
+        </div>
+      </main>
+      <footer class="raid-actions">${btn('start', NAMES[selBoss] + ' Lv.' + selLv + (remaining ? ' 도전' : ' 연습'))}</footer>`;
+    root.querySelector('.raid-scroll').scrollTop = previousScroll;
+    if (focused?.raid) {
+      const control = Array.from(root.querySelectorAll('[data-raid]')).find(el => el.dataset.raid === focused.raid && el.dataset.b === focused.b);
+      if (control && !control.disabled) control.focus({ preventScroll:true });
+    }
+    root.querySelector('[data-raid="lvm"]').setAttribute('aria-label', '도전 레벨 낮추기');
+    root.querySelector('[data-raid="lvp"]').setAttribute('aria-label', '도전 레벨 높이기');
   }
   function start() {
     calc(); const lv = selLv, b = selBoss;
@@ -35,7 +54,7 @@ window.RAID = (() => {
     arena.enemies = [boss];
     run = { lv, b, t: TIME, prep: 2, atk: bossAtk(lv), pat: 3.2, warns: [], revive: 0 };
     mode = 'battle'; root.className = 'raid-arena';
-    root.innerHTML = '<canvas id="raid-canvas"></canvas><div class="defense-hud"><header><b id="raid-title"></b>' + btn('exit', '나가기') + '</header><div class="raid-bosshp"><span id="raid-bhp"></span><i><em id="raid-bbar"></em></i></div><div class="raid-myhp"><span id="raid-hp"></span></div></div><div id="raid-notice"></div>';
+    root.innerHTML = '<canvas id="raid-canvas"></canvas><div class="raid-battle-hud"><header><b id="raid-title"></b>' + btn('exit', '나가기') + '</header><div class="raid-bosshp"><span id="raid-bhp"></span><i><em id="raid-bbar"></em></i></div><div class="raid-myhp"><span id="raid-hp"></span></div></div><div id="raid-notice"></div>';
     const c = $('raid-canvas');
     surface = { canvas: c, ctx: c.getContext('2d', { alpha: false }), title: $('raid-title'), bossHp: $('raid-bhp'), bar: $('raid-bbar'), hp: $('raid-hp') };
     renderElapsed = RENDER_INTERVAL;
@@ -53,8 +72,8 @@ window.RAID = (() => {
       trackTask('raid'); trackTask('boss'); window.SFX && SFX.play('fanfare', { v: .7, fixed: 1 });
     }
     r.reward = got; save();
-    const n = $('raid-notice'); n.className = 'defense-result';
-    n.innerHTML = '<h2>' + (win ? NAMES[r.b] + ' Lv.' + r.lv + ' 처치!' : '레이드 실패') + '</h2>' + (win ? (got ? '<div class="defense-earned">' + items(got) + '</div>' + btn('claim', '보상 받기') : '<p>오늘 보상 횟수를 다 써서 보상은 없어요 (연습)</p>') : '<p>90초 안에 처치하지 못했어요</p>') + btn('again', '다시 준비') + btn('exit', '나가기');
+    const n = $('raid-notice'); n.className = 'raid-result';
+    n.innerHTML = '<h2>' + (win ? NAMES[r.b] + ' Lv.' + r.lv + ' 처치!' : '레이드 실패') + '</h2>' + (win ? (got ? '<div class="raid-reward-items">' + items(got) + '</div>' + btn('claim', '보상 받기') : '<p>오늘 보상 횟수를 다 써서 보상은 없어요 (연습)</p>') : '<p>90초 안에 처치하지 못했어요</p>') + btn('again', '다시 준비') + btn('exit', '나가기');
   }
   function hurt(d) { const p = arena.player; if (p.dead || run.prep > 0) return; p.hp -= d; p.hitT = .2; withArenaCombat(arena, () => num(p.x, p.y - 56, '-' + fmt(d), '#ff6b6b')); window.SFX && SFX.play('hurt', { v: .5, gap: .25 }); if (p.hp <= 0) { p.hp = 0; p.dead = true; run.revive = 7; window.SFX && SFX.play('die', { v: .6 }); } }
   function input() {
