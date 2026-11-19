@@ -100,15 +100,17 @@ window.MOUNT = (() => {
     const sx = x + face * (r.seat[0] - .5) * W, sy = top + r.seat[1] * h;
     return { sx, sy };
   }
-  function aura(m, x, y) { if (m.g < 3) return; ctx.save(); const c = m.fx === 'gold' ? '#ffd23c' : m.fx === 'storm' ? '#7ff0ff' : m.fx === 'fire' ? '#ff8a3a' : '#bfe8ff';
-    ctx.globalAlpha = .22 + Math.sin(T * 4) * .08; const gr = ctx.createRadialGradient(x, y - 34, 6, x, y - 34, 76); gr.addColorStop(0, c); gr.addColorStop(1, c + '00'); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(x, y - 34, 76, 62, 0, 0, TAU); ctx.fill();
-    ctx.globalAlpha = .55; ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.setLineDash([10, 8]); ctx.lineDashOffset = -T * 40; ctx.beginPath(); ctx.ellipse(x, y + 2, 50, 16, 0, 0, TAU); ctx.stroke(); ctx.restore() }
+  // 오라: 그림(mount_aura, 흰 빛 → 등급색 입힘) 있을 때만, 탈것 몸 뒤에서 은은하게
+  const AC = {};
+  function auraImg(c) { const im = AI('mount_aura'); if (!im) return null; if (AC[c]) return AC[c]; const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const g = cv.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = .6; g.fillStyle = c; g.fillRect(0, 0, cv.width, cv.height); AC[c] = cv; return cv }
+  function aura(m, x, y) { if (m.g < 3) return; const c = m.fx === 'gold' ? '#ffd23c' : m.fx === 'storm' ? '#7ff0ff' : m.fx === 'fire' ? '#ff8a3a' : '#bfe8ff', im = auraImg(c); if (!im) return;
+    const w = 150 + Math.sin(T * 3) * 6, h = w * im.height / im.width; ctx.save(); ctx.globalAlpha = .55 + Math.sin(T * 4) * .15; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(im, x - w / 2, y - h * .62, w, h); ctx.restore() }
   function riderDraw(orig, rem) {
     if (typeof PV !== 'undefined' && PV) return orig(); const k = rem ? rem.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
     const face = Math.cos(P.dir) >= 0 ? 1 : -1, mv = P.moving;
     let ph; if (rem) { const o = RPH.get(rem) || { ph: 0, t: T }; o.ph += (T - o.t) * (mv ? 11 : 0); o.t = T; RPH.set(rem, o); ph = o.ph } else ph = F.ph;
     if (!rem) for (const g of F.ghosts) drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35);
-    aura(m, P.x, P.y); shadow(P.x, P.y + 2, RIG[m.k].fly ? 32 : 46);
+    shadow(P.x, P.y + 1, RIG[m.k].fly ? 26 : 38); aura(m, P.x, P.y);
     const s0 = drawMount(m, P.x, P.y, face, mv, ph);
     const y0 = P.y, x0 = P.x, w0 = P.walk, m0 = P.moving; P.x = s0.sx; P.y = s0.sy + 21; P.moving = false; P.walk = 0; P.sit = true; P.sitK = mv ? Math.sin(ph) * .08 : 0;
     try { orig() } finally { P.x = x0; P.y = y0; P.walk = w0; P.moving = m0; P.sit = false; P.sitK = 0 }
@@ -123,7 +125,7 @@ window.MOUNT = (() => {
     }
     for (let i = F.ghosts.length - 1; i >= 0; i--) { F.ghosts[i].l -= dt * 4; if (F.ghosts[i].l <= 0) F.ghosts.splice(i, 1) }
   }
-  function drawFx() { for (const q of F.parts) { ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, q.l * 2)); if (q.glow) ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill(); ctx.restore() } }
+  function drawFx() { for (const q of F.parts) { ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, q.l * 2)); const im = q.glow && typeof gImg === 'function' ? gImg(AI('mount_spark') ? 'mount_spark' : 'fx_star', q.c) : null; if (im) { ctx.globalCompositeOperation = 'lighter'; const w = q.r * 5; ctx.translate(q.x, q.y); ctx.rotate(q.l * 4); ctx.drawImage(im, -w / 2, -w / 2, w, w) } else { const dm = AI('mount_dust'); if (dm) { const w = q.r * 4; ctx.globalAlpha *= .8; ctx.drawImage(dm, q.x - w / 2, q.y - w / 2, w, w) } else { ctx.globalAlpha *= .5; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill() } } ctx.restore() } }
   function update(dt) {
     st(); if (combatArena && S.riding) { S.riding = false; calc() }
     { const m = cur(); if (riding() && P.moving && m) F.ph += dt * (RIG[m.k].slow ? 6 : 11) * Math.min(1.6, ST.spd / 300) }
