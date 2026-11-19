@@ -97,16 +97,56 @@ window.MOUNT = (() => {
   function phWing(k) { const key = k + ':w'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 120; c.height = 80; const g = c.getContext('2d');
     g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.8)'; g.fillStyle = shade(m.c, .35); g.beginPath(); g.moveTo(10, 70); g.quadraticCurveTo(20, 10, 112, 6); g.quadraticCurveTo(90, 30, 100, 40); g.quadraticCurveTo(70, 50, 76, 62); g.quadraticCurveTo(40, 64, 10, 70); g.fill(); g.stroke();
     PH[key] = c; return c }
+  // Joint positions measured from each body sprite, with short stocky legs kept distinct from horse legs.
+  const LEG_FIT = {
+    bear: [0.67, 0.881, 0.32, 0.924, 0.24],
+    bigfrog: [0.68, 0.902, 0.32, 0.941, 0.2],
+    boar: [0.67, 0.885, 0.31, 0.921, 0.23],
+    camel: [0.68, 0.864, 0.28, 0.926, 0.42],
+    crystalbear: [0.66, 0.916, 0.32, 0.941, 0.25],
+    donkey: [0.68, 0.91, 0.32, 0.924, 0.34],
+    dragon: [0.69, 0.899, 0.3, 0.895, 0.25],
+    elk: [0.65, 0.91, 0.3, 0.933, 0.36],
+    frostwolf: [0.68, 0.908, 0.34, 0.912, 0.27],
+    goat: [0.67, 0.911, 0.31, 0.933, 0.29],
+    goldstag: [0.66, 0.909, 0.32, 0.941, 0.34],
+    griffin: [0.68, 0.919, 0.3, 0.888, 0.26],
+    kirin: [0.67, 0.93, 0.31, 0.915, 0.37],
+    lavadrake: [0.67, 0.902, 0.3, 0.898, 0.24],
+    lion: [0.69, 0.937, 0.33, 0.914, 0.27],
+    mammoth: [0.65, 0.892, 0.3, 0.935, 0.24],
+    nightmare: [0.67, 0.927, 0.33, 0.893, 0.33],
+    ostrich: [0.5, 0.953, 0.47, 0.946, 0.48],
+    panther: [0.65, 0.91, 0.31, 0.863, 0.27],
+    pegasus: [0.68, 0.911, 0.34, 0.891, 0.34],
+    phoenixsteed: [0.68, 0.931, 0.34, 0.906, 0.33],
+    pony: [0.67, 0.912, 0.34, 0.905, 0.34],
+    raptor: [0.51, 0.941, 0.47, 0.936, 0.36],
+    reindeer: [0.67, 0.919, 0.33, 0.893, 0.33],
+    rhino: [0.67, 0.885, 0.31, 0.931, 0.22],
+    saber: [0.68, 0.882, 0.32, 0.924, 0.25],
+    seraph: [0.68, 0.923, 0.37, 0.80, 0.32],
+    sheep: [0.67, 0.899, 0.32, 0.929, 0.22],
+    shiba: [0.67, 0.935, 0.33, 0.942, 0.23],
+    stardeer: [0.67, 0.92, 0.32, 0.928, 0.34],
+    tortoise: [0.67, 0.891, 0.31, 0.925, 0.2],
+    whitetiger: [0.68, 0.931, 0.34, 0.919, 0.255],
+    whitehorse: [0.68, 0.891, 0.33, 0.831, 0.34],
+    wolf: [0.67, 0.846, 0.33, 0.874, 0.28],
+    zebra: [0.67, 0.907, 0.33, 0.907, 0.34],
+  };
+  for (const [key, [fx, fy, bx, by, length]] of Object.entries(LEG_FIT)) {
+    Object.assign(RIG[key], { fl: [fx, fy], bl: [bx, by], leg: length });
+  }
   function legInset(rig, anchor, bodyHeight) {
-    return anchor === rig.bl && rig.backTuck ? 0 : bodyHeight * .09;
+    return bodyHeight * (rig.biped ? .065 : .105);
   }
   function legExtension(rig, anchor, bodyHeight) {
-    const rearOffset = anchor === rig.bl && rig.backTuck ? (rig.fl[1] - anchor[1]) * bodyHeight : 0;
-    return legInset(rig, anchor, bodyHeight) + rearOffset;
+    return legInset(rig, anchor, bodyHeight) + (rig.fl[1] - anchor[1]) * bodyHeight;
   }
 
   function phCard(k) { const key = k + ':c' + (AI('mount_' + k + '_body') ? 1 : 0); if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 220; c.height = 220; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 190, h = w * b.height / b.width, x0 = 15, y0 = r.fly ? 90 : 40;
-    { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of (r.biped ? [0] : [-5, 5])) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6 - legInset(r, a, h), lw, lh + legExtension(r, a, h)) }
+    { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of (r.biped ? [a === r.bl ? -5 : 2] : [-5, 5])) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6 - legInset(r, a, h), lw, lh + legExtension(r, a, h)) }
     g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'), ww = w * r.wl * .8, wh = ww * wi.height / wi.width; g.save(); g.translate(x0 + r.wing[0] * w, y0 + r.wing[1] * h); g.scale(-1, 1); g.drawImage(wi, -ww * .06, -wh * .92, ww, wh); g.restore() }
     PH[key] = c; c.url = c.toDataURL(); return c }
   const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
@@ -120,7 +160,7 @@ window.MOUNT = (() => {
   function drawMount(m, x, y, face, mv, ph, alpha) {
     const r = RIG[m.k], body = part(m.k, 'body'), leg = part(m.k, 'leg'), h = W * body.height / body.width;
     const amp = mv ? r.amp : 0, bob = r.fly ? 26 + Math.sin(T * (mv ? 7 : 3)) * 5 : mv ? Math.abs(Math.sin(ph)) * (r.slow ? 1.5 : 4) : Math.sin(T * 2.2) * 1.2;
-    const legLen = W * r.leg, legW = legLen * leg.width / leg.height, top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
+    const legLen = W * r.leg, legW = legLen * leg.width / leg.height * (r.biped ? .88 : .92), top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
     const pitch = r.fly ? (mv ? -.06 : 0) + Math.sin(T * 3) * .03 : mv ? Math.sin(ph * 2) * .025 : 0;
     ctx.save(); if (alpha != null) ctx.globalAlpha *= alpha; ctx.translate(x, top + h * .6); ctx.scale(face, 1); ctx.rotate(pitch); ctx.translate(-W / 2, -h * .6);
     const L = (a, phase, far) => {
@@ -128,9 +168,9 @@ window.MOUNT = (() => {
       const ax = a[0] * W, ay = a[1] * h;
       const ang = r.fly ? (mv ? -.55 : -.12) + Math.sin(T * 3 + phase) * .12 * (rear ? -1 : 1) : amp * Math.sin(ph + phase);
       const length = legLen + legExtension(r, a, h);
-      ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2 - legInset(r, a, h));
+      ctx.save(); ctx.translate(ax + (far ? -5 : 2), ay - (far ? 5 : 2) - legInset(r, a, h));
       ctx.rotate(-ang - (tucked && mv ? tucked : 0));
-      if (far) ctx.filter = 'brightness(.72)';
+      if (far) ctx.filter = 'brightness(.78)';
       ctx.drawImage(leg, -legW / 2, 0, legW, length);
       ctx.restore();
     };
@@ -138,7 +178,7 @@ window.MOUNT = (() => {
     const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 8 : 0), r.wing[1] * h); ctx.scale(-1, 1); ctx.rotate(-.1 - flap * .6 + (far ? -.15 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .06, -wh * .92, ww, wh); ctx.restore() };
     // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
     Wg(true); if (!r.biped) { L(r.fl, Math.PI, true); L(r.bl, 0, true) }
-    L(r.fl, 0, false); L(r.bl, Math.PI, false);
+    L(r.fl, 0, false); L(r.bl, Math.PI, !!r.biped);
     ctx.drawImage(body, 0, 0, W, h);
     Wg(false);
     ctx.restore();
