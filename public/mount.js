@@ -129,7 +129,7 @@ window.MOUNT = (() => {
   // 오라: 그림(mount_aura, 흰 빛 → 등급색 입힘) 있을 때만, 탈것 몸 뒤에서 은은하게
   const AC = {};
   function auraImg(c) { const im = AI('mount_aura'); if (!im) return null; if (AC[c]) return AC[c]; const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const g = cv.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = .75; g.fillStyle = c; g.fillRect(0, 0, cv.width, cv.height); AC[c] = cv; return cv }
-  function aura(m, x, y) { if (m.g < 3) return; const c = FXC[m.fx] || '#bfe8ff', im = auraImg(c); if (!im) return;
+  function aura(m, x, y) { if (m.g < 3) return; const c = FXC[m.fx] || '#bfe8ff', AK = { fire: 'fire', frost: 'frost', storm: 'storm', gold: 'gold', gfeather: 'gold', feather: 'gold', shine: 'gold', shadow: 'shadow', star: 'star' }[m.fx], own = AK && AI('maura_' + AK), im = own || auraImg(c); if (!im) return;
     const w = 140 + Math.sin(T * 3) * 5, h = w * im.height / im.width * (1.15 + Math.sin(T * 5) * .06); ctx.save(); ctx.globalAlpha = (m.g >= 4 ? .42 : .32) + Math.sin(T * 4) * .08; ctx.globalCompositeOperation = 'screen'; ctx.drawImage(im, x - w / 2, y - h * .8, w, h); ctx.restore() }
   function riderDraw(orig, rem) {
     if (typeof PV !== 'undefined' && PV) return orig(); const k = rem ? rem.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
