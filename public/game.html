@@ -1341,7 +1341,7 @@ function withArenaCombat(arena,fn){
   ctx=world.ctx;PV=world.PV;combatArena=null;
  }
 }
-function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.dead||Math.hypot(P.x-P.recall.x,P.y-P.recall.y)>6){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
+function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.dead){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
  // player
  if(P.dead){P.respT-=dt;if(P.respT<=0){P.dead=false;P.x=BASE.x;P.y=BASE.y+120;P.hp=ST.maxhp}}
  else{
