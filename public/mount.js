@@ -42,17 +42,18 @@ window.MOUNT = (() => {
   // 그림 부품: mount_<키>_body(다리 없는 몸·머리·꼬리·안장, 오른쪽 보기), mount_<키>_leg(다리 1개, 위=몸에 붙는 쪽), 날개 달린 건 mount_<키>_wing(위=어깨)
   // RIG: 다리 붙는 위치(몸통 그림 비율 x,y), 다리 길이(몸 폭 비율), 안장(비율), 걸음 폭, 날개
   const RIG = {
-    pony: { fl: [.68, .74], bl: [.30, .74], leg: .30, seat: [.50, .30], amp: .55 },
-    boar: { fl: [.70, .78], bl: [.30, .78], leg: .22, seat: [.48, .32], amp: .6 },
-    wolf: { fl: [.70, .72], bl: [.28, .72], leg: .30, seat: [.48, .30], amp: .65 },
-    tortoise: { fl: [.74, .80], bl: [.26, .80], leg: .17, seat: [.50, .16], amp: .3, slow: 1 },
-    camel: { fl: [.66, .70], bl: [.30, .70], leg: .40, seat: [.46, .20], amp: .5 },
-    whitehorse: { fl: [.68, .72], bl: [.28, .72], leg: .34, seat: [.48, .28], amp: .6 },
-    reindeer: { fl: [.68, .72], bl: [.28, .72], leg: .34, seat: [.48, .30], amp: .6 },
-    lion: { fl: [.70, .74], bl: [.28, .74], leg: .28, seat: [.46, .30], amp: .65 },
-    griffin: { fl: [.70, .74], bl: [.30, .74], leg: .26, seat: [.44, .30], amp: .55, wing: [.46, .30], wl: .72 },
-    kirin: { fl: [.68, .70], bl: [.28, .70], leg: .32, seat: [.46, .28], amp: .55 },
+    pony: { fl: [.66, .86], bl: [.27, .80], leg: .38, seat: [.44, .52], amp: .55 },
+    boar: { fl: [.66, .82], bl: [.26, .86], leg: .28, seat: [.30, .38], amp: .6 },
+    wolf: { fl: [.66, .80], bl: [.25, .82], leg: .38, seat: [.38, .44], amp: .65 },
+    tortoise: { fl: [.68, .84], bl: [.26, .82], leg: .24, seat: [.40, .12], amp: .3, slow: 1 },
+    camel: { fl: [.64, .84], bl: [.26, .84], leg: .46, seat: [.42, .34], amp: .5 },
+    whitehorse: { fl: [.64, .84], bl: [.26, .82], leg: .40, seat: [.38, .43], amp: .6 },
+    reindeer: { fl: [.64, .86], bl: [.25, .86], leg: .40, seat: [.38, .53], amp: .6 },
+    lion: { fl: [.66, .86], bl: [.25, .86], leg: .34, seat: [.40, .53], amp: .65 },
+    griffin: { seat: [.38, .46], fly: 1, wing: [.40, .40], wl: 1.05 },
+    kirin: { fl: [.64, .86], bl: [.25, .86], leg: .44, seat: [.40, .58], amp: .55 },
   };
+
   const PH = {};
   function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v + (k < 0 ? v * k : (255 - v) * k)))); return 'rgb(' + f(n >> 16) + ',' + f(n >> 8 & 255) + ',' + f(n & 255) + ')' }
   function phBody(k) { const key = k + ':b'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 200; c.height = 120; const g = c.getContext('2d');
@@ -70,26 +71,26 @@ window.MOUNT = (() => {
   function phWing(k) { const key = k + ':w'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 120; c.height = 80; const g = c.getContext('2d');
     g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.8)'; g.fillStyle = shade(m.c, .35); g.beginPath(); g.moveTo(10, 70); g.quadraticCurveTo(20, 10, 112, 6); g.quadraticCurveTo(90, 30, 100, 40); g.quadraticCurveTo(70, 50, 76, 62); g.quadraticCurveTo(40, 64, 10, 70); g.fill(); g.stroke();
     PH[key] = c; return c }
-  function phCard(k) { const key = k + ':c'; if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 200; c.height = 150; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 180, h = w * b.height / b.width, x0 = 10, y0 = 10;
-    const lw = w * r.leg * .45, lh = w * r.leg; for (const a of [r.bl, r.fl]) for (const o of [-6, 6]) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 3, lw, lh);
-    g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'); g.drawImage(wi, x0 + r.wing[0] * w - 10, y0 + r.wing[1] * h - w * r.wl * .55, w * r.wl, w * r.wl * wi.height / wi.width) }
+  function phCard(k) { const key = k + ':c' + (AI('mount_' + k + '_body') ? 1 : 0); if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 220; c.height = 220; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 190, h = w * b.height / b.width, x0 = 15, y0 = r.fly ? 90 : 40;
+    if (!r.fly) { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of [-5, 5]) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6, lw, lh) }
+    g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'), ww = w * r.wl * .8, wh = ww * wi.height / wi.width; g.save(); g.translate(x0 + r.wing[0] * w, y0 + r.wing[1] * h); g.scale(-1, 1); g.drawImage(wi, -ww * .06, -wh * .92, ww, wh); g.restore() }
     PH[key] = c; c.url = c.toDataURL(); return c }
   const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
   const url = k => AURL['mount_' + k] || AURL['mount_' + k + '_card'] || phCard(k).url;
-  const W = 100; // 화면상 몸통 폭
+  const W = 108; // 화면상 몸통 폭
   const F = { t: 0, ghosts: [], parts: [], gT: 0, ph: 0 };
   const RPH = new WeakMap();
   function poof() { for (let i = 0; i < 14; i++) { const a = rnd(0, TAU), s = rnd(40, 110); F.parts.push({ x: P.x, y: P.y - 20, vx: Math.cos(a) * s, vy: Math.sin(a) * s * .6 - 20, l: .5, c: '#fff', r: rnd(4, 8) }) } }
   // 몸 전체를 그리고 안장 위치(화면 좌표)를 돌려줌
   function drawMount(m, x, y, face, mv, ph, alpha) {
     const r = RIG[m.k], body = part(m.k, 'body'), leg = part(m.k, 'leg'), h = W * body.height / body.width;
-    const amp = mv ? r.amp : 0, bob = mv ? Math.abs(Math.sin(ph)) * (r.slow ? 1.5 : 4) : Math.sin(T * 2.2) * 1.2;
-    const legLen = W * r.leg, legW = legLen * leg.width / leg.height, top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
-    const pitch = mv ? Math.sin(ph * 2) * .025 : 0;
+    const amp = mv ? r.amp : 0, bob = r.fly ? 26 + Math.sin(T * (mv ? 7 : 3)) * 5 : mv ? Math.abs(Math.sin(ph)) * (r.slow ? 1.5 : 4) : Math.sin(T * 2.2) * 1.2;
+    const legLen = r.fly ? 0 : W * r.leg, legW = r.fly ? 0 : legLen * leg.width / leg.height, top = r.fly ? y - h - bob : y - legLen - h * (1 - r.fl[1]) - bob + 4;
+    const pitch = r.fly ? (mv ? -.06 : 0) + Math.sin(T * 3) * .03 : mv ? Math.sin(ph * 2) * .025 : 0;
     ctx.save(); if (alpha != null) ctx.globalAlpha *= alpha; ctx.translate(x, top + h * .6); ctx.scale(face, 1); ctx.rotate(pitch); ctx.translate(-W / 2, -h * .6);
-    const L = (a, phase, far) => { const ax = a[0] * W, ay = a[1] * h, ang = amp * Math.sin(ph + phase); ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2); ctx.rotate(-ang); if (far) ctx.filter = 'brightness(.72)'; ctx.drawImage(leg, -legW / 2, 0, legW, legLen); ctx.restore() };
+    const L = (a, phase, far) => { if (r.fly) return; const ax = a[0] * W, ay = a[1] * h, ang = amp * Math.sin(ph + phase); ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2); ctx.rotate(-ang); if (far) ctx.filter = 'brightness(.72)'; ctx.drawImage(leg, -legW / 2, 0, legW, legLen); ctx.restore() };
     const flap = mv ? Math.sin(T * 13) : Math.sin(T * 4) * .5;
-    const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 6 : 0), r.wing[1] * h); ctx.rotate(-.35 - flap * .55 + (far ? -.12 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .08, -wh * .9, ww, wh); ctx.restore() };
+    const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 8 : 0), r.wing[1] * h); ctx.scale(-1, 1); ctx.rotate(-.1 - flap * .6 + (far ? -.15 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .06, -wh * .92, ww, wh); ctx.restore() };
     // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
     Wg(true); L(r.fl, Math.PI, true); L(r.bl, 0, true);
     ctx.drawImage(body, 0, 0, W, h);
@@ -107,7 +108,7 @@ window.MOUNT = (() => {
     const face = Math.cos(P.dir) >= 0 ? 1 : -1, mv = P.moving;
     let ph; if (rem) { const o = RPH.get(rem) || { ph: 0, t: T }; o.ph += (T - o.t) * (mv ? 11 : 0); o.t = T; RPH.set(rem, o); ph = o.ph } else ph = F.ph;
     if (!rem) for (const g of F.ghosts) drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35);
-    aura(m, P.x, P.y); shadow(P.x, P.y + 2, 44);
+    aura(m, P.x, P.y); shadow(P.x, P.y + 2, RIG[m.k].fly ? 32 : 46);
     const s0 = drawMount(m, P.x, P.y, face, mv, ph);
     const y0 = P.y, x0 = P.x, w0 = P.walk, m0 = P.moving; P.x = s0.sx; P.y = s0.sy + 21; P.moving = false; P.walk = 0; P.sit = true; P.sitK = mv ? Math.sin(ph) * .08 : 0;
     try { orig() } finally { P.x = x0; P.y = y0; P.walk = w0; P.moving = m0; P.sit = false; P.sitK = 0 }

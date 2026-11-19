@@ -905,7 +905,11 @@ function collectionClaimButton(){
 function collectionScore(){return Object.values(collectionState().claimed).reduce((a,v)=>a+(Number(v)||0),0)}
 function collectionBonus(){return Math.min(5,Math.floor(collectionScore()/15))*.01}
 function featureImage(key){return '<img src="assets/feature_'+key+'.webp" alt="">'}
-function collectionPanel(){
+function bookCreature(){const pet=bookTab==='pet',L=pet?(window.PET?PET.PETS:[]):(window.MOUNT?MOUNT.MS:[]),own=pet?(S.pets||{}):(S.mounts||{}),GN=['일반','희귀','레어','에픽','전설'],GC=['#c3cad6','#6fe04f','#5ab4ff','#c97bff','#ffc93c'],RW=[5,10,20,40,80],cl=collectionState().claimed;
+ const n=L.filter(x=>own[x.k]).length;
+ return '<div class="feature-head">'+featureImage('book')+'<div><b>'+(pet?'펫':'탈것')+' 도감 · '+n+'/'+L.length+'</b><small>처음 얻으면 보석, 5성 달성하면 보석 한 번 더</small></div></div><div class="petGrid">'+L.map(x=>{const o=own[x.k],c=cl[bookTab+':'+x.k]||0,ready=o&&(c===0||(c===1&&o.st>=5)),rw=RW[x.g]*(c===0?1:2);
+  return '<div class="petCell'+(o?'':' lock')+(ready?' sel':'')+'" '+(ready?'data-a="bookcclaim:'+x.k+'"':'')+' style="border-color:'+GC[x.g]+'"><img src="'+(pet?PET.url(x.k):MOUNT.url(x.k))+'" style="'+(pet?'':'width:54px;height:40px')+'" alt=""><b>'+x.n+'</b><span>'+(o?'★'+o.st:GN[x.g])+'</span>'+(ready?'<i class="pon" style="background:#ff3b5c">보석 '+rw+'</i>':c>=2?'<i class="pon">완료</i>':'')+'</div>'}).join('')+'</div>'}
+function collectionPanel(){if(bookTab==='pet'||bookTab==='mount')return bookCreature();
  const entries=collectionEntries(),score=collectionScore(),rank=['D','C','B','A','S','SS'][Math.min(5,Math.floor(score/15))];
  return '<div class="feature-head">'+featureImage('book')+'<div><b>'+rank+' · '+['초보 모험가','견습 탐험가','노련한 탐험가','대륙의 모험가','전설의 모험가','대륙의 수호자'][Math.min(5,Math.floor(score/15))]+'</b><small>보상 '+score+'회 수령 · 공격력 +'+Math.round(collectionBonus()*100)+'%</small></div></div><div class="note">획득·처치 수를 모으면 각 항목에서 보석 보상을 받아요.</div><div class="collection-grid">'+entries.map(e=>{const claimed=collectionState().claimed[bookTab+':'+e.id]||0,goal=COLLECT_STEPS[claimed],ready=goal&&e.count>=goal;
  return '<button class="collection-item '+(ready?'ready':'')+'" data-a="bookentry:'+e.id+'"><img src="'+(AURL[e.img]||'assets/'+e.img+'.webp')+'" alt=""><strong>'+e.name+'</strong><small>'+e.count+(goal?'/'+goal:' · 완료')+'</small>'+(ready?'<b>보상 받기</b>':'')+'</button>'}).join('')+'</div>';
@@ -996,7 +1000,8 @@ function promotionPanel(){
 }
 function featureAct(action,value){
  if(action==='collection'){panel='collection';bookFocus=null}
- else if(action==='booktab'){if(!['weapon','monster'].includes(value))return true;bookTab=value;bookFocus=null;panel='collection'}
+ else if(action==='booktab'){if(!['weapon','monster','pet','mount'].includes(value))return true;bookTab=value;bookFocus=null;panel='collection'}
+ else if(action==='bookcclaim'){const pet=bookTab==='pet',L=pet?PET.PETS:MOUNT.MS,x=L.find(q=>q.k===value),o=x&&(pet?(S.pets||{}):(S.mounts||{}))[value];if(!o)return true;const cl=collectionState().claimed,key=bookTab+':'+value,c=cl[key]||0;if(!(c===0||(c===1&&o.st>=5)))return true;const rw=[5,10,20,40,80][x.g]*(c===0?1:2);cl[key]=c+1;S.gem+=rw;save();rewardFly({gem:rw});toast(x.n+' 도감 · 보석 '+rw)}
  else if(action==='bookentry'){bookFocus=value;panel='collectionDetail'}
  else if(action==='collectall'){
   const rewards=collectAllRewards(true);
@@ -2029,7 +2034,7 @@ function open(p){PBACK.length=0;if(p!=='home')window.SFX&&SFX.play('open',{v:.5}
  panel=p;$('modal').className='open';draw()}
 function close(){if(panel)window.SFX&&SFX.play('close',{v:.45});closePop();swapKey=null;mergeSel=null;panel=null;lastGot=[];resetArm=false;$('modal').className=''}
 function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'),F=$('mfoot');F.innerHTML='';
- if(panel==='collection'||panel==='collectionDetail'){$('mtitle').textContent='도감';cur(['gem']);B.innerHTML=panel==='collection'?collectionPanel():collectionDetail();F.innerHTML=collectionClaimButton()+'<div class="tabs">'+['weapon','monster'].map(k=>'<button class="tab '+(bookTab===k?'on':'')+'" data-a="booktab:'+k+'">'+(k==='weapon'?'무기':'몬스터')+'</button>').join('')+'</div>'}
+ if(panel==='collection'||panel==='collectionDetail'){$('mtitle').textContent='도감';cur(['gem']);B.innerHTML=panel==='collection'?collectionPanel():collectionDetail();F.innerHTML=collectionClaimButton()+'<div class="tabs">'+['weapon','monster','pet','mount'].map(k=>'<button class="tab '+(bookTab===k?'on':'')+'" data-a="booktab:'+k+'">'+({weapon:'무기',monster:'몬스터',pet:'펫',mount:'탈것'}[k])+'</button>').join('')+'</div>'}
  else if(panel==='challenges'){
   $('mtitle').textContent='도전';
   cur([]);
@@ -2266,7 +2271,7 @@ qlv();loadAssets();requestAnimationFrame(frame);
 <script src="defense.js?v=10"></script>
 <script src="raid.js?v=8"></script>
 <script src="pet.js?v=10"></script>
-<script src="mount.js?v=4"></script>
+<script src="mount.js?v=6"></script>
 <script src="unlock.js?v=1"></script>
 <script src="sfx.js?v=4"></script>
 </body>
