@@ -145,9 +145,33 @@ window.MOUNT = (() => {
     return legInset(rig, anchor, bodyHeight) + (rig.fl[1] - anchor[1]) * bodyHeight;
   }
 
+  const NEAR_LEGS = new WeakMap();
+  function nearLeg(source) {
+    let art = NEAR_LEGS.get(source);
+    if (art) return art;
+    art = document.createElement('canvas');
+    art.width = source.width; art.height = source.height;
+    const g = art.getContext('2d');
+    g.drawImage(source, 0, 0);
+    g.globalCompositeOperation = 'destination-in';
+    const fade = g.createLinearGradient(0, 0, 0, art.height * .37);
+    fade.addColorStop(0, 'rgba(0,0,0,0)');
+    fade.addColorStop(.38, 'rgba(0,0,0,.1)');
+    fade.addColorStop(1, 'rgba(0,0,0,1)');
+    g.fillStyle = fade; g.fillRect(0, 0, art.width, art.height);
+    NEAR_LEGS.set(source, art);
+    return art;
+  }
+
   function phCard(k) { const key = k + ':c' + (AI('mount_' + k + '_body') ? 1 : 0); if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 220; c.height = 220; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 190, h = w * b.height / b.width, x0 = 15, y0 = r.fly ? 90 : 40;
-    { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of (r.biped ? [a === r.bl ? -5 : 2] : [-5, 5])) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6 - legInset(r, a, h), lw, lh + legExtension(r, a, h)) }
-    g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'), ww = w * r.wl * .8, wh = ww * wi.height / wi.width; g.save(); g.translate(x0 + r.wing[0] * w, y0 + r.wing[1] * h); g.scale(-1, 1); g.drawImage(wi, -ww * .06, -wh * .92, ww, wh); g.restore() }
+    const lh = w * r.leg, lw = lh * l.width / l.height;
+    const cardLeg = (a, far) => g.drawImage(far ? l : nearLeg(l), x0 + a[0] * w - lw / 2 + (far ? -5 : 2), y0 + a[1] * h - (far ? 9 : 6) - legInset(r, a, h), lw, lh + legExtension(r, a, h));
+    if (!r.biped) cardLeg(r.fl, true);
+    cardLeg(r.bl, true);
+    g.drawImage(b, x0, y0, w, h);
+    cardLeg(r.fl, false);
+    if (!r.biped) cardLeg(r.bl, false);
+    if (r.wing) { const wi = part(k, 'wing'), ww = w * r.wl * .8, wh = ww * wi.height / wi.width; g.save(); g.translate(x0 + r.wing[0] * w, y0 + r.wing[1] * h); g.scale(-1, 1); g.drawImage(wi, -ww * .06, -wh * .92, ww, wh); g.restore() }
     PH[key] = c; c.url = c.toDataURL(); return c }
   const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
   const url = k => AURL['mount_' + k] || AURL['mount_' + k + '_card'] || phCard(k).url;
@@ -171,15 +195,16 @@ window.MOUNT = (() => {
       ctx.save(); ctx.translate(ax + (far ? -5 : 2), ay - (far ? 5 : 2) - legInset(r, a, h));
       ctx.rotate(-ang - (tucked && mv ? tucked : 0));
       if (far) ctx.filter = 'brightness(.78)';
-      ctx.drawImage(leg, -legW / 2, 0, legW, length);
+      ctx.drawImage(far ? leg : nearLeg(leg), -legW / 2, 0, legW, length);
       ctx.restore();
     };
     const flap = mv ? Math.sin(T * 13) : Math.sin(T * 4) * .5;
     const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 8 : 0), r.wing[1] * h); ctx.scale(-1, 1); ctx.rotate(-.1 - flap * .6 + (far ? -.15 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .06, -wh * .92, ww, wh); ctx.restore() };
     // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
-    Wg(true); if (!r.biped) { L(r.fl, Math.PI, true); L(r.bl, 0, true) }
-    L(r.fl, 0, false); L(r.bl, Math.PI, !!r.biped);
+    Wg(true); if (!r.biped) L(r.fl, Math.PI, true);
+    L(r.bl, r.biped ? Math.PI : 0, true);
     ctx.drawImage(body, 0, 0, W, h);
+    L(r.fl, 0, false); if (!r.biped) L(r.bl, Math.PI, false);
     Wg(false);
     ctx.restore();
     const ox = (r.seat[0] - .5) * W, oy = (r.seat[1] - .6) * h;
