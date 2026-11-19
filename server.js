@@ -107,6 +107,18 @@ const server = http.createServer(async (req, res) => {
       if (b.a === 'claim') { for (const g of got) u.gifts[g.id] = Date.now(); if (got.length) markDirty(); }
       return send(res, 200, { gifts: got });
     }
+    if (p === '/api/pass') { // 성장 패스 프리미엄: 운영자(ehgus)가 켜 줌
+      const S1 = 's1';
+      if (b.a === 'grant') {
+        if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
+        const t = Object.values(db.users).find(x => x.nick && x.nick.toLowerCase() === String(b.nick || '').trim().toLowerCase());
+        if (!t) return send(res, 400, { err: '그 닉네임을 찾을 수 없어요' });
+        t.passPrem = t.passPrem || {}; if (b.on) t.passPrem[S1] = Date.now(); else delete t.passPrem[S1]; markDirty();
+      }
+      const out = { prem: !!(u.passPrem && u.passPrem[S1]) };
+      if (u.id === 'ehgus') out.list = Object.values(db.users).filter(x => x.passPrem && x.passPrem[S1]).map(x => x.nick || x.id);
+      return send(res, 200, out);
+    }
     if (p === '/api/market') return market(u, b, res);
     if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', epoch: db.epoch || 0 });
     if (p === '/api/nick') {
@@ -267,7 +279,7 @@ function launchReset() {
   fs.writeFileSync(path.join(DATA, 'backup-before-launch-' + stamp + '.json'), JSON.stringify({ db, mk }));
   for (const id in db.users) {
     const u = db.users[id];
-    db.users[id] = { id: u.id, salt: u.salt, hash: u.hash, nick: u.nick || '', token: u.token, save: null, at: u.at };
+    db.users[id] = { id: u.id, salt: u.salt, hash: u.hash, nick: u.nick || '', token: u.token, save: null, at: u.at, ...(u.passPrem ? { passPrem: u.passPrem } : {}) };
   }
   db.launchReset = Date.now(); db.epoch = db.launchReset;
   fs.writeFileSync(DB_FILE, JSON.stringify(db)); dirty = false;
