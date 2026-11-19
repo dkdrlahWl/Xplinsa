@@ -97,8 +97,16 @@ window.MOUNT = (() => {
   function phWing(k) { const key = k + ':w'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 120; c.height = 80; const g = c.getContext('2d');
     g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.8)'; g.fillStyle = shade(m.c, .35); g.beginPath(); g.moveTo(10, 70); g.quadraticCurveTo(20, 10, 112, 6); g.quadraticCurveTo(90, 30, 100, 40); g.quadraticCurveTo(70, 50, 76, 62); g.quadraticCurveTo(40, 64, 10, 70); g.fill(); g.stroke();
     PH[key] = c; return c }
+  function legInset(rig, anchor, bodyHeight) {
+    return anchor === rig.bl && rig.backTuck ? 0 : bodyHeight * .09;
+  }
+  function legExtension(rig, anchor, bodyHeight) {
+    const rearOffset = anchor === rig.bl && rig.backTuck ? (rig.fl[1] - anchor[1]) * bodyHeight : 0;
+    return legInset(rig, anchor, bodyHeight) + rearOffset;
+  }
+
   function phCard(k) { const key = k + ':c' + (AI('mount_' + k + '_body') ? 1 : 0); if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 220; c.height = 220; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 190, h = w * b.height / b.width, x0 = 15, y0 = r.fly ? 90 : 40;
-    { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of [-5, 5]) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6, lw, lh + (a === r.bl && r.backTuck ? (r.fl[1] - a[1]) * h : 0)) }
+    { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of (r.biped ? [0] : [-5, 5])) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6 - legInset(r, a, h), lw, lh + legExtension(r, a, h)) }
     g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'), ww = w * r.wl * .8, wh = ww * wi.height / wi.width; g.save(); g.translate(x0 + r.wing[0] * w, y0 + r.wing[1] * h); g.scale(-1, 1); g.drawImage(wi, -ww * .06, -wh * .92, ww, wh); g.restore() }
     PH[key] = c; c.url = c.toDataURL(); return c }
   const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
@@ -119,8 +127,8 @@ window.MOUNT = (() => {
       const rear = a === r.bl, tucked = rear && r.backTuck;
       const ax = a[0] * W, ay = a[1] * h;
       const ang = r.fly ? (mv ? -.55 : -.12) + Math.sin(T * 3 + phase) * .12 * (rear ? -1 : 1) : amp * Math.sin(ph + phase);
-      const length = legLen + (tucked ? (r.fl[1] - a[1]) * h : 0);
-      ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2);
+      const length = legLen + legExtension(r, a, h);
+      ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2 - legInset(r, a, h));
       ctx.rotate(-ang - (tucked && mv ? tucked : 0));
       if (far) ctx.filter = 'brightness(.72)';
       ctx.drawImage(leg, -legW / 2, 0, legW, length);
@@ -130,9 +138,9 @@ window.MOUNT = (() => {
     const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 8 : 0), r.wing[1] * h); ctx.scale(-1, 1); ctx.rotate(-.1 - flap * .6 + (far ? -.15 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .06, -wh * .92, ww, wh); ctx.restore() };
     // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
     Wg(true); if (!r.biped) { L(r.fl, Math.PI, true); L(r.bl, 0, true) }
-    if (r.backTuck) L(r.bl, Math.PI, false);
+    L(r.fl, 0, false); L(r.bl, Math.PI, false);
     ctx.drawImage(body, 0, 0, W, h);
-    L(r.fl, 0, false); if (!r.backTuck) L(r.bl, Math.PI, false); Wg(false);
+    Wg(false);
     ctx.restore();
     const ox = (r.seat[0] - .5) * W, oy = (r.seat[1] - .6) * h;
     const c = Math.cos(pitch), sn = Math.sin(pitch);
