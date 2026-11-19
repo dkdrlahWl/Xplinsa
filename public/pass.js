@@ -30,7 +30,7 @@
   function rwHTML(r) {
     const out = [];
     for (const k in r) {
-      if (k === 'key') { const b = BOX[r.key[0]], u = b && (AURL[b.img] || AURL[b.fb]); out.push(`<span class="pi">${u ? `<img src="${u}" alt="">` : '🔑'}<i>🔑${r.key[1]}</i></span>`) }
+      if (k === 'key') { const b = BOX[r.key[0]], u = b && (AURL[b.img] || AURL[b.fb]), ki = AURL.icon_key; out.push(`<span class="pi">${ki ? `<img src="${ki}" alt="">` : '🔑'}${u ? `<img class="pbx" src="${u}" alt="">` : ''}<i>x${r.key[1]}</i></span>`) }
       else out.push(`<span class="pi">${IC[k] || ''}<i>${fmt(r[k])}</i></span>`);
     }
     return out.join('');
@@ -60,6 +60,7 @@
 .pass-c.lock::before{content:'🔒';position:absolute;top:-8px;right:-6px;font-size:18px;filter:none}
 .pass-c .pi{position:relative;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center}
 .pass-c .pi>img,.pass-c .pi>svg{width:36px;height:36px;object-fit:contain}
+.pass-c .pi>img.pbx{position:absolute;left:-6px;top:-6px;width:22px;height:22px}
 .pass-c .pi i{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:11px;color:#fff;text-shadow:0 1px 0 #1c1830,0 0 3px #1c1830;white-space:nowrap}
 .pass-all{display:block;margin:4px auto 10px;font:inherit;font-size:18px;color:#fff;border:3px solid #1c1830;border-radius:12px;padding:6px 26px;background:linear-gradient(#9be86a,#4fb83a);box-shadow:inset 0 -4px 0 #2f8a24}
 .pass-all:disabled{filter:grayscale(.9);opacity:.6}
