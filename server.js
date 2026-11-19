@@ -30,12 +30,8 @@ const nickTaken = n => Object.values(db.users).some(u => u.nick && u.nick.toLowe
 // 무기를 금화·보석으로 사고팖. 판매 대금(수수료 10% 제외)은 판매자 우편함에 쌓였다가 접속 시 받음
 const MK_FILE = path.join(DATA, 'market.json');
 // 운영자 선물: id를 새로 추가하면 모든 유저가 다음 접속 때 1번 받음
-const GIFTS = [
-  { id: 'test-season-1', gem: 50000, msg: '테스트 시즌 선물' },
-  { id: 'test-season-2', gem: 100000, msg: '테스트 시즌 선물 2' },
-  { id: 'test-season-3', gem: 5000000, msg: '테스트 시즌 선물 3' },
-  { id: 'test-season-lv100', lv: 100, msg: '테스트 시즌: 레벨 100' },
-];
+// 예) { id: 'launch-1', gem: 500, msg: '정식 오픈 선물' }  (테스트 시즌 선물은 정식 오픈 때 삭제)
+const GIFTS = [];
 let mk = { list: [], mail: {}, seq: 0 };
 try { mk = Object.assign(mk, JSON.parse(fs.readFileSync(MK_FILE, 'utf8'))); } catch (e) {}
 const saveMk = () => { const t = MK_FILE + '.tmp'; fs.writeFile(t, JSON.stringify(mk), e => { if (!e) fs.rename(t, MK_FILE, () => {}); }); };
@@ -258,5 +254,28 @@ setInterval(() => {
   }
   for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); raid.leave(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
 }, 50);
+
+/* ---------------- 정식 오픈 초기화 ----------------
+   2026-11-19 19:00(한국 시간)에 딱 1번: 계정(아이디·비밀번호·닉네임)은 남기고 게임 진행도 전부 삭제.
+   실행 전 data/backup-before-launch-*.json 으로 전체 백업. 로그인 토큰도 새로 바꿔서
+   켜져 있던 폰의 옛 저장이 다시 올라오지 못하게 함 → 모두 다시 로그인. */
+const LAUNCH_AT = +process.env.LAUNCH_AT || Date.parse('2026-11-19T19:00:00+09:00');
+function launchReset() {
+  if (db.launchReset || Date.now() < LAUNCH_AT) return;
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  fs.writeFileSync(path.join(DATA, 'backup-before-launch-' + stamp + '.json'), JSON.stringify({ db, mk }));
+  for (const id in db.users) {
+    const u = db.users[id];
+    db.users[id] = { id: u.id, salt: u.salt, hash: u.hash, nick: u.nick || '', token: crypto.randomBytes(24).toString('hex'), save: null, at: u.at };
+  }
+  db.launchReset = Date.now();
+  fs.writeFileSync(DB_FILE, JSON.stringify(db)); dirty = false;
+  mk = { list: [], mail: {}, seq: 0 }; fs.writeFileSync(MK_FILE, JSON.stringify(mk));
+  mons.clear(); pendingBossHp.clear(); fs.writeFileSync(MONS_FILE, '{}');
+  for (const [id, c] of clients) { wsSend(c.sock, { t: 'kick', msg: '정식 오픈! 진행도가 초기화됐어요. 다시 로그인해 주세요.' }); setTimeout(() => wsClose(c.sock), 100); defense.leave(id); raid.leave(id); }
+  clients.clear();
+  console.log('정식 오픈 초기화 완료');
+}
+setInterval(launchReset, 5000); launchReset();
 
 server.listen(PORT, () => console.log('링구 HERO 서버 실행 중: 포트 ' + PORT));
