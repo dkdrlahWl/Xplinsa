@@ -100,6 +100,7 @@ function tickChiefPattern(m,dt) {
   }
   p.elapsed=0;
   p.path=null;
+  if(p.impact)p.impact.clear=true;
 }
 
 const BOSS_FX=new Image();
@@ -124,13 +125,28 @@ function drawChiefPattern(m) {
     ctx.globalAlpha=.25+.28*p.elapsed/p.warn;
     ctx.fill(p.path);
   }else{
-    ctx.clip(p.path);
-    const progress=(p.elapsed-p.warn)/.21;
-    const {x,y,r}=p.arena;
-    const step=r*.48, size=step*(1.45+progress*.7);
-    ctx.globalAlpha=1-progress*.65;
-    for(let row=-2;row<=2;row++)for(let col=-2;col<=2;col++){
-      drawBossSprite(CHIEF_FX[p.kind],x+col*step,y+row*step,size,size);
+    if(BOSS_FX.naturalWidth){
+      const {x,y,r}=p.arena;
+      if(!p.impact){
+        const canvas=document.createElement('canvas');
+        canvas.width=canvas.height=256;
+        p.impact={canvas,g:canvas.getContext('2d'),clear:true};
+      }
+      const {canvas,g}=p.impact;
+      if(p.impact.clear){
+        const scale=canvas.width/(2*r);
+        g.resetTransform();g.clearRect(0,0,canvas.width,canvas.height);
+        g.save();g.setTransform(scale,0,0,scale,(r-x)*scale,(r-y)*scale);
+        g.clip(p.path);
+        const index=CHIEF_FX[p.kind],cw=BOSS_FX.naturalWidth/4,ch=BOSS_FX.naturalHeight/4;
+        const step=r*.48,size=step*1.8;
+        for(let row=-2;row<=2;row++)for(let col=-2;col<=2;col++){
+          g.drawImage(BOSS_FX,index%4*cw,Math.floor(index/4)*ch,cw,ch,x+col*step-size/2,y+row*step-size/2,size,size);
+        }
+        g.restore();p.impact.clear=false;
+      }
+      ctx.globalAlpha=1-(p.elapsed-p.warn)/.21*.65;
+      ctx.drawImage(canvas,x-r,y-r,2*r,2*r);
     }
   }
   ctx.restore();

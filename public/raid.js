@@ -122,7 +122,7 @@ window.RAID = (() => {
     if (!surface?.ctx || !arena) return;
     const { canvas: c, ctx: g } = surface;
     const w = c.clientWidth, h = c.clientHeight; if (!w || !h) return;
-    const dp = Math.min(1.5, devicePixelRatio || 1); if (c.width !== Math.round(w * dp) || c.height !== Math.round(h * dp)) { c.width = Math.round(w * dp); c.height = Math.round(h * dp); }
+    const dp = Math.min(1.25, devicePixelRatio || 1); if (c.width !== Math.round(w * dp) || c.height !== Math.round(h * dp)) { c.width = Math.round(w * dp); c.height = Math.round(h * dp); }
     const zoom = w / 470, sc = zoom * dp, p = arena.player, vw = w / zoom, vh = h / zoom;
     const follow = (v, s, view) => view >= s ? s / 2 : clamp(v, view / 2, s - view / 2), cx = follow(p.x, W, vw), cy = follow(p.y - 20, H, vh);
     g.setTransform(sc, 0, 0, sc, c.width / 2 - cx * sc, c.height / 2 - cy * sc);
