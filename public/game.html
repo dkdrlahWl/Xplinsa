@@ -500,7 +500,7 @@ async function idbAll(){const db=await idb();return new Promise(res=>{const out=
 async function idbPut(k,v){const db=await idb();return new Promise(res=>{const tx=db.transaction('a','readwrite');tx.objectStore('a').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>res()})}
 async function idbDel(k){const db=await idb();return new Promise(res=>{const tx=db.transaction('a','readwrite');tx.objectStore('a').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res()})}
 const BAKED={};
-async function loadAssets(){try{const r=await fetch('assets/manifest.json',{cache:'no-cache'});if(r.ok){const j=await r.json();for(const f of(j.files||[])){const n=f.replace(/\.(png|webp|jpe?g|gif)$/i,'');BAKED[n]='assets/'+f;setAsset(n,'assets/'+f+(/^hero_/.test(n)?'?v=2040':/^(tile|obs)/.test(n)?'?v=2037':''))}}}catch(e){}
+async function loadAssets(){try{const r=await fetch('assets/manifest.json',{cache:'no-cache'});if(r.ok){const j=await r.json();for(const f of(j.files||[])){const n=f.replace(/\.(png|webp|jpe?g|gif)$/i,'');BAKED[n]='assets/'+f;setAsset(n,'assets/'+f+(n==='bld_fire'?'?v=2041':/^hero_/.test(n)?'?v=2040':/^(tile|obs)/.test(n)?'?v=2037':''))}}}catch(e){}
  try{for(const[k,v]of await idbAll()){LOCAL[k]=1;setAsset(k,URL.createObjectURL(v))}}catch(e){}}
 const SHAPE={sprout:'머리에 새싹 잎이 난 동글동글한 몸',slime:'말랑한 젤리 슬라임',mush:'버섯 갓을 쓴 작은 몸',spider:'다리 8개 달린 벌레형',golem:'큼직한 돌덩이 골렘',tall:'키 큰 인간형(로브·갑옷)',bat:'날개를 편 박쥐형',chest:'보물상자(때리면 부서짐)',cactus:'선인장'};
 const HERO_LOOK={archer:'초록 후드와 가죽 조끼의 견습 궁수',farmer:'밀짚모자와 멜빵바지의 농부',mage:'파란 뾰족 모자와 로브의 수습 마법사',miner:'노란 안전모와 헤드랜턴, 갈색 작업복의 광부',monk:'주황 승복과 민머리의 수도승',pirate:'삼각 해적모자와 빨간 두건, 안대의 해적',viking:'뿔 달린 투구와 털망토, 갈색 수염의 바이킹',samurai:'빨간 일본 갑옷과 투구의 사무라이',icewitch:'하늘색 마녀 모자와 얼음 결정 장식 로브의 마녀',dragon:'붉은 용비늘 갑옷과 용머리 투구의 용기사',adv:'얼굴 없는 노란 마네킹 같은 기본 캐릭터, 몸 전체가 노란색',knight:'은색 갑옷, 가슴에 파란 천, 빨간 깃털 달린 투구',rogue:'짙은 보라색 후드와 옷, 어두운 얼굴에 빛나는 노란 눈 두 개'};
@@ -538,7 +538,7 @@ function assetSlots(){const L=[],add=(g,n,d,sz)=>L.push({g,n,d,sz});
  Object.keys(MT).forEach(k=>add('몬스터 (오른쪽을 봄, 발이 아래)','mon_'+k,MT[k].n+' (Lv.'+MT[k].lv+')','256×256'));
  ['초록 들판 바위','초록 들판 나무','사막 바위','선인장','숲 바위','큰 버섯','얼음 결정','눈 덮인 나무','유적 기둥','유적 나무','화산 바위','용암 분화구'].forEach((d,i)=>add('장애물 (지나갈 수 없음)','obs_'+i,d,'256×256'));
  [['icon_shard','영혼 파편 아이콘','128×128'],['shop_banner','상점 위 배너 (상인과 금화·보석 더미, 가로로 긴 그림)','1024×384'],['shop_chest1','초보자의 무기상자 (파란 철 상자)','256×256'],['shop_chest2','전문가의 무기상자 (빨강·금색 상자)','256×256'],['shop_chest3','전사의 무기상자 (보라·금색 왕관 상자, 가장 화려하게)','256×256'],['shop_herobox','영혼 상자 (금색 투구 모양 영웅 상자)','256×256']].forEach(([n,d,z])=>add('상점',n,d,z));
- [['bld_fire','모닥불 (불 붙은 상태)','256×256'],['bld_smith','대장간','256×256'],['bld_chest','기지 보물상자','192×192']].forEach(([n,d,z])=>add('건물',n,d,z));
+ [['bld_fire','모닥불 돌 받침과 장작','256×256'],['bld_smith','대장간','256×256'],['bld_chest','기지 보물상자','192×192']].forEach(([n,d,z])=>add('건물',n,d,z));
  ZS.forEach((z,i)=>add('바닥 (이음새 없이 반복되는 무늬)','tile_'+i,'스테이지 '+(i+1)+' '+z.n,'512×512'));add('바닥 (이음새 없이 반복되는 무늬)','tile_base','기지 모래 바닥','512×512');
  return L}
 
@@ -1603,12 +1603,69 @@ let goldPos=null;function drawFlys(){if(!flys.length)return;if(!goldPos){const g
  for(let i=flys.length-1;i>=0;i--){const f=flys[i];f.t+=1/60;const k=f.t/.55;if(k>=1){flys.splice(i,1);continue}const e=k*k;ctx.lineWidth=2;ell(p.x+(goldPos.x-p.x)*e,p.y+(goldPos.y-p.y)*e-Math.sin(k*Math.PI)*40,6.5,6.5,'#ffc93c');ctx.lineWidth=3}}
 window.addEventListener('resize',()=>{goldPos=null});
 function drawBanner(){if(banner.t<=0)return;const a=clamp(banner.t*2,0,1)*clamp((2.4-banner.t)*4,0,1),y=ch*.27;ctx.globalAlpha=a*.8;ctx.fillStyle='#1c1830';ctx.fillRect(0,y-40,cw,84);ctx.globalAlpha=a;label(banner.a,cw/2,y-8,20,'#ffe066');label(banner.b,cw/2,y+26,30,'#fff');ctx.globalAlpha=1}
-function drawFire(){const x=BASE.x,y=BASE.y;{const im=AI('bld_fire');if(im){const w=130,h=w*im.height/im.width;ctx.globalAlpha=S.built.fire?1:.45;ctx.drawImage(im,x-w/2,y+30-h,w,h);ctx.globalAlpha=1;if(!S.built.fire){label('모닥불 터',x,y-40,16,'#fff');mini('gold',x-16,y-24);label(fmt(Math.ceil(3-S.bp.fire)),x+4,y-19,14,'#ffe066')}return}}
- for(let i=0;i<8;i++){const a=i/8*TAU;ell(x+Math.cos(a)*46,y+Math.sin(a)*26,15,12,'#aeb4c2')}
- ctx.lineWidth=9;ctx.lineCap='round';ctx.strokeStyle='#8a5a34';ctx.beginPath();ctx.moveTo(x-22,y+6);ctx.lineTo(x+22,y-8);ctx.moveTo(x-22,y-8);ctx.lineTo(x+22,y+6);ctx.stroke();ctx.lineWidth=2.2;ctx.strokeStyle=OLC;ctx.lineCap='butt';
- if(S.built.fire){const f=Math.sin(T*9)*3;ctx.beginPath();ctx.moveTo(x-20,y-2);ctx.quadraticCurveTo(x-24,y-30,x-6,y-44+f);ctx.quadraticCurveTo(x,y-66-f,x+8,y-42+f);ctx.quadraticCurveTo(x+24,y-28,x+20,y-2);ctx.closePath();ctx.fillStyle='#ff8a2b';ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x-10,y-4);ctx.quadraticCurveTo(x-10,y-22,x,y-36-f);ctx.quadraticCurveTo(x+10,y-22,x+10,y-4);ctx.closePath();ctx.fillStyle='#ffe066';ctx.fill()}
- else{label('모닥불 터',x,y-40,16,'#fff');mini('gold',x-16,y-24);label(fmt(Math.ceil(3-S.bp.fire)),x+4,y-19,14,'#ffe066')}}
+const FIRE_TONGUES=[
+ {x:-14,h:37,w:16,phase:.28,rate:8.8},
+ {x:12,h:41,w:15,phase:2.7,rate:7.2},
+ {x:-1,h:61,w:22,phase:1.3,rate:7.8}
+];
+const FIRE_EMBERS=Array.from({length:9},(_,i)=>({
+ phase:hsh(i+91,7),x:(hsh(i+91,11)-.5)*46,drift:(hsh(i+91,17)-.5)*30,
+ rise:35+hsh(i+91,19)*48,rate:.45+hsh(i+91,23)*.61
+}));
+function fireTongue(x,h,w,sway,curl){
+ ctx.beginPath();
+ ctx.moveTo(x-w*.8,4);
+ ctx.bezierCurveTo(x-w,-h*.24,x-w*.72,-h*.47,x+sway*.16-w*.51,-h*.56);
+ ctx.quadraticCurveTo(x+sway*.42-w*.2,-h*.67,x+sway,-h);
+ ctx.bezierCurveTo(x+sway+curl,-h*.57,x+w*.64,-h*.42,x+w*.83,-h*.19);
+ ctx.quadraticCurveTo(x+w,0,x+w*.64,4);
+ ctx.closePath();
+ ctx.fill();
+}
+function drawCampfireFlames(x,y){
+ ctx.save();
+ ctx.translate(x,y);
+ const light=ctx.createRadialGradient(0,1,3,0,1,52);
+ light.addColorStop(0,'rgba(255,153,48,.33)');
+ light.addColorStop(.48,'rgba(255,100,21,.13)');
+ light.addColorStop(1,'rgba(255,87,17,0)');
+ ctx.fillStyle=light;
+ ctx.fillRect(-52,-51,104,104);
+ const flame=ctx.createLinearGradient(0,5,0,-62);
+ flame.addColorStop(0,'#fff4a6');
+ flame.addColorStop(.37,'#ffc52e');
+ flame.addColorStop(.74,'#ff8d22');
+ flame.addColorStop(1,'rgba(244,71,17,.76)');
+ ctx.fillStyle=flame;
+ for(const f of FIRE_TONGUES){
+  const t=T*f.rate+f.phase;
+  fireTongue(f.x,f.h+Math.sin(t)*5+Math.sin(t*1.67)*2.5,f.w,Math.sin(t*.68)*9+Math.sin(t*1.27)*3,Math.cos(t)*6);
+ }
+ ctx.fillStyle='#fff3a0';
+ ctx.globalAlpha=.7;
+ fireTongue(1,28+Math.sin(T*10)*3,10,Math.sin(T*6)*4,3);
+ for(const p of FIRE_EMBERS){
+  const age=(T*p.rate+p.phase)%1,px=p.x*(.42+age*.41)+p.drift*age+Math.sin(age*6+p.phase*TAU)*4;
+  const py=-5-age*p.rise;
+  ctx.globalAlpha=Math.sin(age*Math.PI)*(1-age*.54)*.86;
+  ctx.fillStyle=age<.53?'#ffe692':'#ff9449';
+  ctx.fillRect(px,py,1.6-age*.8,2.15-age);
+ }
+ ctx.restore();
+}
+function drawFire(){
+ const x=BASE.x,y=BASE.y,im=AI('bld_fire');
+ if(im){
+  const w=130,h=w*im.height/im.width;
+  ctx.save();ctx.globalAlpha=S.built.fire?1:.45;
+  ctx.drawImage(im,x-w/2,y+30-h,w,h);
+  ctx.restore();
+ }else{
+  for(let i=0;i<8;i++){const a=i/8*TAU;ell(x+Math.cos(a)*42,y+Math.sin(a)*21,13,10,'#82736d')}
+ }
+ if(S.built.fire)drawCampfireFlames(x,y-8);
+ else{label('모닥불 터',x,y-40,16,'#fff');mini('gold',x-16,y-24);label(fmt(Math.ceil(3-S.bp.fire)),x+4,y-19,14,'#ffe066')}
+}
 function drawSmith(){const x=BASE.x+190,y=BASE.y-90;{const im=AI('bld_smith');if(im&&(S.built.smith||S.built.fire)){const w=120,h=w*im.height/im.width;shadow(x,y+12,44);ctx.globalAlpha=S.built.smith?1:.4;ctx.drawImage(im,x-w/2,y+18-h,w,h);ctx.globalAlpha=1;if(S.built.smith)label('대장간',x,y+30,15,'#fff');else{label('대장간 터',x,y-6,15,'#fff');mini('gold',x-16,y+10);label(fmt(Math.ceil(70-S.bp.smith)),x+4,y+15,14,'#ffe066')}return}}if(!S.built.smith){ctx.setLineDash([8,8]);ctx.strokeStyle='#a08a5a';rr(x-36,y-30,72,50,10);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle=OLC;label('대장간 터',x,y-6,15,'#fff');if(S.built.fire){mini('gold',x-16,y+10);label(fmt(Math.ceil(70-S.bp.smith)),x+4,y+15,14,'#ffe066')}return}
  shadow(x,y+12,44);frr('#8a5a34',x-30,y-6,60,20,6);
  ctx.beginPath();ctx.moveTo(x-34,y-30);ctx.lineTo(x+22,y-30);ctx.lineTo(x+40,y-22);ctx.lineTo(x+22,y-14);ctx.lineTo(x+10,y-14);ctx.lineTo(x+10,y-6);ctx.lineTo(x-14,y-6);ctx.lineTo(x-14,y-14);ctx.lineTo(x-34,y-18);ctx.closePath();ctx.fillStyle='#9aa3b8';ctx.fill();ctx.stroke();label('대장간',x,y-40,15,'#fff')}
@@ -1841,7 +1898,7 @@ function render(){
  for(const m of mons)if(m.slam){const p=1-m.slam.t;ctx.globalAlpha=.3;ell(m.slam.x,m.slam.y,95,95,'#ff3b2f',1);ctx.globalAlpha=.55;ell(m.slam.x,m.slam.y,95*p,95*p,'#ff3b2f',1);ctx.globalAlpha=1}
  for(const o of drops)if(o.y>y0-20&&o.y<y1+20)drawDrop(o);
  if(P.recall&&!P.dead)drawRecallAura(P.x,P.y);
- const list=[{y:BASE.y,f:drawFire},{y:BASE.y-90,f:drawSmith},{y:BASE.y-70,f:drawChest},{y:P.y,f:drawPlayer}];if(window.NET)for(const o of NET.list())if(o.x>x0-160&&o.x<x1+160&&o.y>y0-160&&o.y<y1+210)list.push({y:o.y,f:NET.draw,m:o});if(window.PET)PET.addDraw(list,x0,y0,x1,y1);
+ const list=[{y:BASE.y-90,f:drawSmith},{y:BASE.y-70,f:drawChest},{y:P.y,f:drawPlayer}];if(BASE.x>x0-82&&BASE.x<x1+82&&BASE.y>y0-40&&BASE.y<y1+100)list.push({y:BASE.y,f:drawFire});if(window.NET)for(const o of NET.list())if(o.x>x0-160&&o.x<x1+160&&o.y>y0-160&&o.y<y1+210)list.push({y:o.y,f:NET.draw,m:o});if(window.PET)PET.addDraw(list,x0,y0,x1,y1);
  for(const m of mons)if(!m.dead&&m.x>x0-120&&m.x<x1+120&&m.y>y0-120&&m.y<y1+160)list.push({y:m.y,f:drawMon,m});
  for(const o of obs)if(o.x>x0-80&&o.x<x1+80&&o.y>y0-40&&o.y<y1+110)list.push({y:o.y,f:drawObs,m:o});
  list.sort((a,b)=>a.y-b.y);for(const e of list)e.f(e.m);
@@ -2234,7 +2291,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
    B.innerHTML=`<div style="position:relative;text-align:center;margin:2px 0 8px">${U('rank_banner')?`<div class="ts" style="${bg('rank_banner')}padding:10px 0 18px;font-size:20px;color:#fff">${t==='pow'?'전투력 랭킹':'도전의 탑 랭킹'}</div>`:''}</div><div class="feature-head ts" style="${bg('rank_row')}${U('rank_row')?'padding:10px 18px;color:#fff;':''}">${featureImage('rank')}<div><b style="color:#ffe066">${U('rank_banner')?'내 순위':(t==='pow'?'전투력 랭킹':'도전의 탑 랭킹')}</b><small style="color:#fff">${L.my?L.my.rank+'위 · '+fv(L.my.v):'아직 기록이 없어요'}</small></div></div>`+(L.list.length?L.list.map((r,i)=>row(r,i,r.me)).join(''):'<div class="note">아직 기록이 없어요</div>')}}
  else if(panel==='market'){$('mtitle').textContent='거래소';cur(['gem','gold']);B.innerHTML=marketPanel();F.innerHTML='<div class="tabs">'+[['buy','구매'],['sell','판매'],['mine','내 등록']].map(([k,n])=>'<button class="tab '+(MK.tab===k?'on':'')+'" data-a="mkt:'+k+'">'+n+'</button>').join('')+'</div>'}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1119-2040</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1119-2041</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  if(k==='nickset'){const n=(document.getElementById('nickin')||{}).value?.trim()||'';fetch('/api/nick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:localStorage.getItem('xp_token'),nick:n})}).then(r=>r.json().then(j=>[r.ok,j])).then(([ok,j])=>{if(!ok){toast(j.err||'변경 실패');return}localStorage.setItem('xp_nick',j.nick);if(window.NET)NET.nick=j.nick;toast('닉네임이 '+j.nick+'(으)로 바뀌었어요');draw()}).catch(()=>toast('서버에 연결할 수 없어요'));return}
  if(k==='challengeTower'){window.TOWER?.open();return}
