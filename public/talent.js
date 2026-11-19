@@ -38,12 +38,12 @@
   };
   const pct = (t, n) => (t.k === 'regen' || t.k === 'skill' || t.k === 'critd' || t.k === 'atk' || t.k === 'hp' || t.k === 'spd') ? '+' + Math.round(n * t.per * 1000) / 10 + '%' : n;
   const st = document.createElement('style');
-  st.textContent = `.tlg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.tlc{display:flex;align-items:center;gap:6px;background:#2e2a48;border:2px solid #1c1830;border-radius:12px;padding:6px 6px 6px 4px}
-.tlc .ti{flex:0 0 34px;height:34px}.tlc .ti>img,.tlc .ti>svg{width:100%;height:100%;object-fit:contain}
-.tlc .tt{flex:1;min-width:0;line-height:1.15}.tlc .tt b{display:block;font-size:14px;font-weight:normal;white-space:nowrap}
-.tlc .tt small{display:block;font-size:11px!important;color:#9d93ff;white-space:nowrap}.tlc .tt i{font-style:normal;font-size:12px;color:#7be36a}
-.tlc button{flex:0 0 40px;height:34px;font:inherit;font-size:15px;color:#fff;border:2px solid #1c1830;border-radius:9px;background:linear-gradient(#8fe26a,#4fb83a);box-shadow:inset 0 -3px 0 #2f8a24;padding:0}
+  st.textContent = `.tlg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;box-sizing:border-box}
+.tlc{min-width:0;box-sizing:border-box;overflow:hidden;display:flex;align-items:center;gap:5px;background:#2e2a48;border:2px solid #1c1830;border-radius:12px;padding:6px 6px 6px 4px}
+.tlc .ti{flex:0 0 30px;height:30px}.tlc .ti>img,.tlc .ti>svg{width:100%;height:100%;object-fit:contain}
+.tlc .tt{flex:1;min-width:0;line-height:1.15}.tlc .tt b{display:block;font-size:13px;font-weight:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlc .tt small{display:block;font-size:11px!important;color:#9d93ff;white-space:nowrap}.tlc .tt i{display:block;font-style:normal;font-size:11px;color:#7be36a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlc button{flex:0 0 36px;min-width:0;height:32px;font:inherit;font-size:15px;color:#fff;border:2px solid #1c1830;border-radius:9px;background:linear-gradient(#8fe26a,#4fb83a);box-shadow:inset 0 -3px 0 #2f8a24;padding:0}
 .tlc button:disabled{background:#4a4466;box-shadow:none;color:#9d93ff}
 .tlh{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 8px;font-size:15px}.tlh b{font-weight:normal;font-size:20px}
 .tlr{display:block;margin:10px auto 0;font:inherit;font-size:13px;color:#cfc8ee;background:#38324f;border:2px solid #1c1830;border-radius:10px;padding:5px 14px}
