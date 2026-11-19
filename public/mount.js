@@ -10,11 +10,11 @@ window.MOUNT = (() => {
     ['tortoise', '거대 거북', 1, '#6aa860', 280, 'leaf', 30], ['bear', '갈색 곰', 1, '#8a5a3a', 285, 'dust2', 28], ['wolf', '초원 늑대', 1, '#9aa4b0', 295, 'dust2', 24],
     ['elk', '숲 사슴', 1, '#b07a4a', 300, 'leaf', 22], ['zebra', '얼룩말', 1, '#e8e8e8', 310, 'dust2', 16], ['panther', '검은 표범', 1, '#3a3a4a', 315, 'dust2', 13], ['raptor', '초록 랩터', 1, '#5ab45a', 320, 'leaf', 10],
     ['rhino', '철갑 코뿔소', 2, '#8a8a9a', 330, 'sand', 28], ['mammoth', '아기 매머드', 2, '#a07050', 335, 'frost', 26], ['camel', '사막 낙타', 2, '#d8b070', 340, 'sand', 24],
-    ['bigfrog', '왕개구리', 2, '#4ac860', 345, 'leaf', 20], ['whitehorse', '백마', 2, '#f4f0ea', 350, 'shine', 18], ['saber', '검치호', 2, '#e8a040', 360, 'sand', 13], ['goldstag', '황금뿔 수사슴', 2, '#c8963a', 365, 'shine', 10],
+    ['bigfrog', '왕개구리', 2, '#4ac860', 345, 'water', 20], ['whitehorse', '백마', 2, '#f4f0ea', 350, 'shine', 18], ['saber', '검치호', 2, '#e8a040', 360, 'sand', 13], ['goldstag', '황금뿔 수사슴', 2, '#c8963a', 365, 'gold', 10],
     ['crystalbear', '수정 곰', 3, '#9ad0ff', 400, 'frost', 28], ['frostwolf', '서리 늑대', 3, '#d8f0ff', 405, 'frost', 25], ['reindeer', '얼음 순록', 3, '#8fd8ff', 410, 'frost', 22],
-    ['lion', '화염 사자', 3, '#ff8a3a', 410, 'fire', 22], ['nightmare', '그림자 말', 3, '#5a3a8a', 420, 'shine', 16], ['lavadrake', '용암 도마뱀', 3, '#ff5a2a', 425, 'fire', 12], ['pegasus', '페가수스', 3, '#ffffff', 430, 'shine', 9],
-    ['whitetiger', '백호왕', 4, '#f4f4ff', 480, 'storm', 25], ['stardeer', '별빛 사슴', 4, '#a8b8ff', 485, 'gold', 22], ['kirin', '번개 기린', 4, '#4ad8c8', 490, 'storm', 20],
-    ['phoenixsteed', '불사조 말', 4, '#ff7a2a', 495, 'fire', 15], ['griffin', '황금 그리핀', 4, '#ffc83c', 500, 'gold', 12], ['seraph', '천상의 천마', 4, '#fff6d8', 510, 'gold', 8], ['dragon', '붉은 용', 4, '#e83a3a', 520, 'fire', 6],
+    ['lion', '화염 사자', 3, '#ff8a3a', 410, 'fire', 22], ['nightmare', '그림자 말', 3, '#5a3a8a', 420, 'shadow', 16], ['lavadrake', '용암 도마뱀', 3, '#ff5a2a', 425, 'fire', 12], ['pegasus', '페가수스', 3, '#ffffff', 430, 'feather', 9],
+    ['whitetiger', '백호왕', 4, '#f4f4ff', 480, 'storm', 25], ['stardeer', '별빛 사슴', 4, '#a8b8ff', 485, 'star', 22], ['kirin', '번개 기린', 4, '#4ad8c8', 490, 'storm', 20],
+    ['phoenixsteed', '불사조 말', 4, '#ff7a2a', 495, 'fire', 15], ['griffin', '황금 그리핀', 4, '#ffc83c', 500, 'gfeather', 12], ['seraph', '천상의 천마', 4, '#fff6d8', 510, 'gfeather', 8], ['dragon', '붉은 용', 4, '#e83a3a', 520, 'fire', 6],
   ];
 
   const MS = L.map(([k, n, g, c, sp, fx, w]) => ({ k, n, g, c, sp, fx, w }));
@@ -83,6 +83,7 @@ window.MOUNT = (() => {
   const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
   const url = k => AURL['mount_' + k] || AURL['mount_' + k + '_card'] || phCard(k).url;
   const W = 108; // 화면상 몸통 폭
+  const FXC = { dust: '#d9c9a8', dust2: '#cfd6dc', leaf: '#8be05a', sand: '#f0d090', shine: '#ffffff', frost: '#bfeaff', fire: '#ffb04a', gold: '#ffe066', storm: '#9ff6ff', shadow: '#b07aff', feather: '#ffffff', gfeather: '#ffd23c', star: '#c8d4ff', water: '#8fe0ff' };
   const F = { t: 0, ghosts: [], parts: [], gT: 0, ph: 0 };
   const RPH = new WeakMap();
   function poof() { for (let i = 0; i < 14; i++) { const a = rnd(0, TAU), s = rnd(40, 110); F.parts.push({ x: P.x, y: P.y - 20, vx: Math.cos(a) * s, vy: Math.sin(a) * s * .6 - 20, l: .5, c: '#fff', r: rnd(4, 8) }) } }
@@ -107,9 +108,9 @@ window.MOUNT = (() => {
   }
   // 오라: 그림(mount_aura, 흰 빛 → 등급색 입힘) 있을 때만, 탈것 몸 뒤에서 은은하게
   const AC = {};
-  function auraImg(c) { const im = AI('mount_aura'); if (!im) return null; if (AC[c]) return AC[c]; const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const g = cv.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = .6; g.fillStyle = c; g.fillRect(0, 0, cv.width, cv.height); AC[c] = cv; return cv }
-  function aura(m, x, y) { if (m.g < 3) return; const c = m.fx === 'gold' ? '#ffd23c' : m.fx === 'storm' ? '#7ff0ff' : m.fx === 'fire' ? '#ff8a3a' : '#bfe8ff', im = auraImg(c); if (!im) return;
-    const w = 150 + Math.sin(T * 3) * 6, h = w * im.height / im.width; ctx.save(); ctx.globalAlpha = .55 + Math.sin(T * 4) * .15; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(im, x - w / 2, y - h * .62, w, h); ctx.restore() }
+  function auraImg(c) { const im = AI('mount_aura'); if (!im) return null; if (AC[c]) return AC[c]; const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const g = cv.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = .75; g.fillStyle = c; g.fillRect(0, 0, cv.width, cv.height); AC[c] = cv; return cv }
+  function aura(m, x, y) { if (m.g < 3) return; const c = FXC[m.fx] || '#bfe8ff', im = auraImg(c); if (!im) return;
+    const w = 140 + Math.sin(T * 3) * 5, h = w * im.height / im.width * (1.15 + Math.sin(T * 5) * .06); ctx.save(); ctx.globalAlpha = (m.g >= 4 ? .42 : .32) + Math.sin(T * 4) * .08; ctx.globalCompositeOperation = 'screen'; ctx.drawImage(im, x - w / 2, y - h * .8, w, h); ctx.restore() }
   function riderDraw(orig, rem) {
     if (typeof PV !== 'undefined' && PV) return orig(); const k = rem ? rem.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
     const face = Math.cos(P.dir) >= 0 ? 1 : -1, mv = P.moving;
@@ -125,12 +126,12 @@ window.MOUNT = (() => {
     if (P.moving) {
       F.gT -= dt;
       if (m.g >= 4 && F.gT <= 0) { F.gT = .06; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, l: 1 }) }
-      const n = dt * [10, 14, 18, 24, 30][m.g], col = { dust: '#d9c9a8', dust2: '#cfd6dc', leaf: '#8be05a', sand: '#f0d090', shine: '#ffffff', frost: '#bfeaff', fire: '#ffb04a', gold: '#ffe066', storm: '#9ff6ff' }[m.fx];
-      if (Math.random() < n) F.parts.push({ x: P.x - Math.cos(P.dir) * 26 + rnd(-10, 10), y: P.y + rnd(-4, 4), vx: -Math.cos(P.dir) * rnd(20, 60), vy: rnd(-30, -6), l: rnd(.35, .6), c: col, r: m.g >= 2 ? rnd(2.5, 4.5) : rnd(4, 7), glow: m.g >= 2 })
+      const n = dt * [10, 14, 18, 24, 30][m.g], col = FXC[m.fx] || '#ffffff';
+      if (Math.random() < n) F.parts.push({ x: P.x - Math.cos(P.dir) * 26 + rnd(-10, 10), y: P.y + rnd(-4, 4), vx: -Math.cos(P.dir) * rnd(20, 60), vy: rnd(-30, -6), l: rnd(.35, .6), c: col, r: m.g >= 2 ? rnd(2.5, 4.5) : rnd(4, 7), glow: m.g >= 2, fx: m.fx, spin: rnd(-4, 4) })
     }
     for (let i = F.ghosts.length - 1; i >= 0; i--) { F.ghosts[i].l -= dt * 4; if (F.ghosts[i].l <= 0) F.ghosts.splice(i, 1) }
   }
-  function drawFx() { for (const q of F.parts) { ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, q.l * 2)); const im = q.glow && typeof gImg === 'function' ? gImg(AI('mount_spark') ? 'mount_spark' : 'fx_star', q.c) : null; if (im) { ctx.globalCompositeOperation = 'lighter'; const w = q.r * 5; ctx.translate(q.x, q.y); ctx.rotate(q.l * 4); ctx.drawImage(im, -w / 2, -w / 2, w, w) } else { const dm = AI('mount_dust'); if (dm) { const w = q.r * 4; ctx.globalAlpha *= .8; ctx.drawImage(dm, q.x - w / 2, q.y - w / 2, w, w) } else { ctx.globalAlpha *= .5; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill() } } ctx.restore() } }
+  function drawFx() { for (const q of F.parts) { ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, q.l * 2)); const own = q.fx && AI('mfx_' + q.fx), im = own || (q.glow && typeof gImg === 'function' ? gImg(AI('mount_spark') ? 'mount_spark' : 'fx_star', q.c) : null); if (own) { const w = q.r * 4.2; ctx.translate(q.x, q.y); ctx.rotate((q.spin || 0) * q.l); ctx.drawImage(own, -w / 2, -w / 2, w, w) } else if (im) { ctx.globalCompositeOperation = 'lighter'; const w = q.r * 5; ctx.translate(q.x, q.y); ctx.rotate(q.l * 4); ctx.drawImage(im, -w / 2, -w / 2, w, w) } else { const dm = AI('mount_dust'); if (dm) { const w = q.r * 4; ctx.globalAlpha *= .8; ctx.drawImage(dm, q.x - w / 2, q.y - w / 2, w, w) } else { ctx.globalAlpha *= .5; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill() } } ctx.restore() } }
   function update(dt) {
     st(); if (combatArena && S.riding) { S.riding = false; calc() }
     { const m = cur(); if (riding() && P.moving && m) F.ph += dt * (RIG[m.k].slow ? 6 : 11) * Math.min(1.6, ST.spd / 300) }
