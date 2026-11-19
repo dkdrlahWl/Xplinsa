@@ -30,7 +30,7 @@
       for (const u of U) if (u.lv > lastLv && u.lv <= S.lv) banQ.push(u);
       lastLv = S.lv; save();
     }
-    if (banQ.length && !document.getElementById('ubanner')) showBan(banQ.shift());
+    if (banQ.length && !document.getElementById('ubanner') && !window.RAID?.visible && !window.DEFENSE?.visible && !window.TOWER?.visible && !(typeof GA !== 'undefined' && GA)) showBan(banQ.shift());
     for (const u of U) for (const el of document.querySelectorAll(u.sel)) { lockTag(el, u); badge(el, isOpen(u.k) && !S.seenU[u.k], 'NEW') }
     const mp = document.querySelector('#lb [data-p="map"]'); if (mp) badge(mp, mapReady());
   }
