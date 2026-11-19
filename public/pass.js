@@ -7,7 +7,8 @@
     const free = t % 4 === 1 ? { gem: 50 } : t % 4 === 2 ? { gold: G } : t % 4 === 3 ? { key: ['b2', 1] } : { key: ['b3', 1] };
     let prem = t % 5 === 1 ? { gem: 150 } : t % 5 === 2 ? { key: ['b3', 2] } : t % 5 === 3 ? { orb: 20 + 10 * t } : t % 5 === 4 ? { key: [t % 2 ? 'pet' : 'mount', 1] } : { gem: 300, scr: 50 * t };
     if (t === 20) prem = { gem: 500, myth: 2 };
-    TIERS.push({ lv, free, prem });
+    const x2 = r => { const o = {}; for (const k in r) o[k] = k === 'key' ? [r.key[0], r.key[1] * 2] : r[k] * 2; return o }; // 전 구간 2배
+    TIERS.push({ lv, free: x2(free), prem: x2(prem) });
   }
   let PREM = false, ADMIN_LIST = null;
   function fetchPrem(extra) {
