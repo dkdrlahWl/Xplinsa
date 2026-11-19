@@ -20,7 +20,7 @@ function connect(){if(kicked)return;
  ws.onopen=()=>{if(retry>0){P.x=BASE.x;P.y=BASE.y+120}retry=0}; // 재접속 → 캠프파이어
  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
   if(m.t==='handoff'){
-   if(typeof S!=='undefined'){save();fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:saveBody(m.key)}).catch(()=>{});}
+   if(typeof S!=='undefined'){save();saveNow(m.key);}
    return;
   }
   if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();
@@ -77,35 +77,35 @@ function list(){return [...others.values()].filter(r=>r.ch===MYCH())}
 
 // 서버 저장
 let saveSequence=Number(sessionStorage.xp_save_seq)||0;
-function saveBody(handoff){sessionStorage.xp_save_seq=++saveSequence;return JSON.stringify({token:TOKEN,save:S,seq:saveSequence,handoff})}
-function prog(s){if(!s||typeof s!=='object')return -1;return ((s.ch===2||(s.chs&&s.chs[2]))?1e15:0)+(+s.lv||0)*1e10+Math.min(9e9,+s.xp||0)}
-// 다른 기기 기록과 어긋났을 때: 서버 쪽이 더 높으면 그걸 받아오고, 이 기기가 더 높으면 이 기기 기록으로 덮어씀
-let syncing=false;
-function resolveSync(){if(syncing||kicked)return;syncing=true;
- fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(me=>{
-  if(typeof S==='undefined')return;
-  if(prog(me.save)>prog(S)){kicked=true;try{ws&&ws.close()}catch(e){}localStorage.setItem('camp_save_v2',JSON.stringify(me.save));sessionStorage.removeItem('xp_push');location.replace('index.html');return}
-  saveSequence=Math.max(saveSequence,Number(me.saveSeq)||0);syncing=false;pushSave();
- }).catch(()=>{syncing=false})}
-function pushSave(){saveDirty=false;saveT=4;
- const body=saveBody();fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:document.hidden && new Blob([body]).size<60000})
-  .then(async r=>{if(r.status===401)kick();else if(r.status===409)resetGo();else if(!r.ok)saveDirty=true;else{const j=await r.json().catch(()=>({}));if(j.older&&!document.hidden)resolveSync()}}).catch(()=>{saveDirty=true})}
-if(sessionStorage.getItem('xp_push')){sessionStorage.removeItem('xp_push');setTimeout(()=>{if(typeof S!=='undefined'&&!kicked)resolveSync()},2500)}
+function saveBody(handoff){sessionStorage.xp_save_seq=++saveSequence;return JSON.stringify({token:TOKEN,save:S,seq:saveSequence,rev:REV,handoff})}
+// 저장 (링피지 방식): 서버 기록 버전(rev)을 들고 저장하고, 서버가 "다른 곳에서 먼저 저장됨(409 충돌)"이라고 하면
+// 이 기기 상태를 버리고 서버 최신 기록을 다시 불러옴. 저장은 한 번에 하나씩만 보냄(같은 버전으로 두 번 보내 충돌 나지 않게).
+let REV=Number(sessionStorage.xp_rev)||0,inflight=false;
+function conflictGo(){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}window.save=function(){};localStorage.removeItem('camp_save_v2');
+ const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.88);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
+ d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:20px;margin-bottom:10px">다른 곳에서 진행한 기록이 있어요</div><div style="color:#cfc8ee;font-size:14px">최신 기록을 불러올게요…</div></div>';
+ document.body.appendChild(d);setTimeout(()=>location.replace('index.html'),1200)}
+function onSaved(r){if(r.status===401){kick();return}
+ return r.json().catch(()=>({})).then(j=>{if(r.status===409){if(j.conflict)conflictGo();else resetGo();return}
+  if(!r.ok){saveDirty=true;return}if(Number.isSafeInteger(j.rev)){REV=j.rev;sessionStorage.xp_rev=REV}})}
+function postSave(handoff,keep){const body=saveBody(handoff);return fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:!!keep&&new Blob([body]).size<60000})}
+function pushSave(force){if(kicked||typeof S==='undefined')return;if(inflight&&!force){saveDirty=true;return}
+ saveDirty=false;saveT=4;inflight=true;postSave(null,document.hidden).then(onSaved).catch(()=>{saveDirty=true}).finally(()=>{inflight=false})}
+function saveNow(handoff){return new Promise(res=>{const go=()=>{if(inflight)return setTimeout(go,100);inflight=true;postSave(handoff).then(onSaved).catch(()=>{}).finally(()=>{inflight=false;res()})};go()})}
+function markSave(){saveDirty=true}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
 // 같은 브라우저에서 게임 탭이 여러 개면 옛날 탭은 멈춤 (서로 저장을 덮어쓰지 않게)
 try{const bc=new BroadcastChannel('lingoo-game'),me=Math.random().toString(36).slice(2);bc.onmessage=e=>{if(e.data&&e.data.t==='hi'&&e.data.id!==me&&!kicked){kicked=true;try{ws&&ws.close()}catch(_){}window.save=function(){};
   const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.9);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
   d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:20px;margin-bottom:10px">다른 탭에서 게임을 열었어요</div><div style="color:#cfc8ee;font-size:14px;margin-bottom:16px">이 탭은 멈췄어요. 이 탭은 닫아 주세요.</div><button style="font:inherit;font-size:17px;padding:8px 22px;border-radius:12px;border:3px solid #1c1830;background:#7be36a;color:#1c1830">여기서 다시 하기</button></div>';
   d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}};bc.postMessage({t:'hi',id:me})}catch(e){}
-let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)hiddenAt=Date.now();else if(hiddenAt&&Date.now()-hiddenAt>20000)resolveSync()});
-function markSave(){saveDirty=true}
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
-window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});
+window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave(true)});
 
 async function logout(){kicked=true;try{ws&&ws.close()}catch(e){}
- try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:saveBody()})}catch(e){}
+  try{await saveNow()}catch(e){}
  for(const k of['xp_token','xp_admin','xp_nick','camp_save_v2'])localStorage.removeItem(k);location.replace('index.html')}
 // 새 버전 감시: 서버가 업데이트되면 저장 후 자동 새로고침
-let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{cache:'no-store'})).text();if(VER===null)VER=v;else if(v!==VER&&!kicked){VER=v;try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:saveBody()})}catch(e){}
+let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{cache:'no-store'})).text();if(VER===null)VER=v;else if(v!==VER&&!kicked){VER=v;try{await saveNow()}catch(e){}
   const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
 chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chkVer()});
 function defense(action,details={}){if(on())ws.send(JSON.stringify({t:"defense",action,...details}))}

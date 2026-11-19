@@ -144,7 +144,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, out);
     }
     if (p === '/api/market') return market(u, b, res);
-    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, epoch: db.epoch || 0 });
+    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, rev: u.rev || 0, epoch: db.epoch || 0 });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
       if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
@@ -158,12 +158,14 @@ const server = http.createServer(async (req, res) => {
       if (db.epoch && u.id !== 'ehgus' && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
       const pending = clients.get(u.id)?.handoff;
       if (b.handoff && pending?.key !== b.handoff) return send(res, 409, {err:'기기 전환이 만료됐어요'});
-      if (stale) { if (b.handoff) pending.finish(true); return send(res, 200, { ok: 1, older: true, stale: 1 }); }
+      // 링피지 방식 저장 버전(rev): 서버 기록 버전과 같은 버전을 바탕으로 한 저장만 받음. 다르면 다른 곳에서 먼저 저장된 것 → 409 충돌, 기기는 서버 기록을 다시 불러옴
+      if (Number.isSafeInteger(b.rev) && b.rev !== (u.rev || 0)) { if (b.handoff) pending.finish(true); return send(res, 409, { conflict: 1, rev: u.rev || 0 }); }
+      if (stale) { if (b.handoff) pending.finish(true); return send(res, 200, { ok: 1, older: true, stale: 1, rev: u.rev || 0 }); }
       if (!b.handoff && Number.isSafeInteger(b.seq) && b.seq <= (u.saveSeq||0)) return send(res,200,{ok:1,older:true});
       if(Number.isSafeInteger(b.seq)) u.saveSeq=b.seq;
-      u.save = b.save; markDirty();
+      u.save = b.save; u.rev = (u.rev || 0) + 1; markDirty();
       if (b.handoff) { flush(); pending.finish(!dirty); }
-      return send(res, 200, { ok: 1 });
+      return send(res, 200, { ok: 1, rev: u.rev });
     }
     return send(res, 404, { err: 'no' });
   }

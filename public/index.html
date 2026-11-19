@@ -66,8 +66,9 @@ async function enter(token){
  const prevNick=localStorage.getItem('xp_nick');let local=null;try{local=JSON.parse(localStorage.getItem('camp_save_v2')||'null')}catch(e){}
  if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
  localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');localStorage.setItem('xp_ep',String(me.epoch||0));
- const keepLocal=local&&prevNick===me.nick&&(me.admin||!me.epoch||Number(local.ep)===me.epoch)&&prog(local)>prog(me.save);
- if(keepLocal)sessionStorage.setItem('xp_push','1');else if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
+ // 링피지 방식: 들어올 때는 항상 서버 기록을 씀 (기기 안 기록은 캐시일 뿐, 다른 계정 기록도 여기서 지워짐)
+ if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
+ sessionStorage.xp_rev=me.rev||0;sessionStorage.removeItem('xp_push');
  sessionStorage.xp_save_seq=me.saveSeq||0;sessionStorage.setItem('xp_enter',token);location.replace('game.html');
 }
 let tok=null;
