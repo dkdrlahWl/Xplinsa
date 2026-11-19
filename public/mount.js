@@ -40,41 +40,41 @@ window.MOUNT = (() => {
   // 그림 부품: mount_<키>_body(다리 없는 몸·머리·꼬리·안장, 오른쪽 보기), mount_<키>_leg(다리 1개, 위=몸에 붙는 쪽), 날개 달린 건 mount_<키>_wing(위=어깨)
   // RIG: 다리 붙는 위치(몸통 그림 비율 x,y), 다리 길이(몸 폭 비율), 안장(비율), 걸음 폭, 날개
   const RIG = {
-    pony: { fl: [.66, .86], bl: [.27, .80], leg: .38, seat: [.44, .52], amp: .55 },
-    boar: { fl: [.66, .82], bl: [.26, .86], leg: .28, seat: [.30, .38], amp: .6 },
-    wolf: { fl: [.66, .80], bl: [.25, .82], leg: .38, seat: [.38, .44], amp: .65 },
-    tortoise: { fl: [.68, .84], bl: [.26, .82], leg: .24, seat: [.40, .12], amp: .3, slow: 1 },
-    camel: { fl: [.64, .84], bl: [.26, .84], leg: .46, seat: [.42, .34], amp: .5 },
-    whitehorse: { fl: [.64, .84], bl: [.26, .82], leg: .40, seat: [.38, .43], amp: .6 },
-    reindeer: { fl: [.64, .86], bl: [.25, .86], leg: .40, seat: [.38, .53], amp: .6 },
-    lion: { fl: [.66, .86], bl: [.25, .86], leg: .34, seat: [.40, .53], amp: .65 },
-    griffin: { fl: [.66, .84], bl: [.27, .84], leg: .30, seat: [.38, .46], fly: 1, wing: [.40, .40], wl: 1.05 },
-    kirin: { fl: [.64, .86], bl: [.25, .86], leg: .44, seat: [.40, .58], amp: .55 },
-    crystalbear: { fl: [.64, .86], bl: [.30, .86], leg: .30, seat: [.40, .32], amp: .55 },
-    frostwolf: { fl: [.64, .86], bl: [.30, .86], leg: .36, seat: [.40, .45], amp: .65 },
-    nightmare: { fl: [.64, .86], bl: [.30, .86], leg: .38, seat: [.40, .46], amp: .6 },
-    lavadrake: { fl: [.64, .86], bl: [.30, .86], leg: .28, seat: [.40, .30], amp: .6 },
-    pegasus: { fl: [.64, .86], bl: [.30, .86], leg: .38, seat: [.40, .42], amp: .6, fly: 1, wing: [.40, .36], wl: 1.0 },
-    donkey: { fl: [.64, .86], bl: [.30, .86], leg: 0.36, seat: [.40, 0.49], amp: .6 },
-    sheep: { fl: [.64, .86], bl: [.30, .86], leg: 0.28, seat: [.40, 0.44], amp: .6 },
-    goat: { fl: [.64, .86], bl: [.30, .86], leg: 0.36, seat: [.40, 0.52], amp: .6 },
-    shiba: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [.40, 0.48], amp: .6 },
-    ostrich: { fl: [.50, .84], bl: [.40, .84], leg: 0.52, seat: [.40, 0.48], amp: .6, biped: 1, amp: .75 },
-    bear: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [.40, 0.26], amp: .6 },
-    elk: { fl: [.64, .86], bl: [.30, .86], leg: 0.4, seat: [.40, 0.52], amp: .6 },
-    zebra: { fl: [.64, .86], bl: [.30, .86], leg: 0.38, seat: [.40, 0.45], amp: .6 },
-    panther: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [.40, 0.29], amp: .6 },
-    raptor: { fl: [.50, .84], bl: [.40, .84], leg: 0.42, seat: [.40, 0.36], amp: .6, biped: 1, amp: .75 },
-    rhino: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [.40, 0.45], amp: .6 },
-    mammoth: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [.40, 0.4], amp: .6, amp: .4 },
-    bigfrog: { fl: [.64, .86], bl: [.30, .86], leg: 0.26, seat: [.40, 0.41], amp: .6, amp: .45 },
-    saber: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [.40, 0.4], amp: .6 },
-    goldstag: { fl: [.64, .86], bl: [.30, .86], leg: 0.4, seat: [.40, 0.56], amp: .6 },
-    whitetiger: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [.40, 0.41], amp: .6 },
-    stardeer: { fl: [.64, .86], bl: [.30, .86], leg: 0.4, seat: [.40, 0.59], amp: .6 },
-    phoenixsteed: { fl: [.64, .86], bl: [.30, .86], leg: 0.38, seat: [.40, 0.45], amp: .6 },
-    seraph: { fl: [.64, .86], bl: [.30, .86], leg: 0.34, seat: [.40, 0.43], amp: .6, fly: 1, wing: [.40, .36], wl: 1.0 },
-    dragon: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [.40, 0.5], amp: .6, fly: 1, wing: [.42, .36], wl: 1.15 },
+    pony: { fl: [.66, .86], bl: [.27, .80], leg: .38, seat: [0.48, 0.54], amp: .55 },
+    boar: { fl: [.66, .82], bl: [.26, .86], leg: .28, seat: [0.37, 0.39], amp: .6 },
+    wolf: { fl: [.66, .80], bl: [.25, .82], leg: .38, seat: [0.41, 0.45], amp: .65 },
+    tortoise: { fl: [.68, .84], bl: [.26, .82], leg: .24, seat: [0.48, 0.13], amp: .3, slow: 1 },
+    camel: { fl: [.64, .84], bl: [.26, .84], leg: .46, seat: [0.47, 0.35], amp: .5 },
+    whitehorse: { fl: [.64, .84], bl: [.26, .82], leg: .40, seat: [0.47, 0.47], amp: .6 },
+    reindeer: { fl: [.64, .86], bl: [.25, .86], leg: .40, seat: [0.46, 0.57], amp: .6 },
+    lion: { fl: [.66, .86], bl: [.25, .86], leg: .34, seat: [0.47, 0.55], amp: .65 },
+    griffin: { fl: [.66, .84], bl: [.27, .84], leg: .30, seat: [0.47, 0.49], fly: 1, wing: [.40, .40], wl: 1.05 },
+    kirin: { fl: [.64, .86], bl: [.25, .86], leg: .44, seat: [0.46, 0.60], amp: .55 },
+    crystalbear: { fl: [.64, .86], bl: [.30, .86], leg: .30, seat: [0.46, 0.37], amp: .55 },
+    frostwolf: { fl: [.64, .86], bl: [.30, .86], leg: .36, seat: [0.46, 0.44], amp: .65 },
+    nightmare: { fl: [.64, .86], bl: [.30, .86], leg: .38, seat: [0.48, 0.48], amp: .6 },
+    lavadrake: { fl: [.64, .86], bl: [.30, .86], leg: .28, seat: [0.46, 0.32], amp: .6 },
+    pegasus: { fl: [.64, .86], bl: [.30, .86], leg: .38, seat: [0.48, 0.47], amp: .6, fly: 1, wing: [.40, .36], wl: 1.0 },
+    donkey: { fl: [.64, .86], bl: [.30, .86], leg: 0.36, seat: [0.47, 0.52], amp: .6 },
+    sheep: { fl: [.64, .86], bl: [.30, .86], leg: 0.28, seat: [0.43, 0.46], amp: .6 },
+    goat: { fl: [.64, .86], bl: [.30, .86], leg: 0.36, seat: [0.45, 0.53], amp: .6 },
+    shiba: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [0.47, 0.50], amp: .6 },
+    ostrich: { fl: [.50, .84], bl: [.40, .84], leg: 0.52, seat: [0.47, 0.49], amp: .6, biped: 1, amp: .75 },
+    bear: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [0.44, 0.31], amp: .6 },
+    elk: { fl: [.64, .86], bl: [.30, .86], leg: 0.4, seat: [0.42, 0.54], amp: .6 },
+    zebra: { fl: [.64, .86], bl: [.30, .86], leg: 0.38, seat: [0.46, 0.47], amp: .6 },
+    panther: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [0.46, 0.30], amp: .6 },
+    raptor: { fl: [.50, .84], bl: [.40, .84], leg: 0.42, seat: [0.47, 0.38], amp: .6, biped: 1, amp: .75 },
+    rhino: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [0.41, 0.44], amp: .6 },
+    mammoth: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [0.36, 0.37], amp: .6, amp: .4 },
+    bigfrog: { fl: [.64, .86], bl: [.30, .86], leg: 0.26, seat: [0.45, 0.46], amp: .6, amp: .45 },
+    saber: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [0.43, 0.38], amp: .6 },
+    goldstag: { fl: [.64, .86], bl: [.30, .86], leg: 0.4, seat: [0.43, 0.55], amp: .6 },
+    whitetiger: { fl: [.64, .86], bl: [.30, .86], leg: 0.32, seat: [0.47, 0.49], amp: .6 },
+    stardeer: { fl: [.64, .86], bl: [.30, .86], leg: 0.4, seat: [0.43, 0.53], amp: .6 },
+    phoenixsteed: { fl: [.64, .86], bl: [.30, .86], leg: 0.38, seat: [0.47, 0.46], amp: .6 },
+    seraph: { fl: [.64, .86], bl: [.30, .86], leg: 0.34, seat: [0.48, 0.46], amp: .6, fly: 1, wing: [.40, .36], wl: 1.0 },
+    dragon: { fl: [.64, .86], bl: [.30, .86], leg: 0.3, seat: [0.45, 0.50], amp: .6, fly: 1, wing: [.42, .36], wl: 1.15 },
   };
   const QUAD = { fl: [.66, .84], bl: [.26, .84], leg: .36, seat: [.40, .45], amp: .6 };
   for (const m of MS) if (!RIG[m.k]) RIG[m.k] = Object.assign({}, QUAD, { ostrich: { fl: [.48, .84], bl: [.40, .84], leg: .55, seat: [.40, .40], amp: .7, biped: 1 }, raptor: { fl: [.50, .84], bl: [.38, .84], leg: .42, seat: [.40, .40], amp: .7, biped: 1 }, sheep: { leg: .26 }, mammoth: { leg: .32, amp: .4 }, bigfrog: { leg: .26, amp: .45 }, bear: { leg: .30 }, rhino: { leg: .30 }, crystalbear: { leg: .30 },
@@ -123,9 +123,9 @@ window.MOUNT = (() => {
     ctx.drawImage(body, 0, 0, W, h);
     L(r.fl, 0, false); L(r.bl, Math.PI, false); Wg(false);
     ctx.restore();
-    // 안장 위치 (뒤집힘 고려)
-    const sx = x + face * (r.seat[0] - .5) * W, sy = top + r.seat[1] * h;
-    return { sx, sy };
+    const ox = (r.seat[0] - .5) * W, oy = (r.seat[1] - .6) * h;
+    const c = Math.cos(pitch), sn = Math.sin(pitch);
+    return { sx: x + face * (ox * c - oy * sn), sy: top + h * .6 + ox * sn + oy * c, pitch };
   }
   // Draw the far side before the mount and the near side after the rider.
   function aura(m, x, y, front, moving) {
@@ -167,8 +167,13 @@ window.MOUNT = (() => {
     if (!rem) for (const g of F.ghosts) drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35);
     shadow(P.x, P.y + 1, RIG[m.k].fly ? 26 : 38); aura(m, P.x, P.y, false, mv);
     const s0 = drawMount(m, P.x, P.y, face, mv, ph);
-    const y0 = P.y, x0 = P.x, w0 = P.walk, m0 = P.moving; P.x = s0.sx; P.y = s0.sy + 21; P.moving = false; P.walk = 0; P.sit = true; P.sitK = mv ? Math.sin(ph) * .08 : 0;
-    try { orig() } finally { P.x = x0; P.y = y0; P.walk = w0; P.moving = m0; P.sit = false; P.sitK = 0 }
+    const y0 = P.y, x0 = P.x, w0 = P.walk, m0 = P.moving, sitting = P.sit, sway = P.sitK, pitch = P.sitPitch;
+    P.x = s0.sx; P.y = s0.sy; P.moving = false; P.walk = 0; P.sit = true;
+    P.sitK = mv ? Math.sin(ph) * .08 : 0; P.sitPitch = s0.pitch;
+    try { orig() } finally {
+      P.x = x0; P.y = y0; P.walk = w0; P.moving = m0;
+      P.sit = sitting; P.sitK = sway; P.sitPitch = pitch;
+    }
     aura(m, x0, y0, true, mv);
   }
   function trail(dt) {
