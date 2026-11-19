@@ -34,7 +34,7 @@ window.RAID = (() => {
             <div class="raid-stat-row"><b>보스</b><span>체력 <strong>${fmt(bossHp(selLv))}</strong></span><span>공격 <strong>${fmt(bossAtk(selLv))}</strong></span></div>
             <div class="raid-stat-row"><b>나</b><span>체력 <strong>${fmt(ST.maxhp)}</strong></span><span>공격 <strong>${fmt(ST.atk)}</strong></span></div>
           </section>
-          <section class="raid-rewards"><h2>${remaining ? '클리어 보상' : '오늘 보상 소진'}</h2>${remaining ? '<div class="raid-reward-items">' + items(rw(selLv)) + '</div>' : '<p>연습 모드로 계속 도전할 수 있어요.</p>'}</section>
+          <section class="raid-rewards"><h2>${remaining ? '클리어 보상' : '오늘 보상 소진'}</h2>${remaining ? '<div class="raid-reward-items">' + items(rw(selLv)) + '</div>' : '<p>연습 모드로 계속 도전할 수 있어요. 연습 클리어는 단계가 오르지 않아요.</p>'}</section>
           <p class="raid-rules">1인 도전 · 제한 시간 ${TIME}초 · 붉은 장판을 피해요</p>
         </div>
       </main>
@@ -67,7 +67,7 @@ window.RAID = (() => {
   function finish(win) {
     mode = 'result'; const r = run, s = st(), got = win && s.wins < DAILY ? rw(r.lv) : null;
     if (win) {
-      if (got) s.wins++; if (r.lv > (s.best[r.b] || 0)) s.best[r.b] = r.lv;
+      if (got) { s.wins++; if (r.lv > (s.best[r.b] || 0)) s.best[r.b] = r.lv; }
       const bk = collectionState(); bk.monsters['raid' + r.b] = (bk.monsters['raid' + r.b] || 0) + 1; S.bossKills = S.bossKills || {}; S.bossKills['raid' + r.b] = (S.bossKills['raid' + r.b] || 0) + 1;
       trackTask('raid'); trackTask('boss'); window.SFX && SFX.play('fanfare', { v: .7, fixed: 1 });
     }

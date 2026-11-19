@@ -128,10 +128,10 @@ module.exports = function createRaid(clients, send, markDirty) {
         r.phase = 'cleared'; b.hp = 0;
         for (const id of r.players.keys()) {
           const c = clients.get(id); if (!c) continue;
-          const dd = daily(c.u), first = dd.wins < DAILY_LIMIT;
-          r.players.get(id).reward = first ? { ...reward(r.lv), lv: r.lv } : { none: 1 };
-          if (first) { dd.wins++; c.u.raidDaily = dd; }
-          const bb = best(c.u).slice(); if (r.lv > bb[r.boss]) { bb[r.boss] = r.lv; c.u.raidBest = bb; }
+          // 보상 횟수가 남은 클리어만 레벨이 오른다(연습으로 단계 올려두기 금지). 남의 높은 방에 껴도 내 최고+1 레벨까지만 인정.
+          const dd = daily(c.u), first = dd.wins < DAILY_LIMIT, myLv = Math.min(r.lv, best(c.u)[r.boss] + 1);
+          r.players.get(id).reward = first ? { ...reward(myLv), lv: myLv } : { none: 1 };
+          if (first) { dd.wins++; c.u.raidDaily = dd; const bb = best(c.u).slice(); if (myLv > bb[r.boss]) { bb[r.boss] = myLv; c.u.raidBest = bb; } }
           markDirty();
         }
         publishRooms();
