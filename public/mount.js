@@ -21,8 +21,7 @@ window.MOUNT = (() => {
   const BY = Object.fromEntries(MS.map(m => [m.k, m]));
   const GN = ['일반', '희귀', '레어', '에픽', '전설'], GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c'];
   const MAXST = 5, DUPGEM = [5, 10, 20, 40, 100], UNLOCK = 10;
-  const BOSSG = { golem: 0, skorp: 1, elder: 1, lord: 2, queen: 2, volc: 3, c2kraken: 2, c2hydra: 3, c2crysk: 3, c2storm: 3, c2lich: 4, c2dragon: 4 };
-  function st() { S.mounts = S.mounts || {}; S.mBoss = S.mBoss || {}; if (S.lv >= UNLOCK && !S.mGot && !Object.keys(S.mounts).length) { S.mounts.donkey = { st: 1 }; if (!S.mount) S.mount = 'donkey'; { S.mGot = 1; setTimeout(() => toast('🐴 탈것이 열렸어요! 임무 아래 버튼으로 타고 내려요'), 400) } } return S.mounts }
+  function st() { S.mounts = S.mounts || {}; if (S.lv >= UNLOCK && !S.mGot && !Object.keys(S.mounts).length) { S.mounts.donkey = { st: 1 }; if (!S.mount) S.mount = 'donkey'; { S.mGot = 1; setTimeout(() => toast('🐴 탈것이 열렸어요! 임무 아래 버튼으로 타고 내려요'), 400) } } return S.mounts }
   const own = k => st()[k];
   const cur = () => { const k = S.mount; return k && own(k) && BY[k] ? BY[k] : null };
   const riding = () => !!(S.riding && cur() && !combatArena);
@@ -35,9 +34,6 @@ window.MOUNT = (() => {
   function rollBox() { const bx = BOX.mount; S.pity = S.pity || {}; let g = pickGrade(bx.odds);
     for (const [pg, pn] of bx.pity) { const key = 'mount_' + pg; S.pity[key] = (S.pity[key] || 0) + 1; if (g < pg && S.pity[key] >= pn) g = pg }
     for (const [pg] of bx.pity) if (g >= pg) S.pity['mount_' + pg] = 0; return rollOf(g) }
-  function onBoss(type) { // 보스 첫 처치: 탈것 1마리
-    st(); if (!(type in BOSSG) || S.mBoss[type] || S.lv < UNLOCK) return; S.mBoss[type] = 1; const r = rollOf(BOSSG[type]); calc(); save();
-    setTimeout(() => { if (!GA) startGacha('mountgift', 1, [r]) }, 900) }
   function toggle() { st(); if (S.lv < UNLOCK) return toast('Lv.' + UNLOCK + '부터 탈 수 있어요'); if (!cur()) return toast('탈것이 없어요'); if (combatArena) return;
     S.riding = !S.riding; F.t = 0; calc(); save(); poof(); window.SFX && SFX.play(S.riding ? 'recall' : 'close', { v: .45 }); btn() }
   // ---------- 그리기 (부품: 몸통 + 다리 4개 + 날개) ----------
@@ -213,7 +209,7 @@ window.MOUNT = (() => {
     let h = '<div class="petTop" style="border-color:' + GC[m.g] + '"><div class="petPic ' + (o ? '' : 'lock') + '" style="background:radial-gradient(circle at 50% 60%,' + GC[m.g] + '55,transparent 70%);width:120px"><img src="' + url(fk) + '" style="width:112px;height:84px" alt=""></div><div class="petInfo"><b style="color:' + GC[m.g] + '">' + GN[m.g] + '</b><h3>' + m.n + '</h3>' +
       (o ? '<div>' + stars(o.st) + '</div>' : '<div style="color:#9a94c0">미보유</div>') + '<div class="petAb">탈 때 이동 속도 ' + (o ? spd(m) : m.sp) + ' <span style="color:#cfc8ee">(걸을 때 ' + Math.round(RAW) + ')</span></div><div class="petAb2">타는 동안 공격 불가 · 이동만</div></div></div>';
     if (o) h += '<div class="petBtns">' + (on ? '<button class="btn no" disabled>사용 중</button>' : '<button class="btn" data-a="mequip:' + fk + '">이 탈것 쓰기</button>') + '<button class="btn eq" data-a="mride">' + (riding() ? '내리기' : '타기') + '</button></div>';
-    h += '<div class="note">같은 탈것이 또 나오면 별 +1 (별마다 이동 속도 +4%, 최대 5성, 이후 보석). 탈것을 타면 내 이동 속도 강화와 상관없이 탈것 속도로 달려요. 얻는 곳: 상점 <b>탈것 상자</b>, 보스 첫 처치 보상.</div>';
+    h += '<div class="note">같은 탈것이 또 나오면 별 +1 (별마다 이동 속도 +4%, 최대 5성, 이후 보석). 탈것을 타면 내 이동 속도 강화와 상관없이 탈것 속도로 달려요. 얻는 곳: 상점 <b>탈것 상자</b>.</div>';
     h += '<div class="petGrid">' + MS.map(q => { const qo = own(q.k); return '<div class="petCell' + (q.k === fk ? ' sel' : '') + (qo ? '' : ' lock') + '" data-a="mfocus:' + q.k + '" style="border-color:' + GC[q.g] + '"><img src="' + url(q.k) + '" style="width:54px;height:40px" alt="">' + (S.mount === q.k ? '<i class="pon">사용</i>' : '') + '<b>' + q.n + '</b><span>' + (qo ? '★' + qo.st : GN[q.g]) + '</span></div>' }).join('') + '</div>';
     return h;
   }
@@ -227,7 +223,7 @@ window.MOUNT = (() => {
   function card(r, big) { const m = r.m, tag = r.nw ? '<i class="gnew">NEW</i>' : r.up ? '<i class="gnew" style="background:#ffb020">★' + r.up + '</i>' : r.gem ? '<i class="gnew" style="background:#5ab4ff">보석+' + r.gem + '</i>' : '';
     return '<div class="gc gcb gb' + r.g + (r.g >= 3 ? ' hi' + r.g : '') + (big ? ' big' : '') + '" data-g="' + r.g + '"><img src="' + url(m.k) + '" style="transform:none;width:86%;height:58%;margin-top:6px"><span class="gg ts">' + GN[r.g] + '</span><span class="gn ts">' + m.n + '</span>' + tag + '</div>' }
   function admin() { st(); for (const m of MS) st()[m.k] = { st: MAXST }; S.mount = 'griffin'; calc(); save(); bSig = '' }
-  return { MS, BY, apply, riding, toggle, update, riderDraw, drawFx, rollBox, onBoss, card, panel: panelHTML, act, admin, url, get key() { return riding() ? S.mount : '' } };
+  return { MS, BY, apply, riding, toggle, update, riderDraw, drawFx, rollBox, card, panel: panelHTML, act, admin, url, get key() { return riding() ? S.mount : '' } };
 })();
 // 그리기 감싸기: 탄 상태면 탈것 위에 캐릭터를 올려 그림(내 캐릭터·다른 유저 모두)
 if (typeof drawPlayer === 'function') { const _dp = drawPlayer; drawPlayer = function () { return MOUNT.riderDraw(_dp, window.REM) } }
