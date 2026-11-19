@@ -7,6 +7,8 @@
 .stab .sbang,.s2card .sbang{position:absolute;top:-9px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:#e8322c;border:2px solid #fff;color:#fff;font-size:13px;line-height:18px;text-align:center;padding:0 4px;z-index:2}
 .s2ban{position:relative;aspect-ratio:3/1;border-radius:14px;overflow:hidden;border:3px solid #1c1830;background:radial-gradient(circle at 50% 80%,#7a4a2a,#2a1a14)}
 .shop-key-icon{display:inline-flex;width:20px;height:20px;vertical-align:middle;align-items:center;justify-content:center}
+.shop-token-label{display:inline-flex;align-items:center;gap:4px;margin-left:4px;font-size:12px;color:#ffe6a5}
+.shop-token-label img{width:20px;height:20px;object-fit:contain}
 .shop-key-icon img{width:100%;height:100%;object-fit:contain}
 .s2ban img{width:100%;height:100%;object-fit:cover}
 .s2rib{margin:-14px auto 10px;position:relative;width:62%;text-align:center;background:linear-gradient(#8a5a34,#5e3a1e);border:3px solid #1c1830;border-radius:10px;font-size:24px;padding:2px 0;color:#fff}
@@ -75,13 +77,16 @@
 
   const A = (k, fb) => AURL[k] || fb || '';
   const img = (k, fb) => { const u = A(k, fb); return u ? `<img src="${u}" alt="">` : '' };
-  const weaponKeyIcon = id => /^b[123]$/.test(id) ? img('shop_key_' + id, AURL.icon_key) : '';
-  const chestIcon = id => img(BOX[id]?.img, AURL[BOX[id]?.fb]);
-  window.shopKeyIcon = weaponKeyIcon;
+  const BOX_ITEMS = {
+    b1: ['은열쇠', 'shop_key_silver'], b2: ['금열쇠', 'shop_key_gold'], b3: ['날개 달린 금열쇠', 'shop_key_winged'],
+    hero: ['영혼 인장', 'shop_token_soul'], pet: ['펫 알 교환권', 'shop_token_pet'], mount: ['탈것 교환권', 'shop_token_mount'],
+  };
+  const boxItemName = id => BOX_ITEMS[id]?.[0] || '상자 이용권';
+  const boxItemIcon = id => BOX_ITEMS[id] ? `<img src="assets/${BOX_ITEMS[id][1]}.webp" alt="">` : '';
+  window.ShopBoxItem = { name: boxItemName, icon: boxItemIcon };
   const day = () => calendarKey(), week = () => calendarKey(true);
 
   /* ---------- 데일리 할인 상점 ---------- */
-  const BOXN = { b3: '전사의 무기상자 열쇠', b2: '전문가의 무기상자 열쇠', b1: '초보자의 무기상자 열쇠', pet: '펫 알 상자 열쇠', mount: '탈것 상자 열쇠' };
   const POOL = [
     { t: 'key', k: 'b3', n: 1, p: 150, w: 10 }, { t: 'key', k: 'b2', n: 1, p: 100, w: 10 },
     { t: 'key', k: 'pet', n: 1, p: 200, w: 7 }, { t: 'key', k: 'mount', n: 1, p: 200, w: 7 },
@@ -111,17 +116,14 @@
   const price = (it, d) => Math.floor(it.p * (100 - disc(d)) / 100);
   function itName(it) {
     if (it.t === 'gold') return '골드';
-    if (it.t === 'key') return BOXN[it.k];
+    if (it.t === 'key') return boxItemName(it.k);
     if (it.t === 'cur') return RWN[it.k];
     if (it.t === 'hero') { const h = HERO.find(x => x.k === it.k); return h ? h.n : '영혼 파편' }
     return '';
   }
   function itIcon(it) {
     if (it.t === 'gold') return `<div class="ic">${IC.gold}<span class="q">${fmt(it.n)}</span></div>`;
-    if (it.t === 'key') {
-      const key = weaponKeyIcon(it.k);
-      return `<div class="ic">${chestIcon(it.k)}${key ? `<span class="q kq">${key}</span>` : ''}<span class="q">x${it.n}</span></div>`;
-    }
+    if (it.t === 'key') return `<div class="ic">${boxItemIcon(it.k)}<span class="q">x${it.n}</span></div>`;
     if (it.t === 'cur') return `<div class="ic">${IC[it.k]}<span class="q">x${it.n}</span></div>`;
     if (it.t === 'hero') { const h = HERO.find(x => x.k === it.k), u = AURL['hero_' + it.k + '_head']; return `<div class="ic puz g${h ? h.g : 0}">${u ? `<img src="${u}" alt="">` : `<b style="font-size:26px">${h ? h.n[0] : '?'}</b>`}<span class="q">x${it.n}</span></div>` }
     return '<div class="ic"></div>';
@@ -169,9 +171,9 @@
   function packState() { const s = S.packs = S.packs || {}; if (s.wk !== week()) { s.wk = week(); s.weekly = 0 } return s }
   const count = new Intl.NumberFormat('ko-KR');
   function itemHTML([k, s, n]) {
-    const name = k === 'key' ? BOXN[s] : RWN[k];
+    const name = k === 'key' ? boxItemName(s) : RWN[k];
     const unit = k === 'key' ? '개' : '';
-    return `<li><span class="rewardicon" aria-hidden="true">${k === 'key' ? weaponKeyIcon(s) || chestIcon(s) : IC[k]}</span><span>${name}</span><span class="rewardqty">${count.format(n)}${unit}</span></li>`;
+    return `<li><span class="rewardicon" aria-hidden="true">${k === 'key' ? boxItemIcon(s) : IC[k]}</span><span>${name}</span><span class="rewardqty">${count.format(n)}${unit}</span></li>`;
   }
   function packHTML(p, title, cls, art, lim, req) {
     const can = !req && S.gem >= p.cost;
@@ -209,7 +211,7 @@
     S.gem -= p.cost; if (id === 'weekly') ps.weekly = 1; else ps[id] = 1;
     const rw = {}; S.keys = S.keys || {};
     for (const [k, s, n] of items(p)) { if (k === 'key') S.keys[s] = (S.keys[s] || 0) + n; else { S[k] = (S[k] || 0) + n; rw[k] = n } }
-    calc(); save(); if (window.rewardFly) rewardFly(rw); window.SFX && SFX.play('gem', { v: .7 }); toast('패키지 구매 완료! 열쇠는 상자 탭에서 사용해요');
+    calc(); save(); if (window.rewardFly) rewardFly(rw); window.SFX && SFX.play('gem', { v: .7 }); toast('패키지 구매 완료! 상자 이용 아이템은 상자 탭에서 사용해요');
   }
 
   /* ---------- 교환 ---------- */
