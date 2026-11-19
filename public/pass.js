@@ -43,7 +43,7 @@
   const css = document.createElement('style');
   css.textContent = `
 #passBtn{position:relative;align-self:flex-end;width:67px;height:66px;border:0;padding:0 0 2px;margin-top:2px;pointer-events:auto;display:flex;align-items:flex-end;justify-content:center;cursor:pointer;background:transparent}
-#passBtn .pbIc{position:absolute;top:0;left:50%;transform:translateX(-50%);width:58px;height:53px;object-fit:contain;filter:drop-shadow(0 2px 4px #140b2c)}
+#passBtn .pbIc{position:absolute;top:0;left:50%;transform:translateX(-50%);width:51px;height:47px;object-fit:contain;filter:drop-shadow(0 2px 4px #140b2c)}
 #passBtn b{position:relative;font-size:12px;color:#fff6d8;line-height:1;padding:4px 10px;background:#251445;border:1px solid #ffc96c;border-radius:9px}
 #passBtn:active{transform:scale(.94)}
 .pass-board{--pass-gold:#ffdb91;position:relative;isolation:isolate;min-width:0;padding:8px;border:1px solid #bc8b53;border-radius:16px;color:#fff9e9;background:#1c1337;box-shadow:inset 0 0 18px #100b24}
@@ -131,7 +131,7 @@
       b.addEventListener('click', e => { e.stopPropagation(); open('pass') });
       b.addEventListener('pointerdown', e => e.stopPropagation());
     }
-    const mb = document.getElementById('mountBtn');
+    const mb = document.getElementById('mailBtn') || document.getElementById('mountBtn');
     if (mb && mb.nextSibling !== b) mb.after(b); else if (!mb && b.parentNode !== q) q.appendChild(b);
     b.style.display = combatArena ? 'none' : '';
     let d = b.querySelector(':scope>.ndot'); const on = anyReady();

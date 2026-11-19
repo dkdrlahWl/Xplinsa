@@ -27,7 +27,7 @@ const byToken = t => { if (!t) return null; for (const id in db.users) if (db.us
 const nickTaken = n => Object.values(db.users).some(u => u.nick && u.nick.toLowerCase() === n.toLowerCase());
 
 /* ---------------- 거래소 ---------------- */
-// 무기를 금화·보석으로 사고팖. 판매 대금(수수료 10% 제외)은 판매자 우편함에 쌓였다가 접속 시 받음
+// 무기를 금화·보석으로 사고팖. 판매 대금(수수료 10% 제외)은 판매자 우편함에서 수령
 const MK_FILE = path.join(DATA, 'market.json');
 // 운영자 선물: id를 새로 추가하면 모든 유저가 다음 접속 때 1번 받음
 // 예) { id: 'launch-1', gem: 500, msg: '정식 오픈 선물' }  (테스트 시즌 선물은 정식 오픈 때 삭제)
@@ -39,6 +39,7 @@ const MK_LIMIT = { gold: 1e15, gem: 1e6 }, MK_FEE = .1, MK_MAX = 10;
 function market(u, b, res) {
   const mail = mk.mail[u.id] || [];
   if (b.a === 'list') return send(res, 200, { list: mk.list.slice(-300).reverse(), mail: mail.length, me: u.id });
+  if (b.a === 'inbox') return send(res, 200, { mail: mail.map(({ gold, gem }) => ({ gold, gem })).reverse() });
   if (b.a === 'sell') {
     const key = String(b.key || ''), q = Math.round(Number(b.q) * 100) / 100, price = Math.floor(Number(b.price)), cur = b.cur === 'gem' ? 'gem' : 'gold';
     if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-6]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
