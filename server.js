@@ -129,7 +129,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/save') {
       if (!b.save || typeof b.save !== 'object') return send(res, 400, { err: 'bad' });
-      if (db.epoch && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
+      if (db.epoch && u.id !== 'ehgus' && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
       u.save = b.save; markDirty(); return send(res, 200, { ok: 1 });
     }
     return send(res, 404, { err: 'no' });
@@ -279,14 +279,16 @@ function launchReset() {
   fs.writeFileSync(path.join(DATA, 'backup-before-launch-' + stamp + '.json'), JSON.stringify({ db, mk }));
   for (const id in db.users) {
     const u = db.users[id];
+    if (id === 'ehgus') continue; // 관리자 계정은 초기화하지 않음
     db.users[id] = { id: u.id, salt: u.salt, hash: u.hash, nick: u.nick || '', token: u.token, save: null, at: u.at, ...(u.passPrem ? { passPrem: u.passPrem } : {}) };
   }
   db.launchReset = Date.now(); db.epoch = db.launchReset;
+  if (db.users.ehgus && db.users.ehgus.save) db.users.ehgus.save.ep = db.epoch;
   fs.writeFileSync(DB_FILE, JSON.stringify(db)); dirty = false;
   mk = { list: [], mail: {}, seq: 0 }; fs.writeFileSync(MK_FILE, JSON.stringify(mk));
   mons.clear(); pendingBossHp.clear(); fs.writeFileSync(MONS_FILE, '{}');
-  for (const [id, c] of clients) { wsSend(c.sock, { t: 'reset' }); setTimeout(() => wsClose(c.sock), 100); defense.leave(id); raid.leave(id); }
-  clients.clear();
+  for (const [id, c] of clients) { if (id === 'ehgus') continue; wsSend(c.sock, { t: 'reset' }); setTimeout(() => wsClose(c.sock), 100); defense.leave(id); raid.leave(id); }
+  for (const id of [...clients.keys()]) if (id !== 'ehgus') clients.delete(id);
   console.log('정식 오픈 초기화 완료');
 }
 setInterval(launchReset, 5000); launchReset();
