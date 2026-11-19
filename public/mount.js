@@ -50,7 +50,7 @@ window.MOUNT = (() => {
     whitehorse: { fl: [.64, .84], bl: [.26, .82], leg: .40, seat: [.38, .43], amp: .6 },
     reindeer: { fl: [.64, .86], bl: [.25, .86], leg: .40, seat: [.38, .53], amp: .6 },
     lion: { fl: [.66, .86], bl: [.25, .86], leg: .34, seat: [.40, .53], amp: .65 },
-    griffin: { seat: [.38, .46], fly: 1, wing: [.40, .40], wl: 1.05 },
+    griffin: { fl: [.66, .84], bl: [.27, .84], leg: .30, seat: [.38, .46], fly: 1, wing: [.40, .40], wl: 1.05 },
     kirin: { fl: [.64, .86], bl: [.25, .86], leg: .44, seat: [.40, .58], amp: .55 },
   };
 
@@ -72,7 +72,7 @@ window.MOUNT = (() => {
     g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.8)'; g.fillStyle = shade(m.c, .35); g.beginPath(); g.moveTo(10, 70); g.quadraticCurveTo(20, 10, 112, 6); g.quadraticCurveTo(90, 30, 100, 40); g.quadraticCurveTo(70, 50, 76, 62); g.quadraticCurveTo(40, 64, 10, 70); g.fill(); g.stroke();
     PH[key] = c; return c }
   function phCard(k) { const key = k + ':c' + (AI('mount_' + k + '_body') ? 1 : 0); if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 220; c.height = 220; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 190, h = w * b.height / b.width, x0 = 15, y0 = r.fly ? 90 : 40;
-    if (!r.fly) { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of [-5, 5]) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6, lw, lh) }
+    { const lh = w * r.leg, lw = lh * l.width / l.height; for (const a of [r.bl, r.fl]) for (const o of [-5, 5]) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 6, lw, lh) }
     g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'), ww = w * r.wl * .8, wh = ww * wi.height / wi.width; g.save(); g.translate(x0 + r.wing[0] * w, y0 + r.wing[1] * h); g.scale(-1, 1); g.drawImage(wi, -ww * .06, -wh * .92, ww, wh); g.restore() }
     PH[key] = c; c.url = c.toDataURL(); return c }
   const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
@@ -85,10 +85,10 @@ window.MOUNT = (() => {
   function drawMount(m, x, y, face, mv, ph, alpha) {
     const r = RIG[m.k], body = part(m.k, 'body'), leg = part(m.k, 'leg'), h = W * body.height / body.width;
     const amp = mv ? r.amp : 0, bob = r.fly ? 26 + Math.sin(T * (mv ? 7 : 3)) * 5 : mv ? Math.abs(Math.sin(ph)) * (r.slow ? 1.5 : 4) : Math.sin(T * 2.2) * 1.2;
-    const legLen = r.fly ? 0 : W * r.leg, legW = r.fly ? 0 : legLen * leg.width / leg.height, top = r.fly ? y - h - bob : y - legLen - h * (1 - r.fl[1]) - bob + 4;
+    const legLen = W * r.leg, legW = legLen * leg.width / leg.height, top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
     const pitch = r.fly ? (mv ? -.06 : 0) + Math.sin(T * 3) * .03 : mv ? Math.sin(ph * 2) * .025 : 0;
     ctx.save(); if (alpha != null) ctx.globalAlpha *= alpha; ctx.translate(x, top + h * .6); ctx.scale(face, 1); ctx.rotate(pitch); ctx.translate(-W / 2, -h * .6);
-    const L = (a, phase, far) => { if (r.fly) return; const ax = a[0] * W, ay = a[1] * h, ang = amp * Math.sin(ph + phase); ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2); ctx.rotate(-ang); if (far) ctx.filter = 'brightness(.72)'; ctx.drawImage(leg, -legW / 2, 0, legW, legLen); ctx.restore() };
+    const L = (a, phase, far) => { const ax = a[0] * W, ay = a[1] * h, ang = r.fly ? (mv ? -.55 : -.12) + Math.sin(T * 3 + phase) * .12 * (a === r.fl ? 1 : -1) : amp * Math.sin(ph + phase); ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2); ctx.rotate(-ang); if (far) ctx.filter = 'brightness(.72)'; ctx.drawImage(leg, -legW / 2, 0, legW, legLen); ctx.restore() };
     const flap = mv ? Math.sin(T * 13) : Math.sin(T * 4) * .5;
     const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 8 : 0), r.wing[1] * h); ctx.scale(-1, 1); ctx.rotate(-.1 - flap * .6 + (far ? -.15 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .06, -wh * .92, ww, wh); ctx.restore() };
     // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
