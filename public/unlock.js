@@ -6,7 +6,7 @@
     { k: 'pets', n: '펫', lv: 4, d: '기지에 부화기를 지어 알을 부화시켜요', opens: ['pets'], acts: ['pets'], sel: '[data-p="pets"],[data-a="pets"]' },
     { k: 'tower', n: '도전 (탑)', lv: 5, d: '탑을 올라 보상을 받아요', opens: ['tower', 'challenges'], sel: '[data-p="tower"]' },
     { k: 'defense', n: '캠프 방어', lv: 6, d: '친구와 함께 캠프를 지켜요', acts: ['challengeDefense'], sel: '[data-a="challengeDefense"]' },
-    { k: 'market', n: '거래소', lv: 8, d: '친구와 무기를 사고팔아요', acts: ['market'], sel: '[data-a="market"]' },
+    { k: 'market', n: '거래소', lv: 15, d: '친구와 무기를 사고팔아요', acts: ['market'], sel: '[data-a="market"]' },
     { k: 'mount', n: '탈것', lv: 10, d: '임무 아래 버튼으로 타고 빠르게 달려요', sel: '#mountBtn,[data-a="mounts"]' },
   ];
   const BYK = Object.fromEntries(U.map(u => [u.k, u]));
