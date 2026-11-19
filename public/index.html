@@ -62,7 +62,7 @@ function fail(e){$('err').textContent=(e&&e.err)||'서버에 연결할 수 없�
 async function enter(token){
  const me=await api('me',{token});
  if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
- localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');
+ localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');localStorage.setItem('xp_ep',String(me.epoch||0));
  if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
  location.replace('game.html');
 }

@@ -108,7 +108,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { gifts: got });
     }
     if (p === '/api/market') return market(u, b, res);
-    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus' });
+    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', epoch: db.epoch || 0 });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
       if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
@@ -117,6 +117,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/save') {
       if (!b.save || typeof b.save !== 'object') return send(res, 400, { err: 'bad' });
+      if (db.epoch && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
       u.save = b.save; markDirty(); return send(res, 200, { ok: 1 });
     }
     return send(res, 404, { err: 'no' });
@@ -257,8 +258,8 @@ setInterval(() => {
 
 /* ---------------- 정식 오픈 초기화 ----------------
    2026-11-19 19:00(한국 시간)에 딱 1번: 계정(아이디·비밀번호·닉네임)은 남기고 게임 진행도 전부 삭제.
-   실행 전 data/backup-before-launch-*.json 으로 전체 백업. 로그인 토큰도 새로 바꿔서
-   켜져 있던 폰의 옛 저장이 다시 올라오지 못하게 함 → 모두 다시 로그인. */
+   실행 전 data/backup-before-launch-*.json 으로 전체 백업. 로그인은 유지(다시 로그인 필요 없음).
+   대신 저장 세대(db.epoch)를 새로 정해서, 켜져 있던 폰의 옛 저장(ep가 다름)은 409로 거절 → 폰이 로컬 저장을 지우고 새로 시작. */
 const LAUNCH_AT = +process.env.LAUNCH_AT || Date.parse('2026-11-19T19:00:00+09:00');
 function launchReset() {
   if (db.launchReset || Date.now() < LAUNCH_AT) return;
@@ -266,13 +267,13 @@ function launchReset() {
   fs.writeFileSync(path.join(DATA, 'backup-before-launch-' + stamp + '.json'), JSON.stringify({ db, mk }));
   for (const id in db.users) {
     const u = db.users[id];
-    db.users[id] = { id: u.id, salt: u.salt, hash: u.hash, nick: u.nick || '', token: crypto.randomBytes(24).toString('hex'), save: null, at: u.at };
+    db.users[id] = { id: u.id, salt: u.salt, hash: u.hash, nick: u.nick || '', token: u.token, save: null, at: u.at };
   }
-  db.launchReset = Date.now();
+  db.launchReset = Date.now(); db.epoch = db.launchReset;
   fs.writeFileSync(DB_FILE, JSON.stringify(db)); dirty = false;
   mk = { list: [], mail: {}, seq: 0 }; fs.writeFileSync(MK_FILE, JSON.stringify(mk));
   mons.clear(); pendingBossHp.clear(); fs.writeFileSync(MONS_FILE, '{}');
-  for (const [id, c] of clients) { wsSend(c.sock, { t: 'kick', msg: '정식 오픈! 진행도가 초기화됐어요. 다시 로그인해 주세요.' }); setTimeout(() => wsClose(c.sock), 100); defense.leave(id); raid.leave(id); }
+  for (const [id, c] of clients) { wsSend(c.sock, { t: 'reset' }); setTimeout(() => wsClose(c.sock), 100); defense.leave(id); raid.leave(id); }
   clients.clear();
   console.log('정식 오픈 초기화 완료');
 }

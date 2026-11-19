@@ -6,6 +6,10 @@ const others=new Map();let ME=null,ws=null,sc=0,lastSw=0,sendT=0,kicked=false,re
 const DELAY=110;
 const CHO=()=>((typeof CHAP!=='undefined'?CHAP:1)-1)*5000,L=i=>{const o=CHO();return i>=o&&i<o+5000?i-o:-1},Gi=i=>i+CHO(),MYCH=()=>typeof CHAP!=='undefined'?CHAP:1; // ms 보간 지연
 
+function resetGo(){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}localStorage.removeItem('camp_save_v2');window.save=function(){};
+ const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.88);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
+ d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:26px 24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:24px;margin-bottom:10px">🎉 정식 오픈!</div><div style="color:#cfc8ee;font-size:15px;margin-bottom:18px">테스트 기록이 초기화됐어요.<br>처음부터 새로 시작해요!</div><button style="font:inherit;font-size:19px;padding:10px 28px;border-radius:14px;border:3px solid #1c1830;background:#7be36a;color:#1c1830">시작하기</button></div>';
+ d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}
 function kick(msg){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}localStorage.removeItem('xp_token');
  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.85);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
  d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:26px 24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:22px;margin-bottom:10px">접속이 끊겼어요</div><div style="color:#cfc8ee;font-size:15px;margin-bottom:18px">'+(msg||'다른 기기에서 로그인했어요.')+'</div><button style="font:inherit;font-size:19px;padding:10px 28px;border:3px solid #1c1830;border-radius:14px;background:#ffd23c;color:#1c1830">다시 로그인</button></div>';
@@ -15,7 +19,7 @@ function connect(){if(kicked)return;
  ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(TOKEN));
  ws.onopen=()=>{if(retry>0){P.x=BASE.x;P.y=BASE.y+120}retry=0}; // 재접속 → 캠프파이어
  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
-  if(m.t==='kick')return kick(m.msg);
+  if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(['raidState','raidError','raidInfo','raidRooms'].includes(m.t)){window.RAID?.receive(m);return}
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
@@ -70,7 +74,7 @@ function list(){return [...others.values()].filter(r=>r.ch===MYCH())}
 // 서버 저장
 function pushSave(){saveDirty=false;saveT=4;
  fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S}),keepalive:true})
-  .then(r=>{if(r.status===401)kick()}).catch(()=>{saveDirty=true})}
+  .then(r=>{if(r.status===401)kick();else if(r.status===409)resetGo()}).catch(()=>{saveDirty=true})}
 function markSave(){saveDirty=true}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
 window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});
