@@ -23,7 +23,7 @@ window.SFX = (() => {
   let ctx = null, sfxGain = null, ambGain = null;
   const on = { sfx: true, amb: true }, buf = {}, loading = {}, last = {}, groups = {}, live = new Set();
   try { Object.assign(on, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
-  let amb = null;
+  let amb = null, fire = null;
   function init() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -46,14 +46,14 @@ window.SFX = (() => {
   }
   function play(name, o = {}) {
     if (!ctx || !on.sfx || document.hidden || ctx.state !== 'running' || live.size >= 5) return;
+    const group = /_hit$|^hit/.test(name) ? 'impact' : /_air$|^sw_/.test(name) ? 'swing' : null;
+    const now = ctx.currentTime;
+    const gap = o.gap ?? (group === 'impact' ? .13 : name === 'coin' ? .09 : .12);
+    if (now - (last[name] ?? -Infinity) < gap || (group && now - (groups[group] ?? -Infinity) < (group === 'impact' ? .14 : .16))) return;
     const camera = typeof P !== 'undefined' ? P : null;
     const located = camera && Number.isFinite(o.x) && Number.isFinite(o.y);
     const distance = located ? Math.hypot(o.x - camera.x, o.y - camera.y) : 0;
     if (distance > 380) return;
-    const group = /_hit$|^hit/.test(name) ? 'impact' : /_air$|^sw_/.test(name) ? 'swing' : null;
-    const now = ctx.currentTime;
-    const gap = o.gap ?? (group === 'impact' ? .13 : name === 'coin' ? .09 : .12);
-    if (now - (last[name] ?? -Infinity) < gap || (group && now - (groups[group] ?? -Infinity) < (group === 'impact' ? .11 : .14))) return;
     const arr = LIST[name] || [name], n = arr[Math.floor(Math.random() * arr.length)], b = buf[n];
     if (!b) { load(n); return; }
     last[name] = now;
@@ -97,14 +97,45 @@ window.SFX = (() => {
       entry.src = src; src.start(now);
     });
   }
+  function stopCampfire() {
+    const old = fire; fire = null;
+    if (!old?.src) return;
+    old.src.disconnect();
+    try { old.src.stop(); } catch {}
+  }
+  function campfire(distance) {
+    if (!ctx || !on.amb || document.hidden || ctx.state !== 'running' || distance >= 175) {
+      stopCampfire();
+      return;
+    }
+    const level = .48 * Math.pow(1 - distance / 175, 1.6);
+    if (fire) {
+      if (Math.abs(fire.level - level) < .006) return;
+      fire.level = level;
+      fire.gain?.gain.setTargetAtTime(level, ctx.currentTime, .11);
+      return;
+    }
+    const entry = {level}; fire = entry;
+    load('amb_campfire').then(buffer => {
+      if (fire !== entry) return;
+      if (!buffer || !on.amb || document.hidden || ctx.state !== 'running') { fire = null; return; }
+      const src = ctx.createBufferSource(), gain = ctx.createGain(), now = ctx.currentTime;
+      src.buffer = buffer; src.loop = true;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(entry.level, now + .22);
+      src.connect(gain); gain.connect(ambGain);
+      src.onended = () => gain.disconnect();
+      entry.src = src; entry.gain = gain; src.start(now);
+    });
+  }
   function set(k, v) {
     on[k] = v;
     try { localStorage.setItem(KEY, JSON.stringify(on)); } catch {}
     if (!ctx) return;
     if (k === 'sfx') { sfxGain.gain.value = v ? .7 : 0; if (!v) stopEffects(); }
-    if (k === 'amb') { ambGain.gain.value = v ? .45 : 0; if (!v) stopMusic(); }
+    if (k === 'amb') { ambGain.gain.value = v ? .45 : 0; if (!v) { stopMusic(); stopCampfire(); } }
   }
   for (const ev of ['pointerdown', 'touchstart', 'keydown']) addEventListener(ev, init, { passive: true });
-  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) { stopEffects(); stopMusic(); ctx.suspend(); } else ctx.resume(); });
-  return { play, weapon, ambience, set, get on() { return on; }, init };
+  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) { stopEffects(); stopMusic(); stopCampfire(); ctx.suspend(); } else ctx.resume(); });
+  return { play, weapon, ambience, campfire, set, get on() { return on; }, init };
 })();

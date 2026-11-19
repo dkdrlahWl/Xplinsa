@@ -196,7 +196,24 @@ window.MOUNT = (() => {
   // ---------- 버튼 (임무 카드 아래) ----------
   let bEl = null, bSig = '';
   function btn() {
-    if (!bEl) { const q = document.getElementById('quests'); if (!q) return; bEl = document.createElement('button'); bEl.type = 'button'; bEl.id = 'mountBtn'; bEl.className = 'mountBtn'; bEl.addEventListener('click', e => { e.stopPropagation(); toggle() }); q.appendChild(bEl) }
+    if (!bEl) {
+      const q = document.getElementById('quests'); if (!q) return;
+      bEl = document.createElement('button');
+      bEl.type = 'button'; bEl.id = 'mountBtn'; bEl.className = 'mountBtn';
+      let touchTime = -Infinity;
+      bEl.addEventListener('pointerdown', e => {
+        if (e.pointerType !== 'touch') return;
+        e.preventDefault(); e.stopPropagation();
+        touchTime = performance.now();
+        toggle();
+      });
+      bEl.addEventListener('click', e => {
+        e.stopPropagation();
+        if (e.pointerType === 'touch' || (e.detail > 0 && performance.now() - touchTime < 650)) return;
+        toggle();
+      });
+      q.appendChild(bEl);
+    }
     const m = cur(), sig = (S.lv >= UNLOCK) + ':' + (m ? m.k : '') + ':' + riding() + ':' + !!combatArena;
     if (sig === bSig) return; bSig = sig;
     bEl.style.display = S.lv >= UNLOCK && m && !combatArena ? '' : 'none'; if (!m) return;
