@@ -180,22 +180,89 @@ window.MOUNT = (() => {
   const F = { t: 0, ghosts: [], parts: [], gT: 0, ph: 0 };
   const RPH = new WeakMap();
   function poof() { for (let i = 0; i < 14; i++) { const a = rnd(0, TAU), s = rnd(40, 110); F.parts.push({ x: P.x, y: P.y - 20, vx: Math.cos(a) * s, vy: Math.sin(a) * s * .6 - 20, l: .5, c: '#fff', r: rnd(4, 8) }) } }
+  const GAITS = {
+    horse: { cycle: 110, stance: .55, lift: 8, bob: 2.9, pitch: .026, phases: [0, .50, .50, 0] },
+    bound: { cycle: 108, stance: .48, lift: 7, bob: 3.2, pitch: .042, phases: [0, .18, .51, .67] },
+    heavy: { cycle: 72, stance: .68, lift: 4, bob: 1.5, pitch: .016, phases: [0, .50, .25, .75] },
+    low: { cycle: 60, stance: .65, lift: 4, bob: 1.2, pitch: .018, phases: [0, .50, .25, .75] },
+    biped: { cycle: 90, stance: .53, lift: 10, bob: 2.2, pitch: .019, phases: [0, .50, 0, .50] },
+  };
+  const GAIT_GROUPS = {
+    horse: 'donkey goat pony elk zebra camel whitehorse goldstag reindeer nightmare stardeer kirin phoenixsteed',
+    bound: 'shiba wolf panther saber frostwolf lion whitetiger',
+    heavy: 'boar sheep bear rhino mammoth crystalbear',
+  };
+  const groundGaits = Object.fromEntries(Object.entries(GAIT_GROUPS).flatMap(([group, keys]) => keys.split(' ').map(key => [key, GAITS[group]])));
+  const gaitFor = m => RIG[m.k].biped ? GAITS.biped : groundGaits[m.k] || GAITS.low;
+
+  function travelGait(state, x, y, moving, m) {
+    const dx = x - (state.x ?? x), dy = y - (state.y ?? y), distance = Math.hypot(dx, dy);
+    state.x = x;
+    state.y = y;
+    if (!moving || distance > 45) return;
+    const gait = gaitFor(m);
+    state.ph = (state.ph + distance / gait.cycle * TAU) % TAU;
+    if (distance > .05) state.side = (state.side ?? Math.abs(dx) / distance) * .72 + Math.abs(dx) / distance * .28;
+  }
+
+  function groundFoot(gait, phase, index, horizontal) {
+    const p = ((phase / TAU + gait.phases[index]) % 1 + 1) % 1;
+    const travel = gait.cycle * horizontal;
+    if (p < gait.stance) return { x: travel * (gait.stance * .5 - p), y: 0, lift: 0 };
+    const swing = (p - gait.stance) / (1 - gait.stance);
+    const ease = swing * swing * (3 - 2 * swing), lift = Math.sin(Math.PI * swing);
+    return { x: travel * gait.stance * (ease - .5), y: -gait.lift * lift, lift };
+  }
+
+  function drawJointedLeg(source, ax, ay, fx, fy, width, rear, lift, gait) {
+    const dx = fx - ax, dy = fy - ay, length = Math.max(1, Math.hypot(dx, dy));
+    const bend = (rear || gait === GAITS.biped ? 1 : -1) * (1.5 + lift * (gait === GAITS.biped ? 10 : 6));
+    const kneeX = (ax + fx) * .5 - dy / length * bend;
+    const kneeY = (ay + fy) * .5 + dx / length * bend;
+    const split = Math.round(source.height * .52), overlap = Math.max(1, Math.round(source.height * .07));
+    const piece = (x, y, endX, endY, cropY, cropH, pad) => {
+      const vx = endX - x, vy = endY - y;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.atan2(vy, vx) - Math.PI / 2);
+      ctx.drawImage(source, 0, cropY, source.width, cropH, -width * .5, -pad, width, Math.hypot(vx, vy) + pad);
+      ctx.restore();
+    };
+    piece(ax, ay, kneeX, kneeY, 0, split + overlap, 0);
+    piece(kneeX, kneeY, fx, fy, split - overlap, source.height - split + overlap, 2);
+  }
+
   // 몸 전체를 그리고 안장 위치(화면 좌표)를 돌려줌
-  function drawMount(m, x, y, face, mv, ph, alpha) {
+  function drawMount(m, x, y, face, mv, ph, alpha, side = 1) {
     const r = RIG[m.k], body = part(m.k, 'body'), leg = part(m.k, 'leg'), h = W * body.height / body.width;
-    const amp = mv ? r.amp : 0, bob = r.fly ? 26 + Math.sin(T * (mv ? 7 : 3)) * 5 : mv ? Math.abs(Math.sin(ph)) * (r.slow ? 1.5 : 4) : Math.sin(T * 2.2) * 1.2;
+    const gait = gaitFor(m);
+    const bob = r.fly ? 26 + Math.sin(T * (mv ? 7 : 3)) * 5
+      : mv ? (.5 - Math.cos(ph * 2) * .5) * gait.bob : Math.sin(T * 2.2) * .65;
     const legLen = W * r.leg, legW = legLen * leg.width / leg.height * (r.biped ? .88 : .92), top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
-    const pitch = r.fly ? (mv ? -.06 : 0) + Math.sin(T * 3) * .03 : mv ? Math.sin(ph * 2) * .025 : 0;
+    const pitch = r.fly ? (mv ? -.06 : 0) + Math.sin(T * 3) * .03 : mv ? Math.sin(ph * 2) * gait.pitch : 0;
     ctx.save(); if (alpha != null) ctx.globalAlpha *= alpha; ctx.translate(x, top + h * .6); ctx.scale(face, 1); ctx.rotate(pitch); ctx.translate(-W / 2, -h * .6);
     const L = (a, phase, far) => {
       const rear = a === r.bl, tucked = rear && r.backTuck;
       const ax = a[0] * W, ay = a[1] * h;
-      const ang = r.fly ? (mv ? -.55 : -.12) + Math.sin(T * 3 + phase) * .12 * (rear ? -1 : 1) : amp * Math.sin(ph + phase);
       const length = legLen + legExtension(r, a, h);
-      ctx.save(); ctx.translate(ax + (far ? -5 : 2), ay - (far ? 5 : 2) - legInset(r, a, h));
-      ctx.rotate(-ang - (tucked && mv ? tucked : 0));
+      const rootX = ax + (far ? -5 : 2), rootY = ay - (far ? 5 : 2) - legInset(r, a, h);
+      const sprite = far ? leg : nearLeg(leg);
+      ctx.save();
       if (far) ctx.filter = 'brightness(.78)';
-      ctx.drawImage(far ? leg : nearLeg(leg), -legW / 2, 0, legW, length);
+      if (!r.fly && mv) {
+        const index = (rear ? 2 : 0) + (far || (r.biped && rear) ? 1 : 0);
+        const foot = groundFoot(gait, ph, index, side);
+        // Undo body pitch for the foot target so planted feet stay at ground height.
+        const x0 = rootX - W / 2 + foot.x, y0 = rootY + length - h * .6 + bob + foot.y;
+        const c = Math.cos(pitch), sn = Math.sin(pitch);
+        drawJointedLeg(sprite, rootX, rootY, W / 2 + x0 * c + y0 * sn, h * .6 - x0 * sn + y0 * c, legW, rear, foot.lift, gait);
+        ctx.restore();
+        return;
+      }
+      const ang = r.fly ? (mv ? -.55 : -.12) + Math.sin(T * 3 + phase) * .12 * (rear ? -1 : 1) : 0;
+      ctx.translate(rootX, rootY);
+      ctx.rotate(-ang - (tucked && mv ? tucked : 0));
+      ctx.drawImage(sprite, -legW / 2, 0, legW, length);
       ctx.restore();
     };
     const flap = mv ? Math.sin(T * 13) : Math.sin(T * 4) * .5;
@@ -247,10 +314,18 @@ window.MOUNT = (() => {
   function riderDraw(orig, rem) {
     if (typeof PV !== 'undefined' && PV) return orig(); const k = rem ? rem.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
     const face = Math.cos(P.dir) >= 0 ? 1 : -1, mv = P.moving;
-    let ph; if (rem) { const o = RPH.get(rem) || { ph: 0, t: T }; o.ph += (T - o.t) * (mv ? 11 : 0); o.t = T; RPH.set(rem, o); ph = o.ph } else ph = F.ph;
-    if (!rem) for (const g of F.ghosts) drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35);
+    let motion = F;
+    if (rem) {
+      motion = RPH.get(rem) || { ph: 0, t: T };
+      if (RIG[m.k].fly) motion.ph += (T - motion.t) * (mv ? 11 : 0);
+      else travelGait(motion, P.x, P.y, mv, m);
+      motion.t = T;
+      RPH.set(rem, motion);
+    }
+    const { ph, side } = motion;
+    if (!rem) for (const g of F.ghosts) drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35, g.side);
     shadow(P.x, P.y + 1, RIG[m.k].fly ? 26 : 38); aura(m, P.x, P.y, false, mv);
-    const s0 = drawMount(m, P.x, P.y, face, mv, ph);
+    const s0 = drawMount(m, P.x, P.y, face, mv, ph, undefined, side);
     const y0 = P.y, x0 = P.x, w0 = P.walk, m0 = P.moving, sitting = P.sit, sway = P.sitK, pitch = P.sitPitch;
     P.x = s0.sx; P.y = s0.sy; P.moving = false; P.walk = 0; P.sit = true;
     P.sitK = mv ? Math.sin(ph) * .08 : 0; P.sitPitch = s0.pitch;
@@ -264,7 +339,7 @@ window.MOUNT = (() => {
     const m = cur(); if (!riding() || !m) { F.ghosts.length = 0; return }
     if (P.moving) {
       F.gT -= dt;
-      if (m.g >= 4 && F.gT <= 0) { F.gT = .13; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, l: 1 }) }
+      if (m.g >= 4 && F.gT <= 0) { F.gT = .13; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, side: F.side, l: 1 }) }
       const n = dt * [10, 14, 18, 24, 30][m.g], col = FXC[m.fx] || '#ffffff';
       if (Math.random() < n) F.parts.push({ x: P.x - Math.cos(P.dir) * 26 + rnd(-10, 10), y: P.y + rnd(-4, 4), vx: -Math.cos(P.dir) * rnd(20, 60), vy: rnd(-30, -6), l: rnd(.35, .6), c: col, r: m.g >= 2 ? rnd(2.5, 4.5) : rnd(4, 7), glow: m.g >= 2, fx: m.fx, spin: rnd(-4, 4) })
     }
@@ -273,7 +348,12 @@ window.MOUNT = (() => {
   function drawFx() { for (const q of F.parts) { ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, q.l * 2)); const own = q.fx && AI('mfx_' + q.fx), im = own || (q.glow && typeof gImg === 'function' ? gImg(AI('mount_spark') ? 'mount_spark' : 'fx_star', q.c) : null); if (own) { const w = q.r * 4.2; ctx.translate(q.x, q.y); ctx.rotate((q.spin || 0) * q.l); ctx.drawImage(own, -w / 2, -w / 2, w, w) } else if (im) { ctx.globalCompositeOperation = 'lighter'; const w = q.r * 5; ctx.translate(q.x, q.y); ctx.rotate(q.l * 4); ctx.drawImage(im, -w / 2, -w / 2, w, w) } else { const dm = AI('mount_dust'); if (dm) { const w = q.r * 4; ctx.globalAlpha *= .8; ctx.drawImage(dm, q.x - w / 2, q.y - w / 2, w, w) } else { ctx.globalAlpha *= .5; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill() } } ctx.restore() } }
   function update(dt) {
     st(); if (combatArena && S.riding) { S.riding = false; calc() }
-    { const m = cur(); if (riding() && P.moving && m) F.ph += dt * (RIG[m.k].slow ? 6 : 11) * Math.min(1.6, ST.spd / 300) }
+    const m = cur();
+    if (riding() && m && !RIG[m.k].fly) travelGait(F, P.x, P.y, P.moving, m);
+    else {
+      F.x = P.x; F.y = P.y;
+      if (riding() && m && P.moving) F.ph += dt * 11 * Math.min(1.6, ST.spd / 300);
+    }
     trail(dt); for (let i = F.parts.length - 1; i >= 0; i--) { const q = F.parts[i]; q.l -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.l <= 0) F.parts.splice(i, 1) }
     btn();
   }
