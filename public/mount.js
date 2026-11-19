@@ -171,8 +171,11 @@ window.MOUNT = (() => {
     const m = cur(), sig = (S.lv >= UNLOCK) + ':' + (m ? m.k : '') + ':' + riding() + ':' + !!combatArena;
     if (sig === bSig) return; bSig = sig;
     bEl.style.display = S.lv >= UNLOCK && m && !combatArena ? '' : 'none'; if (!m) return;
-    bEl.classList.toggle('on', riding()); bEl.style.setProperty('--mc', GC[m.g]);
-    bEl.innerHTML = '<img src="' + url(m.k) + '" alt=""><b class="ts">' + (riding() ? '내리기' : '타기') + '</b>';
+    const mounted = riding();
+    bEl.classList.toggle('on', mounted);
+    bEl.setAttribute('aria-pressed', String(mounted));
+    bEl.setAttribute('aria-label', mounted ? '탈것에서 내리기' : '탈것 타기');
+    bEl.innerHTML = '<b class="ts">' + (mounted ? '내리기' : '타기') + '</b>';
   }
   // ---------- 화면 ----------
   let focus = null;
