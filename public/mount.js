@@ -54,6 +54,11 @@ window.MOUNT = (() => {
     lion: { fl: [.66, .86], bl: [.25, .86], leg: .34, seat: [.40, .53], amp: .65 },
     griffin: { fl: [.66, .84], bl: [.27, .84], leg: .30, seat: [.38, .46], fly: 1, wing: [.40, .40], wl: 1.05 },
     kirin: { fl: [.64, .86], bl: [.25, .86], leg: .44, seat: [.40, .58], amp: .55 },
+    crystalbear: { fl: [.64, .86], bl: [.30, .86], leg: .30, seat: [.40, .32], amp: .55 },
+    frostwolf: { fl: [.64, .86], bl: [.30, .86], leg: .36, seat: [.40, .45], amp: .65 },
+    nightmare: { fl: [.64, .86], bl: [.30, .86], leg: .38, seat: [.40, .46], amp: .6 },
+    lavadrake: { fl: [.64, .86], bl: [.30, .86], leg: .28, seat: [.40, .30], amp: .6 },
+    pegasus: { fl: [.64, .86], bl: [.30, .86], leg: .38, seat: [.40, .42], amp: .6, fly: 1, wing: [.40, .36], wl: 1.0 },
     donkey: { fl: [.64, .86], bl: [.30, .86], leg: 0.36, seat: [.40, 0.49], amp: .6 },
     sheep: { fl: [.64, .86], bl: [.30, .86], leg: 0.28, seat: [.40, 0.44], amp: .6 },
     goat: { fl: [.64, .86], bl: [.30, .86], leg: 0.36, seat: [.40, 0.52], amp: .6 },
@@ -130,6 +135,7 @@ window.MOUNT = (() => {
   const AC = {};
   function auraImg(c) { const im = AI('mount_aura'); if (!im) return null; if (AC[c]) return AC[c]; const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height; const g = cv.getContext('2d'); g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = .75; g.fillStyle = c; g.fillRect(0, 0, cv.width, cv.height); AC[c] = cv; return cv }
   function aura(m, x, y) { if (m.g < 3) return; const c = FXC[m.fx] || '#bfe8ff', AK = { fire: 'fire', frost: 'frost', storm: 'storm', gold: 'gold', gfeather: 'gold', feather: 'gold', shine: 'gold', shadow: 'shadow', star: 'star' }[m.fx], own = AK && AI('maura_' + AK), im = own || auraImg(c); if (!im) return;
+    if (own) { const w = 150 + Math.sin(T * 3) * 5, h = w * im.height / im.width * (1 + Math.sin(T * 5) * .05); ctx.save(); ctx.globalAlpha = (m.g >= 4 ? .85 : .7) + Math.sin(T * 4) * .1; ctx.drawImage(im, x - w / 2, y + 14 - h, w, h); ctx.restore(); return }
     const w = 140 + Math.sin(T * 3) * 5, h = w * im.height / im.width * (1.15 + Math.sin(T * 5) * .06); ctx.save(); ctx.globalAlpha = (m.g >= 4 ? .42 : .32) + Math.sin(T * 4) * .08; ctx.globalCompositeOperation = 'screen'; ctx.drawImage(im, x - w / 2, y - h * .8, w, h); ctx.restore() }
   function riderDraw(orig, rem) {
     if (typeof PV !== 'undefined' && PV) return orig(); const k = rem ? rem.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
