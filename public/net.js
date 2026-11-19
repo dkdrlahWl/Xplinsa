@@ -78,9 +78,25 @@ function list(){return [...others.values()].filter(r=>r.ch===MYCH())}
 // 서버 저장
 let saveSequence=Number(sessionStorage.xp_save_seq)||0;
 function saveBody(handoff){sessionStorage.xp_save_seq=++saveSequence;return JSON.stringify({token:TOKEN,save:S,seq:saveSequence,handoff})}
+function prog(s){if(!s||typeof s!=='object')return -1;return ((s.ch===2||(s.chs&&s.chs[2]))?1e15:0)+(+s.lv||0)*1e10+Math.min(9e9,+s.xp||0)}
+// 다른 기기 기록과 어긋났을 때: 서버 쪽이 더 높으면 그걸 받아오고, 이 기기가 더 높으면 이 기기 기록으로 덮어씀
+let syncing=false;
+function resolveSync(){if(syncing||kicked)return;syncing=true;
+ fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(me=>{
+  if(typeof S==='undefined')return;
+  if(prog(me.save)>prog(S)){kicked=true;try{ws&&ws.close()}catch(e){}localStorage.setItem('camp_save_v2',JSON.stringify(me.save));sessionStorage.removeItem('xp_push');location.replace('index.html');return}
+  saveSequence=Math.max(saveSequence,Number(me.saveSeq)||0);syncing=false;pushSave();
+ }).catch(()=>{syncing=false})}
 function pushSave(){saveDirty=false;saveT=4;
  const body=saveBody();fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:document.hidden && new Blob([body]).size<60000})
-  .then(r=>{if(r.status===401)kick();else if(r.status===409)resetGo();else if(!r.ok)saveDirty=true}).catch(()=>{saveDirty=true})}
+  .then(async r=>{if(r.status===401)kick();else if(r.status===409)resetGo();else if(!r.ok)saveDirty=true;else{const j=await r.json().catch(()=>({}));if(j.older&&!document.hidden)resolveSync()}}).catch(()=>{saveDirty=true})}
+if(sessionStorage.getItem('xp_push')){sessionStorage.removeItem('xp_push');setTimeout(()=>{if(typeof S!=='undefined'&&!kicked)resolveSync()},2500)}
+// 같은 브라우저에서 게임 탭이 여러 개면 옛날 탭은 멈춤 (서로 저장을 덮어쓰지 않게)
+try{const bc=new BroadcastChannel('lingoo-game'),me=Math.random().toString(36).slice(2);bc.onmessage=e=>{if(e.data&&e.data.t==='hi'&&e.data.id!==me&&!kicked){kicked=true;try{ws&&ws.close()}catch(_){}window.save=function(){};
+  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.9);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
+  d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:20px;margin-bottom:10px">다른 탭에서 게임을 열었어요</div><div style="color:#cfc8ee;font-size:14px;margin-bottom:16px">이 탭은 멈췄어요. 이 탭은 닫아 주세요.</div><button style="font:inherit;font-size:17px;padding:8px 22px;border-radius:12px;border:3px solid #1c1830;background:#7be36a;color:#1c1830">여기서 다시 하기</button></div>';
+  d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}};bc.postMessage({t:'hi',id:me})}catch(e){}
+let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)hiddenAt=Date.now();else if(hiddenAt&&Date.now()-hiddenAt>20000)resolveSync()});
 function markSave(){saveDirty=true}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
 window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});

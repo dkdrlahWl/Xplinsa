@@ -450,7 +450,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>window.saveReady=!!sessionStorage.xp_enter && sessionStorage.xp_enter===localStorage.xp_token;sessionStorage.removeItem("xp_enter");if(!window.saveReady)location.replace("index.html")</script>
-<script src="net.js?v=24"></script>
+<script src="net.js?v=26"></script>
 <script src="chief-patterns.js?v=3"></script>
 <script src="boss-patterns.js?v=5"></script>
 <script src="weapon-skill-fx.js?v=4"></script>
@@ -2020,6 +2020,7 @@ function hud(){
  const bt=bagTotal();setT('bagt','가방 ('+fmt(bt)+'/'+fmt(ST.bag)+')');const bw=Math.round(clamp(bt/ST.bag,0,1)*100)+'%';if(cache.bw!==bw){cache.bw=bw;$('bagf').style.width=bw}const bc=bt>=ST.bag?'full':'';if(cache.bc!==bc){cache.bc=bc;$('bag').className=bc}
  let bh='';if(S.bag>=1)bh+='<span>'+IC.gold+fmt(S.bag)+'</span>';for(const k of['cry','gem','orb','rb','scr'])if(S.bi[k]>0)bh+='<span>'+IC[k]+S.bi[k]+'</span>';if(cache.bh!==bh){cache.bh=bh;$('bagc').innerHTML=bh}
  const q=Q[S.q];let qt,qs,qp=0,go=false;
+ if(q&&!S.qok&&q.need&&q.type!=='build'&&q.type!=='lv'&&S.qp>=q.need)qdone(); // 진행도가 이미 다 찼는데 완료가 안 된 임무 바로 완료
  if(q&&S.qok){qt=q.t;qs='임무 완료!';qp=1;go=true}
  else if(!q&&CHAP===1){const vk=!!(S.bossKills||{}).volc;if(ch2Open()){qt='챕터 2로 이동하기';qs='탭해서 새로운 모험 시작!';qp=1;go=true}else{qt='챕터 2 열기';qs=(vk?'화산 군주 ✔':'화산 군주 처치')+' · Lv.'+Math.min(S.lv,50)+'/50';qp=((vk?1:0)+Math.min(1,S.lv/50))/2}}
  else if(!q){qt='챕터 2 정복 완료!';qs='레이드·탑에서 계속 성장하기'}

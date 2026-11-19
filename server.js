@@ -13,6 +13,7 @@ let db = { users: {} };
 try { db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); if (!db.users) db.users = {}; } catch (e) {}
 let dirty = false;
 function markDirty() { dirty = true; }
+function prog(s) { if (!s || typeof s !== 'object') return -1; return ((s.ch === 2 || (s.chs && s.chs[2])) ? 1e15 : 0) + (+s.lv || 0) * 1e10 + Math.min(9e9, +s.xp || 0); }
 setInterval(flush, 3000);
 function flush() {
   if (!dirty) return;
@@ -152,9 +153,12 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/save') {
       if (!b.save || typeof b.save !== 'object') return send(res, 400, { err: 'bad' });
+      // 진행도(챕터→레벨→경험치)가 서버 기록보다 낮은 저장은 받지 않음: 옛날 탭·옛날 기기가 최신 기록을 덮어쓰는 것 방지
+      const stale = u.save && prog(b.save) < prog(u.save);
       if (db.epoch && u.id !== 'ehgus' && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
       const pending = clients.get(u.id)?.handoff;
       if (b.handoff && pending?.key !== b.handoff) return send(res, 409, {err:'기기 전환이 만료됐어요'});
+      if (stale) { if (b.handoff) pending.finish(true); return send(res, 200, { ok: 1, older: true, stale: 1 }); }
       if (!b.handoff && Number.isSafeInteger(b.seq) && b.seq <= (u.saveSeq||0)) return send(res,200,{ok:1,older:true});
       if(Number.isSafeInteger(b.seq)) u.saveSeq=b.seq;
       u.save = b.save; markDirty();

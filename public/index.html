@@ -59,11 +59,15 @@ function setMode(m){mode=m;$('tLogin').className=m==='login'?'on':'';$('tSign').
 $('tLogin').onclick=()=>setMode('login');$('tSign').onclick=()=>setMode('sign');
 async function api(p,b){const r=await fetch('/api/'+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({err:'서버 오류'}));if(!r.ok)throw j;return j}
 function fail(e){$('err').textContent=(e&&e.err)||'서버에 연결할 수 없어요'}
+// 진행도 비교: 챕터 → 레벨 → 경험치 순서로 더 높은 쪽을 씀
+function prog(s){if(!s||typeof s!=='object')return -1;return ((s.ch===2||(s.chs&&s.chs[2]))?1e15:0)+(+s.lv||0)*1e10+Math.min(9e9,+s.xp||0)}
 async function enter(token){
  const me=await api('me',{token});
+ const prevNick=localStorage.getItem('xp_nick');let local=null;try{local=JSON.parse(localStorage.getItem('camp_save_v2')||'null')}catch(e){}
  if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
  localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');localStorage.setItem('xp_ep',String(me.epoch||0));
- if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
+ const keepLocal=local&&prevNick===me.nick&&(me.admin||!me.epoch||Number(local.ep)===me.epoch)&&prog(local)>prog(me.save);
+ if(keepLocal)sessionStorage.setItem('xp_push','1');else if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
  sessionStorage.xp_save_seq=me.saveSeq||0;sessionStorage.setItem('xp_enter',token);location.replace('game.html');
 }
 let tok=null;
