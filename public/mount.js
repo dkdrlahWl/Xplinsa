@@ -22,7 +22,7 @@ window.MOUNT = (() => {
   const GN = ['일반', '희귀', '레어', '에픽', '전설'], GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c'];
   const MAXST = 5, DUPGEM = [5, 10, 20, 40, 100], UNLOCK = 10;
   const BOSSG = { golem: 0, skorp: 1, elder: 1, lord: 2, queen: 2, volc: 3, c2kraken: 2, c2hydra: 3, c2crysk: 3, c2storm: 3, c2lich: 4, c2dragon: 4 };
-  function st() { S.mounts = S.mounts || {}; S.mBoss = S.mBoss || {}; if (S.lv >= UNLOCK && !S.mounts.pony) { S.mounts.pony = { st: 1 }; if (!S.mount) S.mount = 'pony'; if (!S.mGot) { S.mGot = 1; setTimeout(() => toast('🐴 탈것이 열렸어요! 임무 아래 버튼으로 타고 내려요'), 400) } } return S.mounts }
+  function st() { S.mounts = S.mounts || {}; S.mBoss = S.mBoss || {}; if (S.lv >= UNLOCK && !S.mGot && !Object.keys(S.mounts).length) { S.mounts.donkey = { st: 1 }; if (!S.mount) S.mount = 'donkey'; { S.mGot = 1; setTimeout(() => toast('🐴 탈것이 열렸어요! 임무 아래 버튼으로 타고 내려요'), 400) } } return S.mounts }
   const own = k => st()[k];
   const cur = () => { const k = S.mount; return k && own(k) && BY[k] ? BY[k] : null };
   const riding = () => !!(S.riding && cur() && !combatArena);
