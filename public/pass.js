@@ -46,6 +46,9 @@
 #passBtn .pbIc{position:absolute;top:0;left:50%;transform:translateX(-50%);width:51px;height:47px;object-fit:contain;filter:drop-shadow(0 2px 4px #140b2c)}
 #passBtn b{position:relative;font-size:12px;color:#fff6d8;line-height:1;padding:4px 10px;background:#251445;border:1px solid #ffc96c;border-radius:9px}
 #passBtn:active{transform:scale(.94)}
+#quests #mailBtn,#quests #passBtn{width:40px;height:40px;margin:6px 4px 0 0;padding:0;align-self:flex-end;filter:drop-shadow(0 2px 0 #1c1830)}
+#quests #mailBtn img,#quests #passBtn .pbIc{top:0;width:40px;height:40px;filter:none}
+#quests #mailBtn b,#quests #passBtn b{display:none}
 .pass-board{--pass-gold:#ffdb91;position:relative;isolation:isolate;min-width:0;padding:8px;border:1px solid #bc8b53;border-radius:16px;color:#fff9e9;background:#1c1337;box-shadow:inset 0 0 18px #100b24}
 .pass-board::before{content:'';position:absolute;z-index:-1;inset:0;border-radius:inherit;background:linear-gradient(180deg,#1b103139 10%,#22143ebe 400px,#1a112e 770px),url(assets/pass_hall.webp) center top/100% auto no-repeat}
 .pass-top{text-align:center;margin:0 0 12px;padding:10px 6px 12px;border:1px solid #edbd71;border-radius:12px;background:linear-gradient(#160c2b0a,#201333e8);box-shadow:inset 0 0 0 2px #4f3567,0 3px 9px #100a22b0}

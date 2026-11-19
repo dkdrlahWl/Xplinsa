@@ -100,7 +100,7 @@
     button.style.display = combatArena ? 'none' : '';
     const count = mail?.length || 0, badge = button.querySelector('.ndot');
     badge.hidden = !count;
-    badge.textContent = count > 99 ? '99+' : count || '';
+    badge.textContent = '!';
   }
   orderButton();
   setInterval(orderButton, 500);
