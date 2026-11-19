@@ -1829,6 +1829,19 @@ function drawTorso(h,hipx,hipy,lean){ctx.save();ctx.translate(hipx,hipy);ctx.rot
  else if(h.k==='rogue'){frr('#4d4270',-9,-17,18,19,7);ctx.fillStyle='#2a2244';ctx.fillRect(-9,-5,18,3);ctx.fillStyle='#ffd23c';ctx.fillRect(-2,-5.5,4,4)}
  else{frr(h.body,-9,-17,18,19,8);ctx.fillStyle='rgba(180,110,10,.35)';ctx.fillRect(-8.5,-5,17,2.5)}
  ctx.restore()}
+// 주먹 그림(손가락 쪽)을 바탕으로 손등 쪽 그림을 만들어 캐시: 손가락 부분을 장갑 색 손등으로 덮고 위쪽에 마디 돌기
+const BKH=new Map();
+function backHand(im){let c=BKH.get(im);if(c)return c;c=document.createElement('canvas');const W=c.width=im.width,H=c.height=im.height,g=c.getContext('2d');g.drawImage(im,0,0);
+ try{const d=g.getImageData(Math.round(W*.55),Math.round(H*.4),Math.max(1,Math.round(W*.25)),Math.max(1,Math.round(H*.25))).data;let r=0,gg=0,b=0,n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]>200){r+=d[i];gg+=d[i+1];b+=d[i+2];n++}
+  if(n){r/=n;gg/=n;b/=n;const col=(k,a)=>`rgba(${Math.min(255,r*k)|0},${Math.min(255,gg*k)|0},${Math.min(255,b*k)|0},${a})`;
+   g.save();g.globalCompositeOperation='source-atop';
+   const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,col(1.3,1));gr.addColorStop(.55,col(1,1));gr.addColorStop(1,col(.7,1));
+   g.fillStyle=gr;g.beginPath();g.ellipse(W*.66,H*.52,W*.3,H*.43,0,0,TAU);g.fill();
+   g.fillStyle=col(1.45,.9);for(let k=0;k<4;k++){g.beginPath();g.ellipse(W*(.58+k*.1),H*.17,W*.055,H*.07,0,0,TAU);g.fill()}
+   g.fillStyle='rgba(255,255,255,.28)';g.beginPath();g.ellipse(W*.6,H*.38,W*.12,H*.08,-.3,0,TAU);g.fill();
+   g.strokeStyle='rgba(20,14,30,.55)';g.lineWidth=Math.max(1.2,W*.035);g.beginPath();g.ellipse(W*.66,H*.52,W*.29,H*.42,0,Math.PI*.6,Math.PI*1.45);g.stroke();
+   g.restore()}}catch(e){}
+ BKH.set(im,c);return c}
 function pimg(im,x,y,w){const h=w*im.height/im.width;ctx.drawImage(im,x-w/2,y-h/2,w,h)}
 function drawRecallAura(x,y){ctx.save();ctx.globalAlpha=.9+.1*Math.sin(T*10);if(recallAura.complete&&recallAura.naturalWidth){const w=136+8*Math.sin(T*8);ctx.drawImage(recallAura,x-w/2,y-30,w,47)}else{ctx.strokeStyle='#2469ca';ctx.lineWidth=6;ctx.beginPath();ctx.ellipse(x,y-2,52,17,0,0,TAU);ctx.stroke();ctx.strokeStyle='#fff4c0';ctx.lineWidth=2;ctx.stroke()}ctx.restore();}
 function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),gr=+mainW().split('_')[1],gc=GR[gr].c,w=WT[k],h=heroOf(),HA=q=>AI('hero_'+h.k+'_'+q);
@@ -1884,10 +1897,10 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   const [angle,bend]=IK(bs.x,bs.y,tx,ty,l1,l2);
   seg2(bs.x,bs.y,angle,l1,bend,l2,5,L,HA('arm'));
  };
- // back=1: 뒷손은 손잡이를 반대쪽에서 감싸므로 자루 축 기준으로 뒤집어서(엄지 방향 반대) 그림
+ // back=1: 아래(뒷)손은 손가락 대신 손등이 보이게 그림
  const fist=(x,y,w,angle,back)=>{
-  ctx.save();ctx.translate(x,y);ctx.rotate(angle);if(back){ctx.scale(-1,1);ctx.filter='brightness(.88)'}
-  HA('hand')?pimg(HA('hand'),0,0,w):ell(0,0,w*.5,w*.5,h.body);
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  HA('hand')?pimg(back?(HA('handback')||backHand(HA('hand'))):HA('hand'),0,0,w):ell(0,0,w*.5,w*.5,h.body);
   ctx.restore();
  };
  const drawArm=()=>{
