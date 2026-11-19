@@ -144,7 +144,7 @@ window.RAID = (() => {
     close(); visible = true; root.hidden = false; joy.on = false; joy.x = joy.y = 0; P.moving = false; P.recall = null; pointer = null;
     selLv = (st().best[selBoss] || 0) + 1; lobby();
   }
-  function exit() { visible = false; root.hidden = true; root.innerHTML = ''; run = null; arena = null; surface = null; pointer = null; save(); }
+  function exit() { visible = false; root.hidden = true; root.className = ''; root.innerHTML = ''; run = null; arena = null; surface = null; pointer = null; save(); }
   root.addEventListener('click', e => {
     const c = e.target.closest('[data-raid]'); if (!c || c.disabled) return; const a = c.dataset.raid;
     window.SFX && SFX.play('click', { v: .35 });

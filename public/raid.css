@@ -2,7 +2,7 @@
   position:absolute;inset:0;z-index:32;overflow:hidden;color:#f4ede2;
   background:#11131d;font-family:inherit;
 }
-#raid-screen[hidden]{display:none}
+#raid-screen[hidden]{display:none!important}
 #raid-screen button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #raid-screen button:disabled{opacity:.34;cursor:default}
 #raid-screen button:focus-visible{outline:2px solid #fff0bd;outline-offset:2px}
