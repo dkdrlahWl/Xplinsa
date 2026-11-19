@@ -15,12 +15,17 @@ let dirty = false;
 function markDirty() { dirty = true; }
 setInterval(flush, 3000);
 function flush() {
-  if (!dirty) return; dirty = false;
+  if (!dirty) return;
   const tmp = DB_FILE + '.tmp';
-  fs.writeFile(tmp, JSON.stringify(db), err => { if (!err) fs.rename(tmp, DB_FILE, () => {}); });
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(db));
+    fs.renameSync(tmp, DB_FILE);
+    dirty = false;
+  } catch (err) { console.error('Account save failed', err.message); }
 }
-process.on('SIGTERM', () => { if (dirty) fs.writeFileSync(DB_FILE, JSON.stringify(db)); process.exit(0); });
-process.on('SIGINT', () => { if (dirty) fs.writeFileSync(DB_FILE, JSON.stringify(db)); process.exit(0); });
+function closeDatabase() { flush(); process.exit(dirty ? 1 : 0); }
+process.on('SIGTERM', closeDatabase);
+process.on('SIGINT', closeDatabase);
 
 const hashPw = (pw, salt) => crypto.scryptSync(pw, salt, 32).toString('hex');
 const byToken = t => { if (!t) return null; for (const id in db.users) if (db.users[id].token === t) return db.users[id]; return null; };
@@ -97,8 +102,19 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/login') {
       const id = String(b.id || '').trim().toLowerCase(), u = db.users[id];
       if (!u || hashPw(String(b.pw || ''), u.salt) !== u.hash) return send(res, 400, { err: '아이디 또는 비밀번호가 틀렸어요' });
+      const active = clients.get(id);
+      if (active?.handoffCapable) {
+        if (active.handoff) return send(res, 503, {err:'기기 전환 중이에요. 잠시 후 다시 시도해 주세요.'});
+        const saved = await new Promise(resolve => {
+          const key = crypto.randomBytes(16).toString('hex');
+          const timer = setTimeout(() => active.handoff.finish(false), 6000);
+          active.handoff = { key, finish(ok) { clearTimeout(timer); delete active.handoff; resolve(ok); } };
+          wsSend(active.sock, {t:'handoff', key});
+        });
+        if (!saved || clients.get(id) !== active) return send(res, 503, {err:'이전 기기의 저장을 확인할 수 없어요. 잠시 후 다시 시도해 주세요.'});
+      }
       u.token = crypto.randomBytes(24).toString('hex'); // 새 로그인 → 이전 토큰 무효
-      kickUser(u.id); markDirty();
+      u.saveSeq=0; kickUser(u.id); markDirty();
       return send(res, 200, { token: u.token, nick: u.nick });
     }
     const u = byToken(b.token);
@@ -127,7 +143,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, out);
     }
     if (p === '/api/market') return market(u, b, res);
-    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', epoch: db.epoch || 0 });
+    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, epoch: db.epoch || 0 });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
       if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
@@ -137,7 +153,13 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/save') {
       if (!b.save || typeof b.save !== 'object') return send(res, 400, { err: 'bad' });
       if (db.epoch && u.id !== 'ehgus' && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
-      u.save = b.save; markDirty(); return send(res, 200, { ok: 1 });
+      const pending = clients.get(u.id)?.handoff;
+      if (b.handoff && pending?.key !== b.handoff) return send(res, 409, {err:'기기 전환이 만료됐어요'});
+      if (!b.handoff && Number.isSafeInteger(b.seq) && b.seq <= (u.saveSeq||0)) return send(res,200,{ok:1,older:true});
+      if(Number.isSafeInteger(b.seq)) u.saveSeq=b.seq;
+      u.save = b.save; markDirty();
+      if (b.handoff) { flush(); pending.finish(!dirty); }
+      return send(res, 200, { ok: 1 });
     }
     return send(res, 404, { err: 'no' });
   }
@@ -208,7 +230,7 @@ server.on('upgrade', (req, sock) => {
   if (!u) { wsSend(sock, { t: 'kick' }); return setTimeout(() => wsClose(sock), 50); }
   const old = clients.get(u.id);
   if (old && old.sock !== sock) { wsSend(old.sock, { t: 'kick' }); setTimeout(() => wsClose(old.sock), 50); }
-  const c = { sock, u, st: null, alive: Date.now() };
+  const c = { sock, u, handoffCapable:url.searchParams.get('handoff')==='1', st: null, alive: Date.now() };
   clients.set(u.id, c);
   wsSend(sock, { t: 'hi', id: u.id, ms: [...mons].map(([i, m]) => [i, m.hp, m.dead ? 1 : 0, m.own, m.dead ? Math.max(0, (m.rt - Date.now()) / 1000) : 0]), all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
   let buf = Buffer.alloc(0);

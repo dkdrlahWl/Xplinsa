@@ -1,7 +1,7 @@
 // 멀티플레이: 서버 저장 + 다른 플레이어 보이기
 (function(){
 window.IS_ADMIN=localStorage.getItem('xp_admin')==='1';const TOKEN=localStorage.getItem('xp_token'),NICK=localStorage.getItem('xp_nick')||'';
-if(!TOKEN){location.replace('index.html');return}
+if(!TOKEN || !window.saveReady){location.replace('index.html');return}
 const others=new Map();let ME=null,ws=null,sc=0,lastSw=0,sendT=0,kicked=false,retry=0,saveT=0,saveDirty=false;
 const DELAY=110;
 const CHO=()=>((typeof CHAP!=='undefined'?CHAP:1)-1)*5000,L=i=>{const o=CHO();return i>=o&&i<o+5000?i-o:-1},Gi=i=>i+CHO(),MYCH=()=>typeof CHAP!=='undefined'?CHAP:1; // ms 보간 지연
@@ -16,9 +16,13 @@ function kick(msg){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}loc
  d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}
 
 function connect(){if(kicked)return;
- ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(TOKEN));
+ ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws?token='+encodeURIComponent(TOKEN)+'&handoff=1');
  ws.onopen=()=>{if(retry>0){P.x=BASE.x;P.y=BASE.y+120}retry=0}; // 재접속 → 캠프파이어
  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
+  if(m.t==='handoff'){
+   if(typeof S!=='undefined'){save();fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:saveBody(m.key)}).catch(()=>{});}
+   return;
+  }
   if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(['raidState','raidError','raidInfo','raidRooms'].includes(m.t)){window.RAID?.receive(m);return}
@@ -72,18 +76,20 @@ function remote(m,dt){if(!m.d.boss||!on()||!m.own||m.own===ME)return false;m.ph+
 function list(){return [...others.values()].filter(r=>r.ch===MYCH())}
 
 // 서버 저장
+let saveSequence=Number(sessionStorage.xp_save_seq)||0;
+function saveBody(handoff){sessionStorage.xp_save_seq=++saveSequence;return JSON.stringify({token:TOKEN,save:S,seq:saveSequence,handoff})}
 function pushSave(){saveDirty=false;saveT=4;
- fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S}),keepalive:true})
-  .then(r=>{if(r.status===401)kick();else if(r.status===409)resetGo()}).catch(()=>{saveDirty=true})}
+ const body=saveBody();fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:document.hidden && new Blob([body]).size<60000})
+  .then(r=>{if(r.status===401)kick();else if(r.status===409)resetGo();else if(!r.ok)saveDirty=true}).catch(()=>{saveDirty=true})}
 function markSave(){saveDirty=true}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
 window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave()});
 
 async function logout(){kicked=true;try{ws&&ws.close()}catch(e){}
- try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S})})}catch(e){}
+ try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:saveBody()})}catch(e){}
  for(const k of['xp_token','xp_admin','xp_nick','camp_save_v2'])localStorage.removeItem(k);location.replace('index.html')}
 // 새 버전 감시: 서버가 업데이트되면 저장 후 자동 새로고침
-let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{cache:'no-store'})).text();if(VER===null)VER=v;else if(v!==VER&&!kicked){VER=v;try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,save:S})})}catch(e){}
+let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{cache:'no-store'})).text();if(VER===null)VER=v;else if(v!==VER&&!kicked){VER=v;try{await fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:saveBody()})}catch(e){}
   const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
 chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chkVer()});
 function defense(action,details={}){if(on())ws.send(JSON.stringify({t:"defense",action,...details}))}

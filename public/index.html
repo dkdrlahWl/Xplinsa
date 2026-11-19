@@ -64,7 +64,7 @@ async function enter(token){
  if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
  localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');localStorage.setItem('xp_ep',String(me.epoch||0));
  if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
- location.replace('game.html');
+ sessionStorage.xp_save_seq=me.saveSeq||0;sessionStorage.setItem('xp_enter',token);location.replace('game.html');
 }
 let tok=null;
 $('go').onclick=async()=>{
