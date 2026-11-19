@@ -2001,13 +2001,13 @@ function hud(){
 
 /* ---------- panels ---------- */
 const BOX={
- b3:{n:'전사의 무기상자',sub:'<b style="color:#ffd23c">전설</b> 무기 획득 가능',cost:150,c10:1350,odds:[0,30,50,17,3],pity:[[3,8,'에픽'],[4,40,'전설']],img:'shop_chest3',fb:'mon_chest2',big:1},
- b1:{n:'초보자의 무기상자',sub:'<b style="color:#7be36a">레어</b> 무기 획득 가능',cost:30,free:1,odds:[62,33,5,0,0],img:'shop_chest1',fb:'mon_chest1',col:'blue'},
- b2:{n:'전문가의 무기상자',sub:'<b style="color:#e3b0ff">에픽</b> 무기 획득 가능',cost:100,odds:[0,55,37,8,0],pity:[[3,10,'에픽']],img:'shop_chest2',fb:'mon_chest6',col:'pink'},
+ b3:{n:'전사의 무기상자',sub:'<b style="color:#ffd23c">전설</b> 무기 획득 가능',cost:150,c10:1350,odds:[0,65,25,8.5,1.5],pity:[[3,8,'에픽'],[4,40,'전설']],img:'shop_chest3',fb:'mon_chest2',big:1},
+ b1:{n:'초보자의 무기상자',sub:'<b style="color:#7be36a">레어</b> 무기 획득 가능',cost:30,free:1,odds:[64.5,33,2.5,0,0],img:'shop_chest1',fb:'mon_chest1',col:'blue'},
+ b2:{n:'전문가의 무기상자',sub:'<b style="color:#e3b0ff">에픽</b> 무기 획득 가능',cost:100,odds:[0,77.5,18.5,4,0],pity:[[3,10,'에픽']],img:'shop_chest2',fb:'mon_chest6',col:'pink'},
  hero:{n:'영혼 상자',sub:'<b style="color:#ffd23c">영혼 파편</b> 획득 · 모아서 영웅 제작',cost:150,c10:1350,img:'shop_herobox',fb:'hero_knight_head'}};
 BOX.attc={n:'출석 보상 상자',img:'shop_chest2',fb:'mon_chest6'};
-BOX.pet={n:'펫 알 상자',sub:'<b style="color:#ffd23c">전설</b> 펫 알 획득 가능 · 부화기에서 부화',cost:200,c10:1800,odds:[40,32,18,8,2],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_petbox',fb:'pet_egg4',egg:4,big:1};
-BOX.mount={n:'탈것 상자',sub:'<b style="color:#ffd23c">전설</b> 탈것 획득 가능 · 35종',cost:200,c10:1800,odds:[45,30,16,7,2],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_mountbox',fb:'mount_griffin',big:1};
+BOX.pet={n:'펫 알 상자',sub:'<b style="color:#ffd23c">전설</b> 펫 알 획득 가능 · 부화기에서 부화',cost:200,c10:1800,odds:[54,32,9,4,1],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_petbox',fb:'pet_egg4',egg:4,big:1};
+BOX.mount={n:'탈것 상자',sub:'<b style="color:#ffd23c">전설</b> 탈것 획득 가능 · 35종',cost:200,c10:1800,odds:[57.5,30,8,3.5,1],pity:[[3,25,'에픽'],[4,100,'전설']],img:'shop_mountbox',fb:'mount_griffin',big:1};
 ['일반','희귀','레어','에픽','전설'].forEach((n,g)=>BOX['egg'+g]={n:n+' 펫 알',img:'pet_egg'+g,egg:g});
 function today(){return new Date().toDateString()}
 const SUPT=4*3600e3,ATT=[{gold:1000},{gem:90},{cry:90},{orb:9},{gem:180},{scr:30},{wpn:4}];
