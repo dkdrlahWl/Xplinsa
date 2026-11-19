@@ -5,7 +5,9 @@
 #mfoot .stabs .stab{position:relative;flex:1;font:inherit;font-size:16px;padding:11px 0;border-radius:12px;border:3px solid #120f20;background:#2e2a48;color:#7d7799;box-shadow:inset 0 -4px 0 #221e38}
 #mfoot .stabs .stab.on{background:linear-gradient(#ffc24a,#f59a1b);color:#fff;text-shadow:0 2px 0 #9a5a08;box-shadow:inset 0 -5px 0 #c27510;transform:translateY(-3px)}
 .stab .sbang,.s2card .sbang{position:absolute;top:-9px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:#e8322c;border:2px solid #fff;color:#fff;font-size:13px;line-height:18px;text-align:center;padding:0 4px;z-index:2}
-.s2ban{position:relative;height:118px;border-radius:14px;overflow:hidden;border:3px solid #1c1830;background:radial-gradient(circle at 50% 80%,#7a4a2a,#2a1a14)}
+.s2ban{position:relative;aspect-ratio:3/1;border-radius:14px;overflow:hidden;border:3px solid #1c1830;background:radial-gradient(circle at 50% 80%,#7a4a2a,#2a1a14)}
+.shop-key-icon{display:inline-flex;width:20px;height:20px;vertical-align:middle;align-items:center;justify-content:center}
+.shop-key-icon img{width:100%;height:100%;object-fit:contain}
 .s2ban img{width:100%;height:100%;object-fit:cover}
 .s2rib{margin:-14px auto 10px;position:relative;width:62%;text-align:center;background:linear-gradient(#8a5a34,#5e3a1e);border:3px solid #1c1830;border-radius:10px;font-size:24px;padding:2px 0;color:#fff}
 .s2head{margin:16px 2px 10px;text-align:center;background:linear-gradient(#4a4466,#38324f);border:2px solid #1c1830;border-radius:10px;font-size:20px;padding:5px 0;color:#fff;box-shadow:inset 0 -3px 0 #2a2540}
@@ -44,21 +46,26 @@
 .s2pack.vip{background:linear-gradient(160deg,#5a3aa8,#2a1f5a);color:#fff}
 .s2pack.wk{background:linear-gradient(160deg,#8fe0ff,#4f9fe8)}
 .s2pack .art{position:absolute;left:0;top:0;bottom:56px;width:38%;display:flex;align-items:center;justify-content:center}
-.s2pack .art img{width:100%;height:100%;object-fit:contain}
+.s2pack .art>img{width:100%;height:100%;padding:6px;box-sizing:border-box;object-fit:contain}
+.s2pack .art .packcharm{position:absolute;right:4%;bottom:2%;width:35%;max-width:48px;aspect-ratio:1}
+.s2pack .packcharm img{width:100%;height:100%;object-fit:contain}
+.s2pack .rewardlist{margin:6px 0 2px;padding:0;list-style:none;display:grid;gap:3px;text-align:left}
+.s2pack .rewardlist li{display:flex;align-items:center;gap:5px;padding:3px 5px;border-radius:6px;background:#fff9e6;color:#3a2410;font-size:12px;line-height:1.3}
+.s2pack .rewardlist .rewardicon{flex:0 0 17px;height:17px}
+.s2pack .rewardicon img,.s2pack .rewardicon svg{width:100%;height:100%;object-fit:contain}
+.s2pack .rewardlist .rewardqty{margin-left:auto;white-space:nowrap;font-weight:bold}
+.s2pack .req{position:static;display:inline-block;margin-top:5px}
+.s2pack .req b{color:#c82822}
 .s2pack .body{margin-left:38%;padding:10px 10px 8px;text-align:center}
 .s2pack h3{margin:0;font-size:22px;font-weight:normal;color:#fff;text-shadow:0 2px 0 #1c1830,0 0 3px #1c1830}
 .s2pack .lim{display:inline-block;margin:4px 0 6px;background:rgba(90,50,20,.75);color:#ffcf6a;border-radius:10px;padding:2px 14px;font-size:14px}
 .s2pack .items{display:flex;justify-content:center;gap:5px;flex-wrap:wrap}
-.s2pack .it{position:relative;width:52px;height:52px;border-radius:10px;border:2px solid #1c1830;background:linear-gradient(#ffd8a8,#f08a5a)}
-.s2pack .it.p{background:linear-gradient(#c79bff,#7a3fd8)}.s2pack .it.b{background:linear-gradient(#d9e3ef,#9aa8bc)}
-.s2pack .it>img,.s2pack .it>svg{width:80%;height:80%;margin:10%;object-fit:contain}
-.s2pack .it i{position:absolute;right:2px;bottom:0;font-style:normal;font-size:12px;color:#fff;text-shadow:0 1px 0 #1c1830,0 0 3px #1c1830}
 .s2pack .buy{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;font:inherit;font-size:28px;color:#fff;border:0;border-top:3px solid #1c1830;padding:6px 0 8px;background:linear-gradient(#f5a84a,#d9782a);text-shadow:0 2px 0 #1c1830,0 0 3px #1c1830}
 .s2pack .buy .aimg,.s2pack .buy svg{width:28px;height:28px}
 .s2pack .buy:disabled{filter:grayscale(.7)}
 .s2pack .val{position:absolute;left:-4px;top:-4px;z-index:2;width:78px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(#ff7a2a,#e8322c 70%);border-radius:50% 50% 50% 10%;color:#fff;font-size:22px;line-height:18px;transform:rotate(-10deg);text-shadow:0 2px 0 #6a0a08}
 .s2pack .val small{font-size:13px!important;color:#ffe066}
-.s2pack .req{position:absolute;left:8px;bottom:62px;background:#fff8e8;border:2px solid #1c1830;border-radius:8px;padding:2px 8px;font-size:13px;color:#3a2410;z-index:2}
+.s2pack .req{background:#fff8e8;border:2px solid #1c1830;border-radius:8px;padding:2px 8px;font-size:13px;color:#3a2410;z-index:2}
 .s2pack .req b{color:#e8322c;font-weight:normal}
 .s2vip{list-style:none;margin:0;padding:0 0 6px;text-align:left}
 .s2vip li{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.28);border-radius:10px;padding:5px 8px;margin:4px 0;font-size:14px}
@@ -70,11 +77,12 @@
 
   const A = (k, fb) => AURL[k] || fb || '';
   const img = (k, fb) => { const u = A(k, fb); return u ? `<img src="${u}" alt="">` : '' };
-  const icon = k => k === 'key' ? (AURL.icon_key ? `<img src="${AURL.icon_key}" class="aimg" alt="">` : '<span style="font-size:26px">🔑</span>') : IC[k];
+  const keyIcon = id => img('shop_key_' + id, AURL.icon_key) || '🔑';
+  window.shopKeyIcon = keyIcon;
   const day = () => calendarKey(), week = () => calendarKey(true);
 
   /* ---------- 데일리 할인 상점 ---------- */
-  const BOXN = { b3: '전사의 상자 열쇠', b2: '전문가 상자 열쇠', b1: '초보자 상자 열쇠', pet: '펫 알 상자 열쇠', mount: '탈것 상자 열쇠' };
+  const BOXN = { b3: '전사의 무기상자 열쇠', b2: '전문가의 무기상자 열쇠', b1: '초보자의 무기상자 열쇠', pet: '펫 알 상자 열쇠', mount: '탈것 상자 열쇠' };
   const POOL = [
     { t: 'key', k: 'b3', n: 1, p: 150, w: 10 }, { t: 'key', k: 'b2', n: 1, p: 100, w: 10 },
     { t: 'key', k: 'pet', n: 1, p: 200, w: 7 }, { t: 'key', k: 'mount', n: 1, p: 200, w: 7 },
@@ -111,7 +119,7 @@
   }
   function itIcon(it) {
     if (it.t === 'gold') return `<div class="ic">${IC.gold}<span class="q">${fmt(it.n)}</span></div>`;
-    if (it.t === 'key') return `<div class="ic">${img(BOX[it.k]?.img, AURL[BOX[it.k]?.fb])}<span class="q kq">${icon('key')}</span><span class="q">x${it.n}</span></div>`;
+    if (it.t === 'key') return `<div class="ic">${img(BOX[it.k]?.img, AURL[BOX[it.k]?.fb])}<span class="q kq">${keyIcon(it.k)}</span><span class="q">x${it.n}</span></div>`;
     if (it.t === 'cur') return `<div class="ic">${IC[it.k]}<span class="q">x${it.n}</span></div>`;
     if (it.t === 'hero') { const h = HERO.find(x => x.k === it.k), u = AURL['hero_' + it.k + '_head']; return `<div class="ic puz g${h ? h.g : 0}">${u ? `<img src="${u}" alt="">` : `<b style="font-size:26px">${h ? h.n[0] : '?'}</b>`}<span class="q">x${it.n}</span></div>` }
     return '<div class="ic"></div>';
@@ -157,15 +165,18 @@
   const items = p => p.items.map(([k, s, n]) => k === 'gold' && !n ? [k, s, upgGold()] : [k, s, n]);
   const value = p => { const v = items(p).reduce((a, [k, s, n]) => a + (k === 'key' ? VAL[s] : VAL[k] || 0) * n, 0) + (p.id === 'upgrade' ? 600 : 0); return Math.round(v / p.cost * 100 / 50) * 50 };
   function packState() { const s = S.packs = S.packs || {}; if (s.wk !== week()) { s.wk = week(); s.weekly = 0 } return s }
+  const count = new Intl.NumberFormat('ko-KR');
   function itemHTML([k, s, n]) {
-    if (k === 'key') return `<div class="it b">${img(BOX[s]?.img, AURL[BOX[s]?.fb])}<i>🔑x${n}</i></div>`;
-    return `<div class="it${k === 'orb' || k === 'rb' ? ' p' : ''}">${IC[k]}<i>x${fmt(n)}</i></div>`;
+    const name = k === 'key' ? BOXN[s] : RWN[k];
+    const unit = k === 'key' ? '개' : '';
+    return `<li><span class="rewardicon" aria-hidden="true">${k === 'key' ? keyIcon(s) : IC[k]}</span><span>${name}</span><span class="rewardqty">${count.format(n)}${unit}</span></li>`;
   }
-  function packHTML(p, title, cls, art, lim, req) {
+  function packHTML(p, title, cls, art, lim, req, charm) {
     const can = !req && S.gem >= p.cost;
-    return `<div class="s2pack ${cls}"><div class="val">${value(p)}%<small>가치</small></div><div class="art">${art}</div>
-      ${req ? `<div class="req">${req}</div>` : ''}
-      <div class="body"><h3>${title}</h3><div class="lim">${lim}</div><div class="items">${items(p).map(itemHTML).join('')}</div></div>
+    return `<div class="s2pack ${cls}"><div class="val">${value(p)}%<small>가치</small></div><div class="art">${art}${charm ? `<span class="packcharm">${img(charm)}</span>` : ''}</div>
+      <div class="body"><h3>${title}</h3><div class="lim">${lim}</div>
+        <ul class="rewardlist" aria-label="패키지 구성품">${items(p).map(itemHTML).join('')}</ul>
+        ${req ? `<div class="req">${req}</div>` : ''}</div>
       <button class="buy" data-a="spack:${p.id}" ${can ? '' : 'disabled'}>${IC.gem}${fmt(p.cost)}</button></div>`;
   }
   function specialPanel() {
@@ -179,9 +190,9 @@
       </ul></div>
       <button class="buy" data-a="buyvip" ${S.gem < VIP_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(VIP_PRICE)}${on ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
     const next = STAGEP.find(p => !ps[p.id]);
-    const stage = next ? packHTML(next, '스테이지 ' + (next.stage + 1) + ' 패키지', '', img('pack_stage', AURL.shop_chest3), '1회 구매 가능', stageClear(next.stage) ? '' : '스테이지 ' + (next.stage + 1) + ' <b>보스 처치</b> 시 해금') : '<div class="s2note">스테이지 패키지를 모두 구매했어요</div>';
+    const stage = next ? packHTML(next, '스테이지 ' + (next.stage + 1) + ' 패키지', '', img('pack_stage', AURL.shop_chest3), '1회 구매 가능', stageClear(next.stage) ? '' : '스테이지 ' + (next.stage + 1) + ' <b>보스 처치</b> 시 해금', 'pack_stage_key') : '<div class="s2note">스테이지 패키지를 모두 구매했어요</div>';
     const upg = ps.upgrade ? '' : `<div class="s2head ts">무기 업그레이드 팩</div>` + packHTML(UPG, '무기 업그레이드 팩', '', img('pack_upgrade', 'assets/icon_anvil.webp'), '1회 구매 가능', S.lv >= 15 ? '' : '<b>Lv.15</b> 달성 시 해금');
-    const wk = packHTML(WEEK, '주간 탐험 패키지', 'wk', img('pack_weekly', AURL.shop_petbox), '이번 주 ' + (1 - (ps.weekly || 0)) + '/1', ps.weekly ? '이번 주 구매 완료' : '');
+    const wk = packHTML(WEEK, '주간 탐험 패키지', 'wk', img('pack_weekly', AURL.shop_petbox), '이번 주 ' + (1 - (ps.weekly || 0)) + '/1', ps.weekly ? '이번 주 구매 완료' : '', 'pack_weekly_key');
     return `<div class="s2ban">${img('shop_banner_special', AURL.shop_banner)}</div><div class="s2rib ts">• 스페셜 •</div>
       <div class="s2head ts">VIP 멤버십</div>${vip}
       <div class="s2head ts">스테이지 패키지</div>${stage}${upg}
