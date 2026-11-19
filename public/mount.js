@@ -38,48 +38,85 @@ window.MOUNT = (() => {
     setTimeout(() => { if (!GA) startGacha('mountgift', 1, [r]) }, 900) }
   function toggle() { st(); if (S.lv < UNLOCK) return toast('Lv.' + UNLOCK + '부터 탈 수 있어요'); if (!cur()) return toast('탈것이 없어요'); if (combatArena) return;
     S.riding = !S.riding; F.t = 0; calc(); save(); poof(); window.SFX && SFX.play(S.riding ? 'recall' : 'close', { v: .45 }); btn() }
-  // ---------- 그리기 ----------
+  // ---------- 그리기 (부품: 몸통 + 다리 4개 + 날개) ----------
+  // 그림 부품: mount_<키>_body(다리 없는 몸·머리·꼬리·안장, 오른쪽 보기), mount_<키>_leg(다리 1개, 위=몸에 붙는 쪽), 날개 달린 건 mount_<키>_wing(위=어깨)
+  // RIG: 다리 붙는 위치(몸통 그림 비율 x,y), 다리 길이(몸 폭 비율), 안장(비율), 걸음 폭, 날개
+  const RIG = {
+    pony: { fl: [.68, .74], bl: [.30, .74], leg: .30, seat: [.50, .30], amp: .55 },
+    boar: { fl: [.70, .78], bl: [.30, .78], leg: .22, seat: [.48, .32], amp: .6 },
+    wolf: { fl: [.70, .72], bl: [.28, .72], leg: .30, seat: [.48, .30], amp: .65 },
+    tortoise: { fl: [.74, .80], bl: [.26, .80], leg: .17, seat: [.50, .16], amp: .3, slow: 1 },
+    camel: { fl: [.66, .70], bl: [.30, .70], leg: .40, seat: [.46, .20], amp: .5 },
+    whitehorse: { fl: [.68, .72], bl: [.28, .72], leg: .34, seat: [.48, .28], amp: .6 },
+    reindeer: { fl: [.68, .72], bl: [.28, .72], leg: .34, seat: [.48, .30], amp: .6 },
+    lion: { fl: [.70, .74], bl: [.28, .74], leg: .28, seat: [.46, .30], amp: .65 },
+    griffin: { fl: [.70, .74], bl: [.30, .74], leg: .26, seat: [.44, .30], amp: .55, wing: [.46, .30], wl: .72 },
+    kirin: { fl: [.68, .70], bl: [.28, .70], leg: .32, seat: [.46, .28], amp: .55 },
+  };
   const PH = {};
-  function ph(k) { if (PH[k]) return PH[k]; const m = BY[k], c = document.createElement('canvas'); c.width = 160; c.height = 120; const g = c.getContext('2d');
-    g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.75)'; g.lineJoin = 'round'; g.fillStyle = shade(m.c, -.25);
-    for (const x of [44, 64, 100, 118]) { g.beginPath(); g.roundRect(x, 70, 14, 40, 6); g.fill(); g.stroke() }
-    const gr = g.createLinearGradient(0, 30, 0, 90); gr.addColorStop(0, shade(m.c, .25)); gr.addColorStop(1, shade(m.c, -.2)); g.fillStyle = gr;
-    g.beginPath(); g.ellipse(82, 64, 52, 28, 0, 0, Math.PI * 2); g.fill(); g.stroke();
-    g.beginPath(); g.ellipse(132, 38, 20, 17, -.3, 0, Math.PI * 2); g.fill(); g.stroke();
-    g.fillStyle = '#1c1830'; g.beginPath(); g.arc(139, 34, 3.5, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#8a3a2a'; g.beginPath(); g.ellipse(80, 42, 22, 9, 0, 0, Math.PI * 2); g.fill(); g.stroke();
-    if (m.g >= 4) { g.fillStyle = '#ffffffcc'; g.beginPath(); g.ellipse(70, 30, 30, 12, -.5, 0, Math.PI * 2); g.fill(); g.stroke() }
-    PH[k] = c; c.url = c.toDataURL(); return c }
   function shade(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v + (k < 0 ? v * k : (255 - v) * k)))); return 'rgb(' + f(n >> 16) + ',' + f(n >> 8 & 255) + ',' + f(n & 255) + ')' }
-  const img = k => AI('mount_' + k) || ph(k), url = k => AURL['mount_' + k] || ph(k).url;
-  const W = 92; // 화면상 탈것 폭
-  const SEAT = .52; // 그림 높이 중 안장 위치(아래에서)
-  const F = { t: 0, ghosts: [], parts: [], gT: 0 };
+  function phBody(k) { const key = k + ':b'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 200; c.height = 120; const g = c.getContext('2d');
+    g.lineWidth = 5; g.strokeStyle = 'rgba(30,22,46,.8)'; g.lineJoin = 'round';
+    const gr = g.createLinearGradient(0, 20, 0, 110); gr.addColorStop(0, shade(m.c, .3)); gr.addColorStop(1, shade(m.c, -.25)); g.fillStyle = gr;
+    g.beginPath(); g.moveTo(34, 60); g.quadraticCurveTo(10, 50, 14, 74); g.stroke(); // 꼬리
+    g.beginPath(); g.ellipse(98, 72, 66, 32, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(140, 66); g.quadraticCurveTo(150, 26, 166, 22); g.lineTo(186, 40); g.quadraticCurveTo(170, 56, 160, 80); g.closePath(); g.fill(); g.stroke(); // 목·머리
+    g.fillStyle = '#1c1830'; g.beginPath(); g.arc(174, 32, 4, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#9a3a2a'; g.beginPath(); g.ellipse(96, 46, 26, 10, 0, 0, Math.PI * 2); g.fill(); g.stroke(); g.fillStyle = '#d8a040'; g.fillRect(92, 50, 8, 18);
+    PH[key] = c; return c }
+  function phLeg(k) { const key = k + ':l'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 30; c.height = 70; const g = c.getContext('2d');
+    g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.8)'; g.fillStyle = shade(m.c, -.12); g.beginPath(); g.roundRect(6, 2, 18, 60, 8); g.fill(); g.stroke(); g.fillStyle = '#3a2a2a'; g.beginPath(); g.roundRect(4, 52, 22, 14, 5); g.fill(); g.stroke();
+    PH[key] = c; return c }
+  function phWing(k) { const key = k + ':w'; if (PH[key]) return PH[key]; const m = BY[k], c = document.createElement('canvas'); c.width = 120; c.height = 80; const g = c.getContext('2d');
+    g.lineWidth = 4; g.strokeStyle = 'rgba(30,22,46,.8)'; g.fillStyle = shade(m.c, .35); g.beginPath(); g.moveTo(10, 70); g.quadraticCurveTo(20, 10, 112, 6); g.quadraticCurveTo(90, 30, 100, 40); g.quadraticCurveTo(70, 50, 76, 62); g.quadraticCurveTo(40, 64, 10, 70); g.fill(); g.stroke();
+    PH[key] = c; return c }
+  function phCard(k) { const key = k + ':c'; if (PH[key]) return PH[key]; const c = document.createElement('canvas'); c.width = 200; c.height = 150; const g = c.getContext('2d'); const b = part(k, 'body'), l = part(k, 'leg'), r = RIG[k], w = 180, h = w * b.height / b.width, x0 = 10, y0 = 10;
+    const lw = w * r.leg * .45, lh = w * r.leg; for (const a of [r.bl, r.fl]) for (const o of [-6, 6]) g.drawImage(l, x0 + a[0] * w - lw / 2 + o, y0 + a[1] * h - 3, lw, lh);
+    g.drawImage(b, x0, y0, w, h); if (r.wing) { const wi = part(k, 'wing'); g.drawImage(wi, x0 + r.wing[0] * w - 10, y0 + r.wing[1] * h - w * r.wl * .55, w * r.wl, w * r.wl * wi.height / wi.width) }
+    PH[key] = c; c.url = c.toDataURL(); return c }
+  const part = (k, p) => AI('mount_' + k + '_' + p) || (p === 'body' ? phBody(k) : p === 'leg' ? phLeg(k) : phWing(k));
+  const url = k => AURL['mount_' + k] || AURL['mount_' + k + '_card'] || phCard(k).url;
+  const W = 100; // 화면상 몸통 폭
+  const F = { t: 0, ghosts: [], parts: [], gT: 0, ph: 0 };
+  const RPH = new WeakMap();
   function poof() { for (let i = 0; i < 14; i++) { const a = rnd(0, TAU), s = rnd(40, 110); F.parts.push({ x: P.x, y: P.y - 20, vx: Math.cos(a) * s, vy: Math.sin(a) * s * .6 - 20, l: .5, c: '#fff', r: rnd(4, 8) }) } }
+  // 몸 전체를 그리고 안장 위치(화면 좌표)를 돌려줌
   function drawMount(m, x, y, face, mv, ph, alpha) {
-    const im = img(m.k), h = W * im.height / im.width, bob = mv ? Math.abs(Math.sin(ph * .5)) * 4 : Math.sin(T * 2) * 1;
-    ctx.save(); if (alpha != null) ctx.globalAlpha = alpha; ctx.translate(x, y - bob); ctx.scale(face, 1);
-    if (mv) ctx.rotate(Math.sin(ph * .5) * .04); ctx.drawImage(im, -W / 2, -h + 4, W, h); ctx.restore();
-    return h * SEAT + bob;
+    const r = RIG[m.k], body = part(m.k, 'body'), leg = part(m.k, 'leg'), h = W * body.height / body.width;
+    const amp = mv ? r.amp : 0, bob = mv ? Math.abs(Math.sin(ph)) * (r.slow ? 1.5 : 4) : Math.sin(T * 2.2) * 1.2;
+    const legLen = W * r.leg, legW = legLen * leg.width / leg.height, top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
+    const pitch = mv ? Math.sin(ph * 2) * .025 : 0;
+    ctx.save(); if (alpha != null) ctx.globalAlpha *= alpha; ctx.translate(x, top + h * .6); ctx.scale(face, 1); ctx.rotate(pitch); ctx.translate(-W / 2, -h * .6);
+    const L = (a, phase, far) => { const ax = a[0] * W, ay = a[1] * h, ang = amp * Math.sin(ph + phase); ctx.save(); ctx.translate(ax + (far ? -3 : 3), ay - 2); ctx.rotate(-ang); if (far) ctx.filter = 'brightness(.72)'; ctx.drawImage(leg, -legW / 2, 0, legW, legLen); ctx.restore() };
+    const flap = mv ? Math.sin(T * 13) : Math.sin(T * 4) * .5;
+    const Wg = (far) => { if (!r.wing) return; const wi = part(m.k, 'wing'), ww = W * r.wl, wh = ww * wi.height / wi.width; ctx.save(); ctx.translate(r.wing[0] * W + (far ? 6 : 0), r.wing[1] * h); ctx.rotate(-.35 - flap * .55 + (far ? -.12 : 0)); if (far) ctx.filter = 'brightness(.7)'; ctx.drawImage(wi, -ww * .08, -wh * .9, ww, wh); ctx.restore() };
+    // 대각선 다리끼리 같이 움직이는 걸음(앞-먼쪽 & 뒤-가까운쪽)
+    Wg(true); L(r.fl, Math.PI, true); L(r.bl, 0, true);
+    ctx.drawImage(body, 0, 0, W, h);
+    L(r.fl, 0, false); L(r.bl, Math.PI, false); Wg(false);
+    ctx.restore();
+    // 안장 위치 (뒤집힘 고려)
+    const sx = x + face * (r.seat[0] - .5) * W, sy = top + r.seat[1] * h;
+    return { sx, sy };
   }
   function aura(m, x, y) { if (m.g < 3) return; ctx.save(); const c = m.fx === 'gold' ? '#ffd23c' : m.fx === 'storm' ? '#7ff0ff' : m.fx === 'fire' ? '#ff8a3a' : '#bfe8ff';
-    ctx.globalAlpha = .22 + Math.sin(T * 4) * .08; const gr = ctx.createRadialGradient(x, y - 30, 6, x, y - 30, 70); gr.addColorStop(0, c); gr.addColorStop(1, c + '00'); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(x, y - 30, 70, 58, 0, 0, TAU); ctx.fill();
-    ctx.globalAlpha = .5; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, y + 2, 44, 14, 0, 0, TAU); ctx.stroke(); ctx.restore() }
-  function riderDraw(orig, r) {
-    // r: 원격 유저 정보(없으면 나)
-    if (typeof PV !== 'undefined' && PV) return orig(); const k = r ? r.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
+    ctx.globalAlpha = .22 + Math.sin(T * 4) * .08; const gr = ctx.createRadialGradient(x, y - 34, 6, x, y - 34, 76); gr.addColorStop(0, c); gr.addColorStop(1, c + '00'); ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(x, y - 34, 76, 62, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = .55; ctx.strokeStyle = c; ctx.lineWidth = 2.5; ctx.setLineDash([10, 8]); ctx.lineDashOffset = -T * 40; ctx.beginPath(); ctx.ellipse(x, y + 2, 50, 16, 0, 0, TAU); ctx.stroke(); ctx.restore() }
+  function riderDraw(orig, rem) {
+    if (typeof PV !== 'undefined' && PV) return orig(); const k = rem ? rem.mt : (riding() ? S.mount : null), m = k && BY[k]; if (!m || P.dead) return orig();
     const face = Math.cos(P.dir) >= 0 ? 1 : -1, mv = P.moving;
-    if (!r) for (const g of F.ghosts) { ctx.save(); drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35); ctx.restore() }
-    aura(m, P.x, P.y); shadow(P.x, P.y + 2, 40);
-    const lift = drawMount(m, P.x, P.y, face, mv, P.walk || 0);
-    const y0 = P.y, w0 = P.walk, m0 = P.moving; P.y = y0 - lift; P.moving = false; P.walk = 0;
-    try { orig() } finally { P.y = y0; P.walk = w0; P.moving = m0 }
+    let ph; if (rem) { const o = RPH.get(rem) || { ph: 0, t: T }; o.ph += (T - o.t) * (mv ? 11 : 0); o.t = T; RPH.set(rem, o); ph = o.ph } else ph = F.ph;
+    if (!rem) for (const g of F.ghosts) drawMount(m, g.x, g.y, g.f, true, g.ph, g.l * .35);
+    aura(m, P.x, P.y); shadow(P.x, P.y + 2, 44);
+    const s0 = drawMount(m, P.x, P.y, face, mv, ph);
+    const y0 = P.y, x0 = P.x, w0 = P.walk, m0 = P.moving; P.x = s0.sx; P.y = s0.sy + 21; P.moving = false; P.walk = 0; P.sit = true; P.sitK = mv ? Math.sin(ph) * .08 : 0;
+    try { orig() } finally { P.x = x0; P.y = y0; P.walk = w0; P.moving = m0; P.sit = false; P.sitK = 0 }
   }
   function trail(dt) {
     const m = cur(); if (!riding() || !m) { F.ghosts.length = 0; return }
     if (P.moving) {
       F.gT -= dt;
-      if (m.g >= 4 && F.gT <= 0) { F.gT = .06; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: P.walk, l: 1 }) }
+      if (m.g >= 4 && F.gT <= 0) { F.gT = .06; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, l: 1 }) }
       const n = dt * [10, 14, 18, 24, 30][m.g], col = { dust: '#d9c9a8', dust2: '#cfd6dc', leaf: '#8be05a', sand: '#f0d090', shine: '#ffffff', frost: '#bfeaff', fire: '#ffb04a', gold: '#ffe066', storm: '#9ff6ff' }[m.fx];
       if (Math.random() < n) F.parts.push({ x: P.x - Math.cos(P.dir) * 26 + rnd(-10, 10), y: P.y + rnd(-4, 4), vx: -Math.cos(P.dir) * rnd(20, 60), vy: rnd(-30, -6), l: rnd(.35, .6), c: col, r: m.g >= 2 ? rnd(2.5, 4.5) : rnd(4, 7), glow: m.g >= 2 })
     }
@@ -88,6 +125,7 @@ window.MOUNT = (() => {
   function drawFx() { for (const q of F.parts) { ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, q.l * 2)); if (q.glow) ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = q.c; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill(); ctx.restore() } }
   function update(dt) {
     st(); if (combatArena && S.riding) { S.riding = false; calc() }
+    { const m = cur(); if (riding() && P.moving && m) F.ph += dt * (RIG[m.k].slow ? 6 : 11) * Math.min(1.6, ST.spd / 300) }
     trail(dt); for (let i = F.parts.length - 1; i >= 0; i--) { const q = F.parts[i]; q.l -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.l <= 0) F.parts.splice(i, 1) }
     btn();
   }
