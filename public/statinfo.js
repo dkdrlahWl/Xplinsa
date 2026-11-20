@@ -73,9 +73,9 @@
   const _draw2 = draw;
   // 관리자 송금 (링피지 방식): 재화 고르기 → 받는 사람 고르기 → 수량 → 확인 화면 → 송금. 받는 사람 우편함으로 바로 들어감
   const SEND = [['gold', '금화'], ['gem', '보석'], ['cry', '크리스탈'], ['orb', '오브'], ['rb', '무지개 오브'], ['scr', '주문서'], ['myth', '신화석'], ['scl', '용의 비늘'],
-    ['b1', '초보자의 무기상자 열쇠'], ['b2', '전문가의 무기상자 열쇠'], ['b3', '전사의 무기상자 열쇠'], ['pet', '펫 알 상자 교환권'], ['mount', '탈것 상자 교환권']];
+    ['b1', '초보자의 무기상자 열쇠'], ['b2', '전문가의 무기상자 열쇠'], ['b3', '전사의 무기상자 열쇠'], ['pet', '펫 알 상자 교환권'], ['mount', '탈것 상자 교환권'], ['lv', '레벨 설정']];
   const SN = Object.fromEntries(SEND);
-  const sIcon = k => /^(b[123]|pet|mount)$/.test(k) ? '🔑' : (IC[k] || '');
+  const sIcon = k => k === 'lv' ? '⭐' : /^(b[123]|pet|mount)$/.test(k) ? '🔑' : (IC[k] || '');
   async function adminSend() {
     const j = await fetch('/api/adminusers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok || '') }) }).then(r => r.json()).catch(() => ({}));
     if (!j.list) { toast(j.err || '불러오지 못했어요'); return }
@@ -85,7 +85,7 @@
     d.innerHTML = `<div class="sp" style="width:min(94vw,400px);max-height:88vh;overflow:auto"><div class="sph"><b>💸 재화 송금</b><button class="spx">✕</button></div>
       <div id="asForm"><div class="sps" style="margin-top:0">보낼 재화</div><div class="as-res">${SEND.map(([k, n]) => `<button type="button" data-res="${k}">${sIcon(k)}<span>${n}</span></button>`).join('')}</div>
       <div class="sps">받는 사람 · 🟢 접속 중</div><div class="as-ppl">${people.map(u => `<button type="button" data-to="${u.id}"><b>${u.on ? '🟢' : '⚪'} ${u.n}</b><small>Lv.${u.lv} · ${u.ch}챕 · ID ${u.id}</small></button>`).join('') || '<div class="as-none">보낼 수 있는 유저가 없어요</div>'}</div>
-      <div class="sps">수량</div><input id="asN" inputmode="numeric" placeholder="보낼 수량" autocomplete="off"><div class="as-q">${[[1, '1'], [10, '10'], [100, '100'], [1000, '1천'], [10000, '1만'], [100000, '10만'], [1000000, '100만'], [100000000, '1억']].map(([n, l]) => `<button type="button" data-add="${n}">+${l}</button>`).join('')}<button type="button" data-add="0">초기화</button></div></div>
+      <div class="sps">수량 (레벨 설정은 바꿀 레벨)</div><input id="asN" inputmode="numeric" placeholder="보낼 수량" autocomplete="off"><div class="as-q">${[[1, '1'], [10, '10'], [100, '100'], [1000, '1천'], [10000, '1만'], [100000, '10만'], [1000000, '100만'], [100000000, '1억']].map(([n, l]) => `<button type="button" data-add="${n}">+${l}</button>`).join('')}<button type="button" data-add="0">초기화</button></div></div>
       <div id="asReview" hidden></div><div id="asSt"></div>
       <div class="as-act"><button type="button" class="btn" id="asBack" hidden>뒤로</button><button type="button" class="btn" id="asGo" disabled>송금 내용 확인</button></div></div>`;
     document.body.appendChild(d);
@@ -106,13 +106,13 @@
       if (!review) {
         review = { to: to.id, name: to.n, res, n: N() };
         q('#asForm').hidden = true; q('#asReview').hidden = false; q('#asBack').hidden = false; q('#asGo').textContent = '송금하기';
-        q('#asReview').innerHTML = `<b>${review.name}</b> (ID ${review.to}) 계정에<br>${sIcon(res)} <b>${SN[res]} ${review.n.toLocaleString("ko-KR")}개</b>를 보냅니다.<br><small>받는 사람 우편함으로 바로 들어가요.</small>`;
+        q('#asReview').innerHTML = res === 'lv' ? `<b>${review.name}</b> (ID ${review.to}) 계정의<br>⭐ <b>레벨을 Lv.${review.n}</b>로 바꿉니다.<br><small>경험치는 0이 되고, 접속 중이면 바로 다시 불러와요.</small>` : `<b>${review.name}</b> (ID ${review.to}) 계정에<br>${sIcon(res)} <b>${SN[res]} ${review.n.toLocaleString("ko-KR")}개</b>를 보냅니다.<br><small>받는 사람 우편함으로 바로 들어가요.</small>`;
         return;
       }
       busy = true; sync(); q('#asSt').textContent = '송금 중…';
       const k = await fetch('/api/admsend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok || ''), to: review.to, res: review.res, n: review.n }) }).then(r => r.json()).catch(() => ({ err: '연결이 끊겼어요. 우편함에 들어갔는지 확인해 주세요.' }));
       busy = false;
-      if (k.ok) { toast(`${k.to}님에게 ${SN[k.res]} ${Number(k.n).toLocaleString("ko-KR")}개 송금 완료!`); q('#asN').value = ''; form(); q('#asSt').textContent = `✔ ${k.to}님에게 ${SN[k.res]} ${Number(k.n).toLocaleString("ko-KR")}개 보냈어요`; }
+      if (k.ok) { const msg = k.res === 'lv' ? `${k.to}님 레벨을 Lv.${k.n}로 바꿨어요` : `${k.to}님에게 ${SN[k.res]} ${Number(k.n).toLocaleString("ko-KR")}개 보냈어요`; toast(msg); q('#asN').value = ''; form(); q('#asSt').textContent = '✔ ' + msg; }
       else { q('#asSt').textContent = k.err || '송금하지 못했어요'; sync() }
     });
     q('#asN').addEventListener('input', () => { const n = N(); q('#asN').value = n ? n.toLocaleString('ko-KR') : ''; sync() });

@@ -142,6 +142,13 @@ const server = http.createServer(async (req, res) => {
       if (!to) return send(res, 400, { err: '받는 유저를 찾을 수 없어요' });
       if (to.id === u.id) return send(res, 400, { err: '자신에게는 보낼 수 없어요' });
       if (!(n >= 1 && n <= 1e15)) return send(res, 400, { err: '수량을 확인해 주세요' });
+      if (r === 'lv') { // 레벨 설정: 서버 기록을 바로 고치고, 접속 중이면 새 기록으로 다시 불러오게 함
+        if (!to.save) return send(res, 400, { err: '아직 기록이 없는 유저예요' });
+        if (n > 999) return send(res, 400, { err: '레벨은 999까지' });
+        to.save.lv = n; to.save.xp = 0; to.rev = (to.rev || 0) + 1; to.saveSeq = 0; markDirty();
+        const c = clients.get(to.id); if (c) wsSend(c.sock, { t: 'admset' });
+        return send(res, 200, { ok: 1, to: to.nick || to.id, res: r, n });
+      }
       const m = { t: '💌 운영자 송금' };
       if (SEND_RES.includes(r)) m[r] = n; else if (SEND_KEYS.includes(r)) { if (n > 10000) return send(res, 400, { err: '열쇠는 1만 개까지' }); m.keys = { [r]: n }; } else return send(res, 400, { err: '보낼 재화를 골라 주세요' });
       (mk.mail[to.id] = mk.mail[to.id] || []).push(m); saveMk(); mailPing(to.id);

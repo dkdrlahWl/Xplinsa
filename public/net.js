@@ -24,6 +24,7 @@ function connect(){if(kicked)return;
    return;
   }
   if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();if(m.t==='mail'){window.dispatchEvent(new Event('xp-mail'));return}
+  if(m.t==='admset'){if(kicked)return;kicked=true;window.save=function(){};try{ws&&ws.close()}catch(e){}try{toast('운영자가 정보를 바꿨어요. 다시 불러올게요!')}catch(e){}setTimeout(()=>location.replace('index.html'),1200);return}
   if(m.t==='emote'){window.EMOTES?.receive(m);return}
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(['raidState','raidError','raidInfo','raidRooms'].includes(m.t)){window.RAID?.receive(m);return}
