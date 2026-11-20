@@ -414,6 +414,21 @@ function launchReset() {
 }
 setInterval(launchReset, 5000); launchReset();
 
+// 운영 보정: 포차코의 현재 챕터 2 공격 속도 강화 임무만 완료 처리.
+const questRepairUser = Object.values(db.users).find(u => u.nick === '포차코');
+const questRepairSave = questRepairUser?.save;
+const questRepairChapter = questRepairSave?.chs?.[2];
+if (!questRepairUser?.aspdQuestRepairApplied && questRepairSave?.ch === 2 && [32, 74, 116].includes(questRepairChapter?.q)) {
+  const progress = Math.max(1, Number(questRepairChapter.qp) || 0);
+  if (!questRepairChapter.qok || !questRepairSave.qok || questRepairSave.qp !== progress) {
+    questRepairChapter.qok = questRepairSave.qok = 1;
+    questRepairChapter.qp = questRepairSave.qp = progress;
+    questRepairUser.rev = (questRepairUser.rev || 0) + 1;
+  }
+  questRepairUser.aspdQuestRepairApplied = true;
+  markDirty();
+  flush();
+}
 deliverAllMonthlyMail();
 setInterval(deliverAllMonthlyMail, 30000);
 
