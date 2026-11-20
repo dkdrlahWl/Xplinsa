@@ -4,9 +4,8 @@ window.DEFENSE = (() => {
   root.id = 'defense-screen';
   root.hidden = true;
   $('game').appendChild(root);
-  const background = new Image();
-  background.src = 'assets/defense_camp.webp';
   const directions = { north: '북', east: '동', south: '남', west: '서' };
+  const terrain=['tile_0_crisp','tile_1','tile_2','tile_3','tile_5','tile2_0','tile2_1','tile2_2','tile2_3','tile2_5'];
   const arrows = { north:'↓', east:'←', south:'↑', west:'→' };
   const positions = new Map(), targets = new Map();
   let arena = null, localPosition = null;
@@ -14,9 +13,7 @@ window.DEFENSE = (() => {
   function resetCombat(){
     localPosition = null;
     sentX = sentY = 0;
-    arena = {width:WIDTH,height:HEIGHT,player:{...P,atkCd:0,swingT:0,pend:null,s2:null,sk:[0,0,0,0,0,0],sub:{},extraT:0,trail:[],scarf:[]},
-      enemies:[],shots:[],nums:[],fxs:[],timers:[],
-      hit(enemy,damage){NET.defense('hit',{enemy:enemy.i,damage})}};
+    arena = makeCombatArena(WIDTH,HEIGHT,(enemy,damage)=>NET.defense('hit',{enemy:enemy.i,damage}));
     targets.clear();
   }
   const swings = new Map();
@@ -252,7 +249,7 @@ window.DEFENSE = (() => {
     if (canvas.width !== Math.round(w * dp) || canvas.height !== Math.round(h * dp)) {
       canvas.width = Math.round(w * dp); canvas.height = Math.round(h * dp);
     }
-    const g = canvas.getContext('2d'), zoom=w/430, scale=zoom*dp;
+    const g = canvas.getContext('2d'), zoom=Math.max(w/430,h/HEIGHT), scale=zoom*dp;
     const time=performance.now(), alive=new Set();
     function smooth(key, entity){
       alive.add(key);
@@ -269,8 +266,7 @@ window.DEFENSE = (() => {
     const camX=follow(focus.x,WIDTH,viewW),camY=follow(focus.y-20,HEIGHT,viewH);
     g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,canvas.width,canvas.height);
     g.setTransform(scale,0,0,scale,canvas.width/2-camX*scale,canvas.height/2-camY*scale);
-    if(background.complete&&background.naturalWidth)g.drawImage(background,0,0,WIDTH,HEIGHT);
-    else{g.fillStyle='#507643';g.fillRect(0,0,WIDTH,HEIGHT)}
+    drawArenaGround(g,WIDTH,HEIGHT,terrain[state.stage-1],'#507643',true);
     g.beginPath();g.arc(CENTER_X,CENTER_Y,34,0,Math.PI*2);
     g.fillStyle='#94f8a849';g.fill();g.strokeStyle='#b7ffba';g.lineWidth=2;g.stroke();
     const camp=AI('bld_fire');

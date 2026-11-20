@@ -414,7 +414,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .map-boss-caption{min-height:1.4em;text-align:center;color:#ffe1a4;margin:4px 0;font-size:13px}
 .promo-req{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin:8px 4px 10px;font-size:14px}.promo-req span{background:#2e2a48;border:2px solid #1c1830;border-radius:10px;padding:3px 9px}
 </style>
-<link rel="stylesheet" href="tower.css?v=40">
+<link rel="stylesheet" href="tower.css?v=41">
 <link rel="stylesheet" href="defense.css?v=3">
 <link rel="stylesheet" href="raid.css?v=2045">
 <link rel="stylesheet" href="ui2.css?v=3">
@@ -1443,12 +1443,29 @@ function ambSfx(dt){
  SFX.ambience(home?'camp':z<0?'field':CHAP===2?['sea','swamp','ruins','sky','castle','volcano'][z]:['field','desert','forest','snow','ruins','volcano'][z]);
 }
 
+function makeCombatArena(width,height,hit){
+ const player={...P,dead:false,moving:false,recall:null,hitT:0,atkCd:0,swingT:0,pend:null,s2:null,
+  sk:[0,0,0,0,0,0],sub:{},combo:0,extraT:0,extraM:null,extraLeft:0,tipX:0,tipY:0,trail:[],scarf:[]};
+ return {width,height,player,enemies:[],shots:[],nums:[],fxs:[],timers:[],hit};
+}
+function drawArenaGround(g,width,height,tile,color,clearing){
+ const old=ctx;ctx=g;
+ try{
+  g.fillStyle=pat(tile)||color;g.fillRect(0,0,width,height);
+  if(clearing){
+   const path=new Path2D();path.ellipse(width/2,height/2,190,150,-.12,0,TAU);
+   const fill=pat('tile_base_crisp')||'#be9c69';
+   g.save();g.strokeStyle='#322b2533';g.lineWidth=14;g.stroke(path);
+   g.fillStyle=fill;g.fill(path);g.restore();
+  }
+ }finally{ctx=old}
+}
 function withArenaCombat(arena,fn){
- const world={P,mons,shots,nums,fxs,TM,ctx,PV};
+ const world={P,mons,shots,nums,fxs,TM,ctx,PV,combatArena};
  P=arena.player;mons=arena.enemies;shots=arena.shots;nums=arena.nums;fxs=arena.fxs;TM=arena.timers;combatArena=arena;
  try{return fn()}finally{
   P=world.P;mons=world.mons;shots=world.shots;nums=world.nums;fxs=world.fxs;TM=world.TM;
-  ctx=world.ctx;PV=world.PV;combatArena=null;
+  ctx=world.ctx;PV=world.PV;combatArena=world.combatArena;
  }
 }
 function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.dead){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
@@ -1959,7 +1976,7 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
 function crown(y){ctx.beginPath();ctx.moveTo(-14,y);ctx.lineTo(-14,y-16);ctx.lineTo(-7,y-8);ctx.lineTo(0,y-18);ctx.lineTo(7,y-8);ctx.lineTo(14,y-16);ctx.lineTo(14,y);ctx.closePath();ctx.fillStyle='#ffc93c';ctx.fill();ctx.stroke()}
 function drawMon(m){const d=m.d,x=m.x,y=m.y,r=d.r,sq=Math.sin(m.ph)*.08,hs=m.hitT>0?1.12:1,sp=m.spawnT>0?1-m.spawnT/.3:1,c=d.c,c2=d.c2,fly=d.sh==='bat'?12+Math.sin(m.ph)*4:0;let top=r*2.2;
  shadow(x,y,r*1.05);ctx.save();ctx.translate(x,y-fly);ctx.scale(hs*sp,hs*sp);
- const mim=AI('mon_'+m.type);if(mim){const w=r*2.7,h=w*mim.height/mim.width;ctx.save();ctx.scale(1-sq*.6,1+sq*.6);ctx.drawImage(mim,-w/2,-h,w,h);ctx.restore();top=h*.92}else
+ const mim=AI(m.sprite||'mon_'+m.type);if(mim){const w=r*2.7,h=w*mim.height/mim.width;ctx.save();ctx.scale(1-sq*.6,1+sq*.6);ctx.drawImage(mim,-w/2,-h,w,h);ctx.restore();top=h*.92}else
  switch(d.sh){
  case'sprout':ell(0,-r*.8,r*.9,r*.8*(1+sq),c);ctx.fillStyle=c2;ctx.beginPath();ctx.ellipse(-7,-r*1.75,9,5,-.6,0,TAU);ctx.fill();ctx.stroke();ctx.beginPath();ctx.ellipse(7,-r*1.75,9,5,.6,0,TAU);ctx.fill();ctx.stroke();eyes(0,-r*.85,5,2.3);break;
  case'slime':if(d.ears){ell(-r*.45,-r*1.6,r*.22,r*.5,c);ell(r*.45,-r*1.6,r*.22,r*.5,c);top=r*2.4}
@@ -1980,7 +1997,8 @@ function drawMon(m){const d=m.d,x=m.x,y=m.y,r=d.r,sq=Math.sin(m.ph)*.08,hs=m.hit
  if(m.hitT>0){ctx.globalAlpha=.55;ell(0,-r*.9,r*1.1,r*1.1,'#fff',1);ctx.globalAlpha=1}
  ctx.restore();
  const ty=y-fly-top;
- if(m.hp<d.hp&&!d.boss)bar(x,ty-6,Math.max(34,r*2.2),5,m.hp/d.hp,'#ff5a5a');
+ if(m.hp<d.hp&&(!d.boss||m.sprite))bar(x,ty-6,Math.max(34,r*2.2),5,m.hp/d.hp,'#ff5a5a');
+ if(m.sprite){if(d.boss)label(d.n,x,ty-26,17,'#ffb3a8');return}
  if(d.elite||d.boss||d.chest){const it=[];for(const k of['gem','cry','orb'])if(d[k])it.push([k,d[k]]);let w=it.length*30,ix=x-w/2+7;ctx.font='12px Jua,sans-serif';for(const[k,n]of it){mini(k,ix,ty-16);label(''+n,ix+15,ty-12,12,'#fff');ix+=30}
   label('Lv.'+d.lv,x,ty-26,d.boss?17:13,d.boss?'#ff6b6b':'#fff');if(!d.chest)label(d.n,x,ty-42,d.boss?17:14,d.boss?'#ffb3a8':'#ffe066')}
  else if(d.cry&&!d.boss&&!d.elite){mini('cry',x-30,ty-15);label(''+d.cry,x-14,ty-11,12,'#7ff0e0');mini('gold',x+4,ty-15);label(fmt(d.gold),x+20,ty-11,12,'#fff')}else{mini('gold',x-14,ty-15);label(fmt(d.gold),x+4,ty-11,12,'#fff')}}
@@ -2524,8 +2542,8 @@ let rSkip=0,nextHudRefresh=0;function frame(t){const dt=Math.min(.05,(t-last)/10
 window.__G={WW,WH,CX,CY,gz,ZC,buyBox,BOX,useSkill,openPop,renderPop,gptGuide,AI,setAsset,assetSlots,attack,HERO,sqG,worldMap,BLD,subPos,zoneOpen,inStage,walk,ZB,obs,S:()=>S,P,ST,mons,drops,update,render,hud,open,act,close,joy,calc};
 qlv();loadAssets();requestAnimationFrame(frame);
 </script>
-<script src="tower.js?v=7"></script>
-<script src="defense.js?v=10"></script>
+<script src="tower.js?v=8"></script>
+<script src="defense.js?v=11"></script>
 <script src="raid.js?v=13"></script>
 <script src="pet.js?v=11"></script>
 <script src="mount.js?v=27"></script>
