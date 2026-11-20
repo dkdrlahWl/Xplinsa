@@ -2296,7 +2296,7 @@ document.addEventListener('click',event=>{
  const caption=marker.closest('.mapw').nextElementSibling;
  caption.textContent=marker.getAttribute('aria-label')+(marker.classList.contains('down')?' · 재등장 대기':'');
 });
-function mergeHint(g){return g===4&&maxMergeG()===4?'화산 군주를 처치하면 고대 합성이 열려요':g===4?'무지개 오브 '+ANC_COST+'개 필요 (보유 '+(S.rb||0)+') · 대장 보스·교환소':g===5?(maxMergeG()<6?'챕터 2가 열리면 신화 합성이 열려요':'신화석 '+MYTH_COST+'개 필요 (보유 '+(S.myth||0)+') · 보스 레이드 보상'):''}
+function mergeHint(g){return g===4&&maxMergeG()===4?'화산 군주를 처치하면 고대 합성이 열려요':g===4?'무지개 오브 '+ANC_COST+'개 사용 (보유 '+(S.rb||0)+')'+((S.rb||0)>=ANC_COST?' ✔ 아래 [합성] 버튼':' · 대장 보스·교환소에서 획득'):g===5?(maxMergeG()<6?'챕터 2가 열리면 신화 합성이 열려요':'신화석 '+MYTH_COST+'개 사용 (보유 '+(S.myth||0)+')'+((S.myth||0)>=MYTH_COST?' ✔ 아래 [합성] 버튼':' · 보스 레이드 보상')):''}
 // 신화: 고대 3개 + 신화석(보스 레이드 보상). 2챕이 열려야 가능
 const MYTH_COST=60;
 // 고대: 전설 3개 + 무지개 오브 (대장 보스·교환소·패스·패키지)
@@ -2436,7 +2436,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   <div style="position:absolute;left:120px;top:24px;right:12px;font-size:15px;line-height:1.5">${mk?`<b style="color:${GR[g].c}">${wName(mk)}</b> 3개<br>→ ${g<maxMergeG()?`<b style="color:${GR[g+1].c}">${wName(mk.split('_')[0]+'_'+(g+1))}</b> 1개<br><span style="font-size:12px">같은 종류 · 공격력 80~120% 무작위</span>`:'최고 등급'}<br><span style="font-size:12px">보유 ${S.weapons[mk]}개</span>${mergeHint(g)?`<br><span style="font-size:12px;color:#ffd23c">${mergeHint(g)}</span>`:''}`:'아래에서 합성할 무기를 고르세요.<br><span style="font-size:12px">같은 무기 3개 → 같은 종류 한 등급 위 무기 1개</span>'}</div></div>
   <div class="eqbar"><button class="sbtn" data-a="back">← 장비</button><h3 class="ts">선택</h3><button class="sbtn yel" data-a="mergeall">일괄합성</button></div>
   <div class="wgrid">${cards.map((k,ix)=>{const gg=+k.split('_')[1],can=S.weapons[k]>=3&&gg<maxMergeG();return `<div class="wc gb${gg}${mk===k?' sel':''}${can?'':' dim'}" data-a="msel:${k}"><span class="lv ts">Lv.1</span>${wIcon(k)}${eqCount(k)?'<span class="eqd ts">장착됨</span>':''}</div>`}).join('')}</div>
-  <button class="btn ${ok?'':'no'}" data-a="domerge" style="width:100%;margin-top:10px;font-size:18px">합성</button><div id="mlog" class="note"></div>`}
+  <button class="btn ${ok?'':'no'}" data-a="domerge" style="width:100%;margin-top:10px;font-size:18px;position:sticky;bottom:0;z-index:2;box-shadow:0 -6px 12px rgba(15,12,29,.85)">합성${ok&&g>=4?' ('+(g===4?'무지개 오브 '+ANC_COST:'신화석 '+MYTH_COST)+')':''}</button><div id="mlog" class="note"></div>`}
  else if(panel==='smithPromotion'||panel==='smithPromoted'){
   const promoted=panel==='smithPromoted',before=promoted?S.step-1:S.step,after=before+1;
   $('mtitle').textContent=promoted?'대장간 승급 완료':'대장간 승급';
@@ -2495,7 +2495,7 @@ function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  else if(k==='back'){panel='wpn';mergeSel=null}
  else if(k==='gomerge'){panel='merge';mergeSel=null}
  else if(k==='msel'){mergeSel=v}
- else if(k==='domerge'){if(!mergeSel)return;const nk=merge1(mergeSel);if(!nk){toast('같은 무기가 3개 있어야 해요');return}fixSlots();autoFill();calc();save();mergeFx([nk]);const was=mergeSel;mergeSel=S.weapons[was]>=3?was:nk;draw();const f=$('fres');if(f){f.innerHTML=wIcon(nk);f.className='fbox top gb'+nk.split('_')[1]+' fglow'}const lg=$('mlog');if(lg)lg.innerHTML=`<b style="color:${GR[+nk.split('_')[1]].c}">${wName(nk)}</b> 획득!`;return}
+ else if(k==='domerge'){if(!mergeSel)return;const nk=merge1(mergeSel);if(!nk){const gg=+mergeSel.split('_')[1];toast(S.weapons[mergeSel]<3?'같은 무기가 3개 있어야 해요':gg>=maxMergeG()?mergeHint(gg)||'더 합성할 수 없어요':gg===4?'무지개 오브가 '+ANC_COST+'개 필요해요':gg===5?'신화석이 '+MYTH_COST+'개 필요해요':'합성할 수 없어요');return}fixSlots();autoFill();calc();save();mergeFx([nk]);const was=mergeSel;mergeSel=S.weapons[was]>=3?was:nk;draw();const f=$('fres');if(f){f.innerHTML=wIcon(nk);f.className='fbox top gb'+nk.split('_')[1]+' fglow'}const lg=$('mlog');if(lg)lg.innerHTML=`<b style="color:${GR[+nk.split('_')[1]].c}">${wName(nk)}</b> 획득!`;return}
  else if(k==='goassets'){if(!window.IS_ADMIN)return;panel='assets'}
  else if(k==='goadmin'){if(!window.IS_ADMIN)return;panel='admin'}else if(k==='logout'){if(window.NET)NET.logout();return}else if(k==='sup'){if((S.sup||0)+SUPT>Date.now()){toast('아직 열 수 없어요');return}S.sup=Date.now();S.keys=S.keys||{};S.keys.b1=(S.keys.b1||0)+1;toast(give(supRw())+' · 초보자 상자 열쇠 1개');save()}
  else if(k==='att'){if(!attOK())return;const a=S.att=S.att||{n:0},i=a.n%7,r=attRw(i);a.n++;a.day=today();if(r.wpn){const ts=Object.keys(WT),kk=ts[Math.floor(Math.random()*ts.length)]+'_'+r.wpn;addW(kk);save();close();startGacha('attc',1,[{k:kk,g:r.wpn}]);return}toast(give(r));save()}
@@ -2532,7 +2532,7 @@ function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  else if(k==='auto'){autoEquip();toast('자동 장착 · 전투력 '+fmt(ST.pow))}
  else if(k==='sup'){const l=S.slv[selSlot],c=slotCost(l);if(l>=SLOT_MAX)return;if(!afford(c)){toast('주문서나 금화가 부족해요');return}S.gold-=c.gold;S.scr-=c.scr;S.slv[selSlot]++;calc();save()}
  else if(k==='merge'||k==='mergeall'){let cnt=0;const got=[];if(k==='merge'){const r=merge1(v);if(r){cnt++;got.push(r)}}else{let again=true;while(again){again=false;for(const w of Object.keys(S.weapons)){let r;while(r=merge1(w,1)){cnt++;for(let q=0;q<3;q++){const i=got.indexOf(w);if(i>=0)got.splice(i,1)}got.push(r);again=true}}}}setTimeout(()=>mergeFx(got),30);
-  fixSlots();autoFill();calc();save();draw();const lg=$('mlog');if(lg)lg.textContent=cnt?' · '+cnt+'회 합성 완료':' · 합성할 무기가 없어요';return}
+  fixSlots();autoFill();calc();save();draw();const hi=Object.keys(S.weapons).find(w=>{const gg=+w.split('_')[1];return(gg===4||gg===5)&&gg<maxMergeG()&&S.weapons[w]>=3});const lg=$('mlog');if(lg)lg.innerHTML=(cnt?' · '+cnt+'회 합성 완료':' · 일괄합성할 무기가 없어요')+(hi?'<br><b style="color:#ffd23c">고대 · 신화 합성은 일괄합성에서 빠져요. 무기를 골라 아래 [합성] 버튼을 눌러 주세요</b>':'');if(hi)setTimeout(()=>toast('고대·신화 합성은 무기를 고르고 [합성] 버튼으로 해요'),cnt?900:0);return}
  else if(k==='mz'){const i=+v,z=ZS[i],el=$('mapinfo');if(el)el.innerHTML=`스테이지 ${i+1} · ${z.n}<br>${zoneOpen(i)?'<span style="font-size:14px;line-height:1.7;display:block">일반: '+[...new Set(mons.filter(m=>m.z===i&&!m.d.boss&&!m.d.elite&&!m.d.chest).map(m=>m.d.n))].join(', ')+'<br>정예: '+[...new Set(mons.filter(m=>m.z===i&&m.d.elite).map(m=>m.d.n))].join(', ')+'<br>보스: '+MT[z.boss].n+(S.bk[i]?' (처치 완료)':'')+(z.boss2?', '+MT[z.boss2].n:'')+'</span>':lockMsg(i)}`;return}
  else if(k==='closeSmith'){close();return}
  else if(k==='promoteSmith'){
