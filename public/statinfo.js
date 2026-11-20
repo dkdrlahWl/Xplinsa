@@ -39,6 +39,39 @@
     d.addEventListener('click', e => { if (e.target === d || e.target.closest('.spx')) d.remove() });
     document.body.appendChild(d);
   }
+  // 대장간 정보: 모루 버튼 왼쪽 위 ⓘ → 현재 대장간 레벨·경험치·제작 확률(현재/다음)
+  function smithInfo() {
+    let d = document.getElementById('statpop'); if (d) d.remove();
+    const st = S.step || 0, mx = st >= SXP.length, cur = SM[st], nx = SM[Math.min(st + 1, SM.length - 1)];
+    const rows = GR.slice(0, 4).map((g, i) => `<div class="spr"><span style="color:${g.c};flex:0 0 52px">${g.n}</span><span></span><em>${cur[i] || 0}%</em>${mx ? '' : `<em style="color:#7be36a;margin-left:10px">→ ${nx[i] || 0}%</em>`}</div>`).join('');
+    d = document.createElement('div'); d.id = 'statpop';
+    d.innerHTML = `<div class="sp"><div class="sph"><b>대장간 Lv.${st + 1}${mx ? ' (최대)' : ''}</b><button class="spx" aria-label="닫기">✕</button></div>
+      <div class="sps" style="margin-top:0">${mx ? '최고 레벨이에요' : '경험치 ' + fmt(S.sxp || 0) + ' / ' + fmt(SXP[st]) + ' · 다 차면 모루를 눌러 승급 (금화 ' + fmt(SMITH_PROMOTION_GOLD[st]) + ')'}</div>
+      <div class="sps">모루 1번 = 크리스탈 5개 · 무기 제작 확률 (지금${mx ? '' : ' → 다음 레벨'})</div>${rows}
+      <div class="sps">같은 무기 3개를 합성하면 한 등급 위 무기가 돼요</div></div>`;
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('.spx')) d.remove() });
+    document.body.appendChild(d);
+  }
+  const sb = document.querySelector('.bb[data-p="smith"]');
+  if (sb) {
+    const b = document.createElement('i'); b.className = 'sinfo'; b.textContent = 'i'; b.setAttribute('aria-label', '대장간 정보');
+    b.style.cssText = 'position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:#3a7bd5;border:2px solid #fff;color:#fff;font:bold 13px/18px Jua,sans-serif;font-style:normal;text-align:center;z-index:3;pointer-events:auto';
+    b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); smithInfo() }, true);
+    b.addEventListener('pointerdown', e => e.stopPropagation(), true);
+    sb.appendChild(b);
+  }
+  // 관리자 모드: 유저 현황 (대장간 레벨·레벨·챕터·승급·크리스탈)
+  async function adminUsers() {
+    const j = await fetch('/api/adminusers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: localStorage.getItem('xp_token') }) }).then(r => r.json()).catch(() => ({}));
+    if (!j.list) { toast(j.err || '불러오지 못했어요'); return }
+    let d = document.getElementById('statpop'); if (d) d.remove(); d = document.createElement('div'); d.id = 'statpop';
+    d.innerHTML = `<div class="sp" style="width:min(94vw,420px)"><div class="sph"><b>유저 현황</b><button class="spx">✕</button></div>
+      <div class="sps" style="margin-top:0">대장간 레벨 높은 순 · 🟢 접속 중</div>` + j.list.map(u => `<div class="spr" style="font-size:13px"><span style="flex:0 0 auto;color:#fff">${u.on ? '🟢' : '⚪'} ${u.n}</span><span></span><em>대장간 Lv.${u.smith} · Lv.${u.lv} · ${u.ch}챕 · ${u.promo}차 · 💎${fmt(u.gem)} · 크리 ${fmt(u.cry)}</em></div>`).join('') + '</div>';
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('.spx')) d.remove() });
+    document.body.appendChild(d);
+  }
+  const _draw2 = draw;
+  draw = function () { const r = _draw2.apply(this, arguments); if (panel === 'admin' && window.IS_ADMIN && !document.getElementById('admUsersBtn')) { const b = document.createElement('button'); b.id = 'admUsersBtn'; b.className = 'btn'; b.textContent = '👥 유저 현황 (대장간 레벨 등)'; b.style.cssText = 'width:100%;margin:0 0 10px'; b.onclick = adminUsers; $('mbody').prepend(b) } return r };
   const _act = act;
   act = function (a) { if (a === 'powinfo') { show(); return } return _act.apply(this, arguments) };
 })();

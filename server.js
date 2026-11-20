@@ -130,6 +130,11 @@ const server = http.createServer(async (req, res) => {
       const cut = l => { const i = l.findIndex(r => r.me); return { list: l.slice(0, 50), my: i >= 0 ? { rank: i + 1, ...l[i] } : null }; };
       return send(res, 200, { level: cut(top(s => s.lv).filter(r => r.v > 0)), pow: cut(top(s => s.pow)), tower: cut(top(s => s.tower && s.tower.clear)) });
     }
+    if (p === '/api/adminusers') { // 관리자 전용: 유저 현황 (대장간 레벨 등)
+      if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
+      const list = Object.values(db.users).filter(x => x.save).map(x => { const s = x.save; return { n: x.nick || x.id, lv: s.lv || 0, smith: (s.step || 0) + 1, sxp: s.sxp || 0, ch: s.ch || 1, promo: s.promotion || 0, cry: s.cry || 0, gold: s.gold || 0, gem: s.gem || 0, on: clients.has(x.id) }; }).sort((a, b) => b.smith - a.smith || b.lv - a.lv);
+      return send(res, 200, { list });
+    }
     if (p === '/api/gift') { // 운영자 선물 (모든 유저 1번씩)
       u.gifts = u.gifts || {}; const got = GIFTS.filter(g => !u.gifts[g.id]);
       if (b.a === 'claim') { for (const g of got) u.gifts[g.id] = Date.now(); if (got.length) markDirty(); }
