@@ -136,6 +136,10 @@ const server = http.createServer(async (req, res) => {
       const list = Object.values(db.users).filter(x => x.save).map(x => { const s = x.save; return { id: x.id, n: x.nick || x.id, scr: s.scr || 0, tw: (s.tower && s.tower.clear) || 0, lv: s.lv || 0, smith: (s.step || 0) + 1, sxp: s.sxp || 0, ch: s.ch || 1, promo: s.promotion || 0, cry: s.cry || 0, gold: s.gold || 0, gem: s.gem || 0, on: clients.has(x.id) }; }).sort((a, b) => b.smith - a.smith || b.lv - a.lv);
       return send(res, 200, { list });
     }
+    if (p === '/api/adminsaves') { // 관리자 전용: 유저별 기록(능력치 계산용)
+      if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
+      return send(res, 200, { list: Object.values(db.users).filter(x => x.nick && x.save).map(x => ({ id: x.id, n: x.nick, save: x.save })) });
+    }
     if (p === '/api/admmail') { // 관리자 전용: 모든 유저 우편함에 멘트 + 보상 보내기
       if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
       const msg = String(b.msg || '').replace(/[<>]/g, '').trim().slice(0, 80);
