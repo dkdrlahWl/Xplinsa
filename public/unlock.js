@@ -52,7 +52,7 @@
         { t: '금화 150개로 부화기 짓기', type: 'build', key: 'incubator', cost: 150, rw: { gem: 10 } },
         { t: '부화기에 알 넣기', type: 'incput', need: 1, rw: { gold: 80 } },
         { t: '펫 부화하기', type: 'hatch', need: 1, rw: { gem: 15 } });
-      if (!S.qv2) { S.qv2 = 1; if (S.q > i) S.q += 3; save() }
+      if (!S.qv2) { S.qv2 = 1; if (CHAP === 1 && S.q > i) S.q += 3; save() }
     }
   }
   window.UNLOCK.built = () => { // 부화기 완성 시

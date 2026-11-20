@@ -1,6 +1,6 @@
 /* 성장 패스 (시즌 1): 5레벨마다 일반 보상 + 프리미엄 보상. 프리미엄은 운영자가 켜 줌(₩1,200) */
 (() => {
-  const SEASON = 's1', START = Date.parse('2026-11-19T19:00:00+09:00'), END = START + 30 * 864e5, PRICE = '₩1,200';
+  const SEASON = 's1', START = Date.parse('2026-11-19T19:00:00+09:00'), END = START + 30 * 864e5, PRICE = 1200;
   const TIERS = [];
   for (let t = 1; t <= 20; t++) {
     const lv = t * 5, G = Math.round(800 * t * t / 100) * 100;
@@ -58,6 +58,7 @@
 .pass-prem{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;font-size:13px}
 .pass-prem button,.pass-all{font:inherit;color:#fff;border:0;background-color:transparent;background-position:center;background-size:100% 100%;background-repeat:no-repeat;text-shadow:0 2px 3px #160924}
 .pass-prem button{background-image:url(assets/pass_premium.webp);padding:9px 18px;min-height:36px}
+.pass-prem button{display:inline-flex;align-items:center;gap:4px}.pass-prem button img,.pass-prem button svg,.pass-prem button .aimg{width:20px;height:20px}
 .pass-all{display:block;margin:0 auto 10px;width:min(210px,84%);min-height:48px;background-image:url(assets/pass_claim.webp);font-size:17px}
 .pass-all:disabled{filter:saturate(.45) brightness(.78)}
 .pass-hd,.pass-row{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:6px;align-items:center;text-align:center}
@@ -88,7 +89,7 @@
   function panelHTML() {
     const ready = anyReady();
     let h = `<section class="pass-board" aria-label="성장 패스"><header class="pass-top"><img class="pass-emblem" src="assets/pass_emblem.webp" alt=""><h3 class="ts">성장 패스 · 시즌 1</h3><div class="tm">${left()}</div>
-      <div class="pass-prem">${PREM ? '<b style="color:#7be36a">✔ 프리미엄 패스 활성화</b>' : `<span>프리미엄 보상까지 모두 받기</span><button class="ts" data-a="passbuy">${PRICE}</button>`}</div></header>
+      <div class="pass-prem">${PREM ? '<b style="color:#7be36a">✔ 프리미엄 패스 활성화</b>' : `<span>프리미엄 보상까지 모두 받기</span><button class="ts" data-a="passbuy">${IC.gem}${fmt(PRICE)}</button>`}</div></header>
       <button class="pass-all ts" data-a="passall" ${ready ? '' : 'disabled'}>모두 받기</button>
       <div class="pass-hd"><span>일반 보상</span><span>Lv</span><span>프리미엄 ${PREM ? '' : '🔒'}</span></div>`;
     for (const t of TIERS) {
@@ -114,13 +115,14 @@
     if (k === 'passc') {
       const t = TIERS.find(x => x.lv === +v); if (!t) return;
       const prem = w === 'p';
-      if (prem && !PREM) { toast('프리미엄 패스(' + PRICE + ')가 필요해요'); return }
+      if (prem && !PREM) { toast('프리미엄 패스(보석 ' + fmt(PRICE) + ')가 필요해요'); return }
       if (!live()) { toast(Date.now() < START ? '시즌은 19시에 시작해요' : '시즌이 끝났어요'); return }
       if (S.lv < t.lv) { toast('Lv.' + t.lv + '에 받을 수 있어요'); return }
       const m = claim(t, prem); if (m) { toast(m); save(); window.SFX && SFX.play('reward', { v: .6 }) } draw(); return;
     }
     if (k === 'passall') { const got = []; for (const t of TIERS) for (const pr of [false, true]) { const m = claim(t, pr); if (m) got.push(m) } if (got.length) { toast('패스 보상 ' + got.length + '개 받음!'); save(); window.SFX && SFX.play('reward', { v: .7 }) } draw(); return }
-    if (k === 'passbuy') { toast('링구에게 기부좀요'); num(P.x, P.y - 120, '링구에게 기부좀요', '#ffe066', true); return }
+    if (k === 'passbuy') { if (PREM) return; if (S.gem < PRICE) { toast('보석이 부족해요 (' + fmt(PRICE) + ' 필요)'); return } if (window.__passBuying) return; window.__passBuying = 1;
+      fetchPrem({ a: 'buy' }).then(() => { window.__passBuying = 0; if (PREM) { S.gem -= PRICE; save(); window.NET && NET.markSave && NET.markSave(); toast('프리미엄 패스 활성화!'); window.SFX && SFX.play('reward', { v: .8 }); draw() } else toast('잠시 후 다시 시도해 주세요') }); return }
     if (k === 'passgrant') { const n = (document.getElementById('passNick') || {}).value || ''; if (!n.trim()) { toast('닉네임을 적어 주세요'); return } fetchPrem({ a: 'grant', nick: n, on: v === '1' }).then(() => toast('처리했어요')); return }
     return _act.apply(this, arguments);
   };

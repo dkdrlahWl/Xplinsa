@@ -23,7 +23,7 @@ function connect(){if(kicked)return;
    if(typeof S!=='undefined'){save();saveNow(m.key);}
    return;
   }
-  if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();
+  if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();if(m.t==='mail'){window.dispatchEvent(new Event('xp-mail'));return}
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(['raidState','raidError','raidInfo','raidRooms'].includes(m.t)){window.RAID?.receive(m);return}
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);

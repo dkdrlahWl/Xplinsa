@@ -45,10 +45,12 @@ const MK_LIMIT = { gold: 1e15, gem: 1e6 }, MK_FEE = .1, MK_MAX = 10;
 // 운영 우편: 정식 오픈(19:00) 이후 모든 계정(새로 가입한 계정 포함)이 우편함에서 1번 받음
 const SYS_MAIL = [{ id: 'launch-1', t: '🎉 정식 오픈 보상', gem: 500, keys: { b2: 3, pet: 2 } }];
 function sysMail(u) { if (Date.now() < LAUNCH_AT) return []; const g = u.gifts || {}; return SYS_MAIL.filter(m => !g[m.id]).map(m => ({ ...m })); }
+// 우편이 생기면 접속 중인 그 유저 폰에 바로 알려서 새로고침 없이 우편함 갱신
+function mailPing(id) { const c = clients.get(id); if (c) wsSend(c.sock, { t: 'mail' }); }
 function market(u, b, res) {
   const mail = mk.mail[u.id] || [];
   if (b.a === 'list') return send(res, 200, { list: mk.list.slice(-300).reverse(), mail: mail.length, me: u.id });
-  if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(mail.map(({ gold, gem }) => ({ gold, gem })).reverse()) });
+  if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(mail.map(({ gold, gem, w, t }) => ({ gold, gem, w, t })).reverse()) });
   if (b.a === 'sell') {
     const key = String(b.key || ''), q = Math.round(Number(b.q) * 100) / 100, price = Math.floor(Number(b.price)), cur = b.cur === 'gem' ? 'gem' : 'gold';
     if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-6]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
@@ -64,8 +66,10 @@ function market(u, b, res) {
     if (b.a === 'cancel') { if (l.seller !== u.id) return send(res, 403, { err: '내 물건만 내릴 수 있어요' }); mk.list.splice(i, 1); saveMk(); return send(res, 200, { ok: 1, key: l.key, q: l.q }); }
     if (l.seller === u.id) return send(res, 400, { err: '내 물건은 살 수 없어요' });
     mk.list.splice(i, 1);
-    (mk.mail[l.seller] = mk.mail[l.seller] || []).push({ [l.cur]: Math.floor(l.price * (1 - MK_FEE)), key: l.key, buyer: u.nick || '모험가' });
-    saveMk(); return send(res, 200, { ok: 1, key: l.key, q: l.q, price: l.price, cur: l.cur });
+    (mk.mail[l.seller] = mk.mail[l.seller] || []).push({ [l.cur]: Math.floor(l.price * (1 - MK_FEE)), key: l.key, buyer: u.nick || '모험가', t: '거래소 판매 대금' });
+    (mk.mail[u.id] = mk.mail[u.id] || []).push({ w: { key: l.key, q: l.q }, t: '거래소 구매 장비' }); // 산 장비는 구매자 우편함으로
+    saveMk(); mailPing(l.seller); mailPing(u.id);
+    return send(res, 200, { ok: 1, key: l.key, q: l.q, price: l.price, cur: l.cur, mailed: 1 });
   }
   if (b.a === 'claim') {
     const sm = sysMail(u); if (sm.length) { u.gifts = u.gifts || {}; for (const m of sm) u.gifts[m.id] = Date.now(); markDirty(); }
@@ -139,6 +143,7 @@ const server = http.createServer(async (req, res) => {
         if (!t) return send(res, 400, { err: '그 닉네임을 찾을 수 없어요' });
         t.passPrem = t.passPrem || {}; if (b.on) t.passPrem[S1] = Date.now(); else delete t.passPrem[S1]; markDirty();
       }
+      if (b.a === 'buy') { u.passPrem = u.passPrem || {}; if (!u.passPrem[S1]) { u.passPrem[S1] = Date.now(); markDirty(); } } // 보석 1,200은 게임에서 차감
       const out = { prem: !!(u.passPrem && u.passPrem[S1]) };
       if (u.id === 'ehgus') out.list = Object.values(db.users).filter(x => x.passPrem && x.passPrem[S1]).map(x => x.nick || x.id);
       return send(res, 200, out);
