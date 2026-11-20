@@ -44,18 +44,8 @@
   if (typeof BLD !== 'undefined' && !BLD.some(b => b.k === 'incubator')) BLD.push({ k: 'incubator', n: '부화기', cost: 150, r: 62, need: 'smith', lv: 4, x: () => BASE.x - 215, y: () => BASE.y + 105 });
   function migrate() { S.built = S.built || {}; S.bp = S.bp || {}; if (S.bp.incubator == null) S.bp.incubator = 0; if (!S.built.incubator && ((S.pets && Object.keys(S.pets).length) || (S.inc || []).some(o => o))) S.built.incubator = true }
   migrate();
-  // 임무: Lv.4 달성 다음에 펫 튜토리얼 3개 (기존 진행 중인 유저는 번호 보정)
-  if (typeof Q !== 'undefined' && typeof CHAP !== 'undefined' && CHAP === 1) {
-    const i = Q.findIndex(q => q.type === 'lv' && q.need === 4);
-    if (i >= 0 && !Q.some(q => q.type === 'hatch')) {
-      Q.splice(i + 1, 0,
-        { t: '금화 150개로 부화기 짓기', type: 'build', key: 'incubator', cost: 150, rw: { gem: 10 } },
-        { t: '부화기에 알 넣기', type: 'incput', need: 1, rw: { gold: 80 } },
-        { t: '펫 부화하기', type: 'hatch', need: 1, rw: { gem: 15 } });
-      if (!S.qv2) { S.qv2 = 1; if (CHAP === 1 && S.q > i) S.q += 3; save() }
-    }
-  }
   window.UNLOCK.built = () => { // 부화기 완성 시
     if (S.tutEgg) return; S.tutEgg = 1; S.petEggs = S.petEggs || [0, 0, 0, 0, 0]; S.petEggs[0]++; toast('🥚 일반 펫 알 1개를 받았어요! 부화기에 넣어보세요'); save();
   };
+  if (CHAP === 1 && S.built.incubator && Q[S.q]?.key === 'incubator' && !S.inc?.some(Boolean) && !Object.keys(S.pets || {}).length) UNLOCK.built();
 })();

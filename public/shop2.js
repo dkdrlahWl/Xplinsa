@@ -313,7 +313,6 @@
     if (k === 'sdref') { const d = dstate(); if (d.ref >= MAXREF) return; d.ref++; d.items = genList(); d.sold = []; d.buys = 0; save(); toast('상품 목록을 새로고침했어요'); draw(); return }
     if (k === 'spack') { packBuy(v); draw(); return }
     if (k === 'buymc') { mcBuy(); draw(); return }
-    if (k === 'buyvip') { const was = vipActive(), r = _act.apply(this, arguments); if (!was && vipActive() && S.tower) { S.tower.tickets = (S.tower.tickets || 0) + 1; save() } return r }
     return _act.apply(this, arguments);
   };
   setInterval(() => { const e = document.getElementById('s2tm'); if (e && panel === 'daily') { e.textContent = '⏱ ' + untilMidnight(); if (S.dshop && S.dshop.day !== day()) draw() } }, 1000);

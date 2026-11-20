@@ -278,7 +278,7 @@ window.DEFENSE = (() => {
         drawMon({...enemy,x:pos.x,y:pos.y});
       }}));
       for(const player of state.players){
-        if(player.hp<=0)continue;
+        if(player.hp<=0||(player.id==='ehgus'&&player.id!==you.id))continue;
         const pos=player.id===you.id?focus:smooth('p'+player.id,player);
         scene.push({y:pos.y,draw(){
           if(player.id===you.id){

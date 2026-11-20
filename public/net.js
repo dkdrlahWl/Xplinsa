@@ -35,7 +35,7 @@ function connect(){if(kicked)return;
   else if(m.t==='mo'){const g=mons[L(m.i)];if(g?.d.boss){g.own=m.o;g.claimT=0;if(m.o&&m.o!==ME){g.rx=g.x;g.ry=g.y;g.slam=null}}}
   else if(m.t==='mk'){const g=mons[L(m.i)];if(g?.d.boss&&!g.dead){g.own=null;if(m.w.includes(ME))kill(g);else{g.dead=true;g.slam=null;g.respT=m.rs||g.d.resp;fxs.push({x:g.x,y:g.y-g.d.r,t:.3,r:g.d.r*2.2,c:'#fff'})}refreshBossMapMarker(g)}}
   else if(m.t==='mr'){const g=mons[L(m.i)];if(g?.d.boss){g.dead=false;g.hp=g.d.hp;g.x=g.hx;g.y=g.hy;g.agg=false;g.own=null;g.spawnT=.3;announceFieldBoss(g)}}
-  else if(m.t==='u'){for(const o of m.l){upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[L(o.mp[k])];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
+  else if(m.t==='u'){for(const o of m.l){if(!o.hidden)upd(o);if(o.mp)for(let k=0;k+2<o.mp.length;k+=3){const g=mons[L(o.mp[k])];if(g?.d.boss&&g.own===o.id){g.rx=o.mp[k+1];g.ry=o.mp[k+2]}}}}
   else if(m.t==='leave')others.delete(m.id)};
  ws.onclose=()=>{window.DEFENSE?.disconnect();window.RAID?.disconnect();others.clear();ME=null;for(const g of sharedBosses)g.own=null;if(kicked)return;retry++;setTimeout(connect,Math.min(5000,500*retry))};
 }
@@ -79,7 +79,14 @@ function list(){return [...others.values()].filter(r=>r.ch===MYCH())}
 
 // 서버 저장
 let saveSequence=Number(sessionStorage.xp_save_seq)||0;
-function saveBody(handoff){sessionStorage.xp_save_seq=++saveSequence;return JSON.stringify({token:TOKEN,save:S,seq:saveSequence,rev:REV,handoff})}
+let inflightWriteId=null;
+function postSave(handoff){
+ const writeId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+ inflightWriteId=writeId;
+ sessionStorage.xp_save_seq=++saveSequence;
+ const body=JSON.stringify({token:TOKEN,save:S,seq:saveSequence,rev:REV,handoff,writeId});
+ return fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:new Blob([body]).size<60000});
+}
 // 저장 (링피지 방식): 서버 기록 버전(rev)을 들고 저장하고, 서버가 "다른 곳에서 먼저 저장됨(409 충돌)"이라고 하면
 // 이 기기 상태를 버리고 서버 최신 기록을 다시 불러옴. 저장은 한 번에 하나씩만 보냄(같은 버전으로 두 번 보내 충돌 나지 않게).
 let REV=Number(sessionStorage.xp_rev)||0,inflight=false;
@@ -90,18 +97,22 @@ function conflictGo(){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}
 function onSaved(r){if(r.status===401){kick();return}
  return r.json().catch(()=>({})).then(j=>{if(r.status===409){if(j.conflict)conflictGo();else resetGo();return}
   if(!r.ok){saveDirty=true;return}if(Number.isSafeInteger(j.rev)){REV=j.rev;sessionStorage.xp_rev=REV}})}
-function postSave(handoff,keep){const body=saveBody(handoff);return fetch('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:!!keep&&new Blob([body]).size<60000})}
-function pushSave(force){if(kicked||typeof S==='undefined')return;if(inflight&&!force){saveDirty=true;return}
- saveDirty=false;saveT=4;inflight=true;postSave(null,document.hidden).then(onSaved).catch(()=>{saveDirty=true}).finally(()=>{inflight=false})}
-function saveNow(handoff){return new Promise(res=>{const go=()=>{if(inflight)return setTimeout(go,100);inflight=true;postSave(handoff).then(onSaved).catch(()=>{}).finally(()=>{inflight=false;res()})};go()})}
-function markSave(){saveDirty=true}
+function pushSave(){if(kicked||typeof S==='undefined'||inflight)return;
+ saveDirty=false;saveT=4;inflight=true;postSave(null).then(onSaved).catch(()=>{saveDirty=true}).finally(()=>{inflight=false})}
+function saveNow(handoff){return new Promise(res=>{const go=()=>{if(inflight)return setTimeout(go,100);saveDirty=false;inflight=true;postSave(handoff).then(onSaved).catch(()=>{saveDirty=true}).finally(()=>{inflight=false;res()})};go()})}
+function markSave(urgent){saveDirty=true;if(urgent)saveT=0}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&saveDirty&&!kicked)pushSave()});
 // 같은 브라우저에서 게임 탭이 여러 개면 옛날 탭은 멈춤 (서로 저장을 덮어쓰지 않게)
 try{const bc=new BroadcastChannel('lingoo-game'),me=Math.random().toString(36).slice(2);bc.onmessage=e=>{if(e.data&&e.data.t==='hi'&&e.data.id!==me&&!kicked){kicked=true;try{ws&&ws.close()}catch(_){}window.save=function(){};
   const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.9);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
   d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:20px;margin-bottom:10px">다른 탭에서 게임을 열었어요</div><div style="color:#cfc8ee;font-size:14px;margin-bottom:16px">이 탭은 멈췄어요. 이 탭은 닫아 주세요.</div><button style="font:inherit;font-size:17px;padding:8px 22px;border-radius:12px;border:3px solid #1c1830;background:#7be36a;color:#1c1830">여기서 다시 하기</button></div>';
   d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}};bc.postMessage({t:'hi',id:me})}catch(e){}
-window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave(true)});
+window.addEventListener('pagehide',()=>{
+ if(kicked||(!saveDirty&&!inflight)||typeof S==='undefined')return;
+ try{
+  sessionStorage.xp_pending_save=JSON.stringify({uid:sessionStorage.xp_uid,epoch:Number(sessionStorage.xp_ep),rev:REV,previousWrite:inflight?inflightWriteId:null,dirty:saveDirty,save:S});
+ }catch(e){pushSave()}
+});
 
 async function logout(){kicked=true;try{ws&&ws.close()}catch(e){}
   try{await saveNow()}catch(e){}

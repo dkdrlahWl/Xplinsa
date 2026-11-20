@@ -188,7 +188,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, out);
     }
     if (p === '/api/market') return market(u, b, res);
-    if (p === '/api/me') return send(res, 200, { id: u.id, nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, rev: u.rev || 0, epoch: db.epoch || 0 });
+    if (p === '/api/me') return send(res, 200, { id: u.id, nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, rev: u.rev || 0, writeId: u.saveWriteId || null, epoch: db.epoch || 0 });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
       if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
@@ -209,6 +209,7 @@ const server = http.createServer(async (req, res) => {
       if (stale) { if (b.handoff) pending.finish(true); return send(res, 200, { ok: 1, older: true, stale: 1, rev: u.rev || 0 }); }
       if (!b.handoff && Number.isSafeInteger(b.seq) && b.seq <= (u.saveSeq||0)) return send(res,200,{ok:1,older:true});
       if(Number.isSafeInteger(b.seq)) u.saveSeq=b.seq;
+      u.saveWriteId = typeof b.writeId === 'string' ? b.writeId.slice(0, 80) : null;
       u.save = b.save; u.rev = (u.rev || 0) + 1; markDirty();
       if (b.handoff) { flush(); pending.finish(!dirty); }
       return send(res, 200, { ok: 1, rev: u.rev });
@@ -284,7 +285,7 @@ server.on('upgrade', (req, sock) => {
   if (old && old.sock !== sock) { wsSend(old.sock, { t: 'kick' }); setTimeout(() => wsClose(old.sock), 50); }
   const c = { sock, u, handoffCapable:url.searchParams.get('handoff')==='1', st: null, alive: Date.now() };
   clients.set(u.id, c);
-  wsSend(sock, { t: 'hi', id: u.id, ms: [...mons].map(([i, m]) => [i, m.hp, m.dead ? 1 : 0, m.own, m.dead ? Math.max(0, (m.rt - Date.now()) / 1000) : 0]), all: [...clients.values()].filter(o => o !== c && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
+  wsSend(sock, { t: 'hi', id: u.id, ms: [...mons].map(([i, m]) => [i, m.hp, m.dead ? 1 : 0, m.own, m.dead ? Math.max(0, (m.rt - Date.now()) / 1000) : 0]), all: [...clients.values()].filter(o => o !== c && o.u.id !== 'ehgus' && o.st).map(o => ({ id: o.u.id, n: o.u.nick, ...o.st })) });
   let buf = Buffer.alloc(0);
   sock.on('data', chunk => {
     buf = Buffer.concat([buf, chunk]);
@@ -319,7 +320,7 @@ function onMsg(c, m) {
     c.lastEmote = now;
     const frame = wsFrame({ t: 'emote', id: c.u.id, emote: m.emote, ch: c.st.ch });
     for (const other of clients.values()) {
-      if (other.st?.ch === c.st.ch && !other.sock.destroyed) other.sock.write(frame);
+      if ((c.u.id !== 'ehgus' || other === c) && other.st?.ch === c.st.ch && !other.sock.destroyed) other.sock.write(frame);
     }
     return;
   }
@@ -350,7 +351,9 @@ setInterval(() => {
   for (const [i, hp] of pendingBossHp) broadcast({ t: 'mh', i, hp });
   pendingBossHp.clear();
   const ups = [];
-  for (const c of clients.values()) if (c.dirty && c.st) { c.dirty = false; ups.push({ id: c.u.id, n: c.u.nick, ...c.st }); }
+  for (const c of clients.values()) if (c.dirty && c.st) { c.dirty = false;
+    if (c.u.id !== 'ehgus') ups.push({ id: c.u.id, n: c.u.nick, ...c.st });
+    else if (c.st.mp?.length) ups.push({ id: c.u.id, hidden: true, mp: c.st.mp }); }
   if (ups.length) for (const c of clients.values()) { const l = ups.filter(o => o.id !== c.u.id); if (l.length) wsSend(c.sock, { t: 'u', l }); }
   const now = Date.now();
   for (const [i, g] of mons) {

@@ -62,7 +62,25 @@ function fail(e){$('err').textContent=(e&&e.err)||'서버에 연결할 수 없�
 // 진행도 비교: 챕터 → 레벨 → 경험치 순서로 더 높은 쪽을 씀
 function prog(s){if(!s||typeof s!=='object')return -1;return ((s.ch===2||(s.chs&&s.chs[2]))?1e15:0)+(+s.lv||0)*1e10+Math.min(9e9,+s.xp||0)}
 async function enter(token){
- const me=await api('me',{token});
+ let me=await api('me',{token});
+ let pending;
+ try{pending=JSON.parse(sessionStorage.xp_pending_save||'null')}catch(e){}
+ if(pending&&token===sessionStorage.xp_tok&&pending.uid===me.id&&pending.epoch===(me.epoch||0)){
+  for(let attempt=0;attempt<2;attempt++){
+   const rev=me.rev||0;
+   const previousAccepted=rev===pending.rev+1&&pending.previousWrite&&pending.previousWrite===me.writeId;
+   if(rev!==pending.rev&&(!previousAccepted||!pending.dirty))break;
+   try{
+    const saved=await api('save',{token,save:pending.save,seq:(me.saveSeq||0)+1,rev});
+    if(!saved.older){me.save=pending.save;me.rev=saved.rev;me.saveSeq=(me.saveSeq||0)+1}
+    break;
+   }catch(e){
+    if(!e.conflict)throw e;
+    me=await api('me',{token});
+   }
+  }
+ }
+ sessionStorage.removeItem('xp_pending_save');
  const prevNick=localStorage.getItem('xp_nick');let local=null;try{local=JSON.parse(localStorage.getItem('camp_save_v2')||'null')}catch(e){}
  if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
  localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');localStorage.setItem('xp_ep',String(me.epoch||0));
