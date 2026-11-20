@@ -24,6 +24,7 @@ function connect(){if(kicked)return;
    return;
   }
   if(m.t==='kick')return kick(m.msg);if(m.t==='reset')return resetGo();if(m.t==='mail'){window.dispatchEvent(new Event('xp-mail'));return}
+  if(m.t==='emote'){window.EMOTES?.receive(m);return}
   if(['defenseState','defenseError','defenseInfo','defenseRooms'].includes(m.t)){window.DEFENSE?.receive(m);return}
   if(['raidState','raidError','raidInfo','raidRooms'].includes(m.t)){window.RAID?.receive(m);return}
   if(m.t==='hi'){ME=m.id;others.clear();for(const o of m.all)upd(o);
@@ -111,7 +112,12 @@ chkVer();setInterval(chkVer,30000);document.addEventListener('visibilitychange',
 function defense(action,details={}){if(on())ws.send(JSON.stringify({t:"defense",action,...details}))}
 function admBoss(){if(on())ws.send(JSON.stringify({t:'admboss'}))}
 function raid(action,details={}){if(on())ws.send(JSON.stringify({t:"raid",action,...details}))}
-const NETO={logout,on,hit,remote,defense,raid,admBoss,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
+async function emote(emote,sync){
+ if(sync)await saveNow();
+ if(!on())return false;
+ ws.send(JSON.stringify({t:"emote",emote}));return true
+}
+const NETO={logout,on,hit,emote,remote,defense,raid,admBoss,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});

@@ -1,0 +1,29 @@
+.emote-control{position:relative}
+#emote-toggle{border:0;padding:0;background:transparent url('assets/hud_emote.webp') center/contain no-repeat;touch-action:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+#emote-toggle:active{transform:scale(.94)}
+.emote-quick{position:absolute;left:calc(100% + 7px);top:50%;transform:translateY(-50%);display:flex;gap:4px;padding:4px;background:#26343aeb;border:1px solid #c69c5a;border-radius:13px;box-shadow:0 4px 12px #15162185;animation:emote-quick-in .16s ease-out}
+.emote-quick[hidden]{display:none}
+.emote-quick button,.emote-slots button,.emote-grid button{border:1px solid #8c7656;background:#34454a;border-radius:10px;color:#fff0cb;cursor:pointer;padding:3px}
+.emote-quick button{width:44px;height:44px}
+.emote-icon{display:block;width:100%;aspect-ratio:1;background-repeat:no-repeat;background-size:500% 300%;pointer-events:none}
+@keyframes emote-quick-in{from{opacity:0;transform:translate(-6px,-50%) scale(.94)}to{opacity:1;transform:translateY(-50%) scale(1)}}
+.emote-settings{width:min(94%,425px);max-height:85%;color:#fff0cb;background:#24363c;border:2px solid #c69c5a;border-radius:21px;padding:15px;box-shadow:0 12px 44px #090c12bb;overflow:auto;font-family:Jua,sans-serif;overscroll-behavior:contain}
+.emote-settings::backdrop{background:#161827b3}
+.emote-settings header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.emote-settings h2{font-size:22px;margin:0}
+.emote-settings header button{background:#374e50;border:1px solid #af9669;border-radius:8px;color:inherit;padding:6px 11px;cursor:pointer}
+.emote-settings p{font-size:14px;margin:10px 0;color:#e6d7b6}
+.emote-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 12px}
+.emote-slots button{display:grid;grid-template-columns:38px 1fr;align-items:center;font:inherit;text-align:center}
+.emote-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.emote-grid button{min-width:0;font:inherit;text-align:center}
+.emote-grid strong{display:block;font-size:11px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.emote-settings [aria-pressed=true]{background:#526b5e;border-color:#ffe395;box-shadow:inset 0 0 0 1px #ffe395}
+@media(max-height:530px){#lb{gap:3px}#lb .lbb{width:33px;height:33px}#lb .lbb :is(svg,img){width:31px;height:31px}}
+@media(prefers-reduced-motion:reduce){.emote-quick{animation:none}}
+.emote-empty{display:grid;place-items:center;color:#f4d897;font-size:23px;height:100%;min-height:34px}
+.emote-locked .emote-icon{opacity:.68}
+.emote-locked::after{content:'◆ 20';color:#c4ddff;font-size:10px;line-height:12px;display:block}
+.emote-shop{position:sticky;bottom:-15px;margin-top:10px;min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:6px;background:#24363c;padding:6px 0}
+.emote-shop button{flex:none;color:#24221b;background:#f5d182;border:1px solid #ffe8a8;border-radius:9px;padding:8px;font:inherit;cursor:pointer}
+.emote-shop button:disabled{opacity:.45;cursor:default}

@@ -275,6 +275,18 @@ server.on('upgrade', (req, sock) => {
 function onMsg(c, m) {
   c.alive = Date.now();
   if (!m || typeof m !== 'object') return;
+  if (m.t === 'emote') {
+    if (!c.st || c.st.dead || !Number.isInteger(m.emote) || m.emote < 0 || m.emote >= 100) return;
+    if (!Array.isArray(c.u.save?.emoteOwned) || !c.u.save.emoteOwned.includes(m.emote)) return;
+    const now = Date.now();
+    if (now - (c.lastEmote || 0) < 2200) return;
+    c.lastEmote = now;
+    const frame = wsFrame({ t: 'emote', id: c.u.id, emote: m.emote, ch: c.st.ch });
+    for (const other of clients.values()) {
+      if (other.st?.ch === c.st.ch && !other.sock.destroyed) other.sock.write(frame);
+    }
+    return;
+  }
   if (m.t === 'defense') { defense.handle(c, m); return; }
   if (m.t === 'raid') { raid.handle(c, m); return; }
   if (m.t === 'admboss' && c.u.id === 'ehgus') { for (const [i, g] of mons) { pendingBossHp.delete(i); g.dead = false; g.hp = g.max; g.hit.clear(); g.rt = 0; broadcast({ t: 'mr', i }); } saveMons(); return; } // 관리자: 모든 공유 보스 즉시 재생성

@@ -414,6 +414,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .map-boss-caption{min-height:1.4em;text-align:center;color:#ffe1a4;margin:4px 0;font-size:13px}
 .promo-req{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin:8px 4px 10px;font-size:14px}.promo-req span{background:#2e2a48;border:2px solid #1c1830;border-radius:10px;padding:3px 9px}
 </style>
+<link rel="stylesheet" href="emotes.css?v=1">
 <link rel="stylesheet" href="tower.css?v=41">
 <link rel="stylesheet" href="defense.css?v=3">
 <link rel="stylesheet" href="raid.css?v=2045">
@@ -451,7 +452,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>window.saveReady=!!sessionStorage.xp_enter && sessionStorage.xp_enter===localStorage.xp_token;sessionStorage.removeItem("xp_enter");if(!window.saveReady)location.replace("index.html")</script>
-<script src="net.js?v=29"></script>
+<script src="net.js?v=30"></script>
 <script src="chief-patterns.js?v=3"></script>
 <script src="boss-patterns.js?v=5"></script>
 <script src="weapon-skill-fx.js?v=5"></script>
@@ -1993,7 +1994,7 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(30,22,46,.7)';ctx.lineWidth=7.5;ctx.beginPath();P.scarf.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();ctx.strokeStyle='#e8402f';ctx.lineWidth=5;ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2}
  if(P.recall&&!window.REM&&!PV){const k=1-P.recall.t/2;bar(x,y-96,54,7,k,'#7fd0ff');label('귀환 중',x,y-109,13,'#d8f9ff')}
  if(P.hitT>0){ctx.globalAlpha=.35;ell(x,y-28,17,27,'#ff5a5a',1);ctx.globalAlpha=1}
- if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0){label(adventurerTitle(rank),x+7,y-105,11,'#ffe4a2');const badge=AI('adventurer_rank_'+rank)||AI('adventurer_rank_'+Math.min(rank,5));if(badge)ctx.drawImage(badge,x-48,y-116,16,16)}}}
+ if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0){label(adventurerTitle(rank),x+7,y-105,11,'#ffe4a2');const badge=AI('adventurer_rank_'+rank)||AI('adventurer_rank_'+Math.min(rank,5));if(badge)ctx.drawImage(badge,x-48,y-116,16,16)}if(!combatArena)window.EMOTES?.draw(ctx,RM?.id||window.NET?.me(),x,y-(rank>0?119:103));}}
 function crown(y){ctx.beginPath();ctx.moveTo(-14,y);ctx.lineTo(-14,y-16);ctx.lineTo(-7,y-8);ctx.lineTo(0,y-18);ctx.lineTo(7,y-8);ctx.lineTo(14,y-16);ctx.lineTo(14,y);ctx.closePath();ctx.fillStyle='#ffc93c';ctx.fill();ctx.stroke()}
 function drawMon(m){const d=m.d,x=m.x,y=m.y,r=d.r,sq=Math.sin(m.ph)*.08,hs=m.hitT>0?1.12:1,sp=m.spawnT>0?1-m.spawnT/.3:1,c=d.c,c2=d.c2,fly=d.sh==='bat'?12+Math.sin(m.ph)*4:0;let top=r*2.2;
  shadow(x,y,r*1.05);ctx.save();ctx.translate(x,y-fly);ctx.scale(hs*sp,hs*sp);
@@ -2575,6 +2576,7 @@ let rSkip=0,nextHudRefresh=0;function frame(t){const dt=Math.min(.05,(t-last)/10
 window.__G={WW,WH,CX,CY,gz,ZC,buyBox,BOX,useSkill,openPop,renderPop,gptGuide,AI,setAsset,assetSlots,attack,HERO,sqG,worldMap,BLD,subPos,zoneOpen,inStage,walk,ZB,obs,S:()=>S,P,ST,mons,drops,update,render,hud,open,act,close,joy,calc};
 qlv();loadAssets();requestAnimationFrame(frame);
 </script>
+<script src="emotes.js?v=1"></script>
 <script src="tower.js?v=9"></script>
 <script src="defense.js?v=11"></script>
 <script src="raid.js?v=13"></script>
