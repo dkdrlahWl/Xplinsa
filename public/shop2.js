@@ -212,12 +212,12 @@
         <li><span class="vi">${featureImage('exchange')}</span><span>교환소 무료 <b>3회</b> / 일</span></li>
       </ul></div>
       <button class="buy" data-a="buyvip" ${S.gem < VIP_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(VIP_PRICE)}${on ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
-    const mc = mcState(), left = mc.left || 0, gotToday = left > 0 && mc.last === kstDay();
+    const mc = mcState(), left = mcDaysRemaining(mc), gotToday = mc.left > 0 && mc.last < kstDay() && mc.last + mc.left >= kstDay();
     const card = `<div class="s2pack mc"><div class="val">${Math.round(MC_TOTAL / MC_PRICE * 100)}%<small>가치</small></div><div class="art">${img('pack_monthly', AURL.shop_vip)}</div>
-      <div class="body"><h3>월정액 보석 카드</h3><div class="stat">${left > 0 ? '이용 중 · <b>' + left + '일 남음</b>' + (gotToday ? ' · 오늘 받음 ✔' : '') : '구매 즉시 + 30일 동안 매일 지급'}</div>
+      <div class="body"><h3>월정액 보석 카드</h3><div class="stat">${left > 0 ? '이용 중 · <b>' + left + '일 남음</b>' + (gotToday ? ' · 오늘 우편 발송' : '') : '구매 즉시 + 30일 동안 매일 우편 지급'}</div>
       <ul class="s2vip">
         <li><span class="vi">${IC.gem}</span><span>구매 즉시 보석 <b>${MC_NOW}</b></span></li>
-        <li><span class="vi">📅</span><span>매일 보석 <b>${MC_DAY}</b> × <b>${MC_DAYS}일</b></span></li>
+        <li><span class="vi">📅</span><span>매일 보석 <b>${MC_DAY}</b> × <b>${MC_DAYS}일</b> · 우편함</span></li>
       </ul><div class="mctot">총 ${IC.gem} ${fmt(MC_TOTAL)}</div>${left > 0 ? `<div class="mcbar"><i style="width:${Math.round((MC_DAYS - Math.min(MC_DAYS, left)) / MC_DAYS * 100)}%"></i></div>` : ''}</div>
       <button class="buy" data-a="buymc" ${S.gem < MC_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(MC_PRICE)}${left > 0 ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
     const next = STAGEP.find(p => !ps[p.id]);
@@ -229,26 +229,22 @@
       <div class="s2head ts">스테이지 패키지</div>${stage}${upg}
       <div class="s2head ts">주간 패키지</div>${wk}`;
   }
-  // 월정액 보석 카드: 1200 → 즉시 200 + 30일 동안 매일 100 (못 들어온 날 것도 다음 접속 때 몰아서)
+  // 첫날부터 일일 보상은 서버가 우편으로 지급한다.
   const MC_PRICE = 1200, MC_NOW = 200, MC_DAY = 100, MC_DAYS = 30, MC_TOTAL = MC_NOW + MC_DAY * MC_DAYS;
   const kstDay = () => Math.floor((Date.now() + 9 * 3600e3) / 86400e3);
-  const mcState = () => S.mc = S.mc || { left: 0, last: 0 };
-  function mcClaim() {
-    if (typeof S === 'undefined' || !S) return; const mc = mcState(); if (!(mc.left > 0)) return;
-    const today = kstDay(), n = Math.min(mc.left, Math.max(0, today - (mc.last || today - 1))); if (n <= 0) return;
-    mc.left -= n; mc.last = today; S.gem += MC_DAY * n; save();
-    window.rewardFly && rewardFly({ gem: MC_DAY * n }); window.SFX && SFX.play('gem', { v: .6 });
-    window.showBanner && showBanner('💎 월정액 보석 카드', '보석 ' + fmt(MC_DAY * n) + '개 지급' + (n > 1 ? ' (' + n + '일치)' : '') + ' · ' + mc.left + '일 남음');
-    if (panel === 'benefits') draw();
-  }
+  const mcState = () => S.mc || { left: 0, last: 0 };
+  const mcDaysRemaining = mc => Math.max(0, (mc.last || kstDay() - 1) + mc.left - kstDay());
   function mcBuy() {
     if (S.gem < MC_PRICE) { toast('보석이 부족해요'); return }
-    const mc = mcState(), fresh = !(mc.left > 0);
-    S.gem -= MC_PRICE; S.gem += MC_NOW; mc.left = (mc.left || 0) + MC_DAYS; if (fresh) mc.last = kstDay() - 1;
-    save(); toast('월정액 보석 카드 구매! 보석 ' + MC_NOW + '개 즉시 지급'); window.rewardFly && rewardFly({ gem: MC_NOW });
-    mcClaim();
+    const mc = mcState(), today = kstDay();
+    const previousEnd = (mc.last || today - 1) + mc.left;
+    const last = mc.last > 0 && previousEnd >= today - 1 ? (mc.last || today - 1) : today - 1;
+    S.mc = { last, left: Math.max(today - 1, previousEnd) + MC_DAYS - last };
+    S.gem -= MC_PRICE - MC_NOW;
+    save(true);
+    toast('보석 ' + MC_NOW + '개 즉시 지급 · 일일 보상은 우편함으로 도착해요');
+    window.rewardFly && rewardFly({ gem: MC_NOW });
   }
-  setTimeout(mcClaim, 2500); setInterval(mcClaim, 30000);
   // VIP ↔ 월정액 카드 좌우 넘기기 + 점 표시
   function carBind() {
     const car = document.getElementById('s2car'), dots = document.getElementById('s2dots'); if (!car || car.dataset.b) return; car.dataset.b = 1;

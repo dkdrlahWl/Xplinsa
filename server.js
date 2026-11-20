@@ -48,10 +48,33 @@ const SYS_MAIL = [{ id: 'launch-1', t: '🎉 정식 오픈 보상', gem: 500, ke
 function sysMail(u) { if (Date.now() < LAUNCH_AT) return []; const g = u.gifts || {}; return SYS_MAIL.filter(m => !g[m.id]).map(m => ({ ...m })); }
 // 우편이 생기면 접속 중인 그 유저 폰에 바로 알려서 새로고침 없이 우편함 갱신
 function mailPing(id) { const c = clients.get(id); if (c) wsSend(c.sock, { t: 'mail' }); }
+function deliverMonthlyMail(u, today) {
+  const card = u.save?.mc;
+  if (!Number.isSafeInteger(card?.left) || card.left <= 0) return;
+  const last = Number.isSafeInteger(card.last) && card.last > 0 ? card.last : today - 1;
+  const through = Math.min(today, last + card.left);
+  const from = Math.max(last, u.monthlyMailThrough || 0);
+  if (through <= from) return;
+  const mail = u.monthlyMail || (u.monthlyMail = []);
+  for (let day = from + 1; day <= through; day++) {
+    const date = new Date(day * 86400e3).toISOString().slice(0, 10);
+    mail.push({ t: '월정액 보석 카드 · ' + date, gem: 100 });
+  }
+  u.monthlyMailThrough = through;
+  markDirty();
+  mailPing(u.id);
+}
+function monthlyDay() { return Math.floor((Date.now() + 9 * 3600e3) / 86400e3); }
+function deliverAllMonthlyMail() {
+  const today = monthlyDay();
+  for (const u of Object.values(db.users)) deliverMonthlyMail(u, today);
+}
 function market(u, b, res) {
+  deliverMonthlyMail(u, monthlyDay());
+  const monthly = u.monthlyMail || [];
   const mail = mk.mail[u.id] || [];
-  if (b.a === 'list') return send(res, 200, { list: mk.list.slice(-300).reverse(), mail: mail.length, me: u.id });
-  if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(mail.map(m => { const o = { w: m.w, t: m.t, keys: m.keys }; for (const k of SEND_RES) if (m[k]) o[k] = m[k]; return o; }).reverse()) });
+  if (b.a === 'list') return send(res, 200, { list: mk.list.slice(-300).reverse(), mail: mail.length + monthly.length, me: u.id });
+  if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(monthly, mail.map(m => { const o = { w: m.w, t: m.t, keys: m.keys }; for (const k of SEND_RES) if (m[k]) o[k] = m[k]; return o; }).reverse()) });
   if (b.a === 'sell') {
     const key = String(b.key || ''), q = Math.round(Number(b.q) * 100) / 100, price = Math.floor(Number(b.price)), cur = b.cur === 'gem' ? 'gem' : 'gold';
     if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-6]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
@@ -74,7 +97,8 @@ function market(u, b, res) {
   }
   if (b.a === 'claim') {
     const sm = sysMail(u); if (sm.length) { u.gifts = u.gifts || {}; for (const m of sm) u.gifts[m.id] = Date.now(); markDirty(); }
-    delete mk.mail[u.id]; if (mail.length) saveMk(); return send(res, 200, { mail: sm.concat(mail) });
+    if (monthly.length) { delete u.monthlyMail; markDirty(); }
+    delete mk.mail[u.id]; if (mail.length) saveMk(); return send(res, 200, { mail: sm.concat(monthly, mail) });
   }
   return send(res, 404, { err: 'no' });
 }
@@ -211,6 +235,7 @@ const server = http.createServer(async (req, res) => {
       if(Number.isSafeInteger(b.seq)) u.saveSeq=b.seq;
       u.saveWriteId = typeof b.writeId === 'string' ? b.writeId.slice(0, 80) : null;
       u.save = b.save; u.rev = (u.rev || 0) + 1; markDirty();
+      deliverMonthlyMail(u, monthlyDay());
       if (b.handoff) { flush(); pending.finish(!dirty); }
       return send(res, 200, { ok: 1, rev: u.rev });
     }
@@ -388,5 +413,8 @@ function launchReset() {
   console.log('정식 오픈 초기화 완료');
 }
 setInterval(launchReset, 5000); launchReset();
+
+deliverAllMonthlyMail();
+setInterval(deliverAllMonthlyMail, 30000);
 
 server.listen(PORT, () => console.log('링구 HERO 서버 실행 중: 포트 ' + PORT));
