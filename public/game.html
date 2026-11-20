@@ -1490,13 +1490,15 @@ function withArenaCombat(arena,fn){
   ctx=world.ctx;PV=world.PV;combatArena=world.combatArena;
  }
 }
-function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.dead){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
+const IDLE_HOME=30*60e3;function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.dead){P.recall=null;toast('귀환 취소')}else if((P.recall.t-=dt)<=0){P.recall=null;P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});toast('기지에 도착했어요')}}lockT-=dt;if(banner.t>0)banner.t-=dt;
  // player
  if(P.dead){P.respT-=dt;if(P.respT<=0){P.dead=false;P.x=BASE.x;P.y=BASE.y+120;P.hp=ST.maxhp}}
  else{
   let mx=joy.x,my=joy.y;
   if(keys.a||keys.arrowleft)mx-=1;if(keys.d||keys.arrowright)mx+=1;if(keys.w||keys.arrowup)my-=1;if(keys.s||keys.arrowdown)my+=1;
   const l=Math.hypot(mx,my);P.moving=l>(joy.on?joy.deadzone:.12);
+   // 방향키·조이스틱 입력 없이 30분 가만히 있으면 모닥불(기지)로 자동 이동
+   if(P.moving||P.idleAt==null)P.idleAt=Date.now();else if(Date.now()-P.idleAt>=IDLE_HOME&&!combatArena&&!P.recall&&Math.hypot(P.x-BASE.x,P.y-BASE.y)>BASE.sand){P.idleAt=Date.now();P.x=BASE.x;P.y=BASE.y+120;for(const m of mons)if(m.agg){m.agg=false;m.slam=null}fxs.push({x:P.x,y:P.y-16,t:.4,r:60,c:'#7fd0ff'});showBanner('🔥 모닥불로 이동','30분 동안 움직임이 없었어요')}
   if(P.moving){const k=Math.min(1,l)/l;const ox=P.x,oy=P.y;P.x+=mx*k*ST.spd*dt;P.y+=my*k*ST.spd*dt;pushOut(P,12);
    if(!walk(P.x,P.y)){const lz=inStage(P.x,P.y,14);if(lz>=0&&!zoneOpen(lz)&&lockT<=0){toast(lockMsg(lz).replace(' 시 열림','하면 열리는 지역이에요'));lockT=2.5}
     if(walk(P.x,oy))P.y=oy;else if(walk(ox,P.y))P.x=ox;else{P.x=ox;P.y=oy}}
