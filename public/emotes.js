@@ -39,7 +39,7 @@ window.EMOTES = (() => {
   const control = document.createElement('div');
   control.className = 'emote-control';
   control.innerHTML = '<button id="emote-toggle" class="lbb" type="button" aria-label="이모티콘" aria-description="누르면 빠른 슬롯, 길게 누르면 설정" aria-controls="emote-quick" aria-expanded="false"></button><div id="emote-quick" class="emote-quick" role="group" aria-label="빠른 이모티콘" hidden></div>';
-  $('lb').append(control);
+  $('game').append(control);
   const toggle = control.querySelector('button'), quick = control.querySelector('.emote-quick');
   const settings = document.createElement('dialog');
   settings.className = 'emote-settings';
@@ -81,8 +81,8 @@ window.EMOTES = (() => {
     }
     buy.hidden=choice===null;
     buy.disabled=S.gem<price;
-    buy.textContent='보석 '+price+'개로 구매';
-    status.textContent=choice===null?'보석 '+fmt(S.gem):names[choice]+' · 보석 '+fmt(S.gem)+'개 보유';
+    buy.innerHTML=IC.gem+' '+price+' 구매';
+    status.innerHTML=(choice===null?'':names[choice]+' · ')+'보유 '+IC.gem+' '+fmt(S.gem);
   }
   function openSettings(slot=0) {
     setQuick(false);
@@ -104,28 +104,45 @@ window.EMOTES = (() => {
     if(hold)clearTimeout(hold.timer);
     hold=null;
   }
+  // 이동 중(조이스틱 누른 손가락이 따로 있어도) 눌리게: click 대신 pointer 이벤트로 처리
   toggle.addEventListener('pointerdown',e=>{
-    if(!e.isPrimary||e.button!==0)return;
+    if(e.button>0)return;
+    e.preventDefault();e.stopPropagation();
     longPress=false;
     stopHold();
-    hold={x:e.clientX,y:e.clientY,timer:setTimeout(()=>{
+    hold={id:e.pointerId,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{
       stopHold();
       longPress=true;
       openSettings();
     },520)};
   });
   toggle.addEventListener('pointermove',e=>{
-    if(hold&&Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>12)stopHold();
+    if(hold&&e.pointerId===hold.id&&Math.hypot(e.clientX-hold.x,e.clientY-hold.y)>12)stopHold();
   });
-  for(const event of ['pointerup','pointercancel','pointerleave'])toggle.addEventListener(event,stopHold);
+  toggle.addEventListener('pointerup',e=>{
+    e.preventDefault();e.stopPropagation();
+    const tap=hold&&e.pointerId===hold.id;stopHold();
+    if(!tap||longPress){longPress=false;return}
+    setQuick(quick.hidden);
+  });
+  for(const event of ['pointercancel','pointerleave'])toggle.addEventListener(event,stopHold);
   toggle.addEventListener('contextmenu',e=>{e.preventDefault()});
   toggle.addEventListener('click',e=>{
-    if(longPress&&e.detail){longPress=false;return}
-    longPress=false;
+    e.stopPropagation();
+    if(e.detail)return; // 마우스/터치는 pointerup에서 처리함 (키보드 Enter만 여기로)
     if(e.shiftKey){openSettings();return}
     setQuick(quick.hidden);
   });
+  quick.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();
+    const button=e.target.closest('[data-emote]');
+    if(button)send(Number(button.dataset.emote));
+    const empty=e.target.closest('[data-empty]');
+    if(empty)openSettings(Number(empty.dataset.empty));
+  });
   quick.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(e.detail)return;
     const button=e.target.closest('[data-emote]');
     if(button)send(Number(button.dataset.emote));
     const empty=e.target.closest('[data-empty]');
@@ -161,6 +178,18 @@ window.EMOTES = (() => {
   settings.addEventListener('close',()=>toggle.focus());
   document.addEventListener('pointerdown',e=>{if(!control.contains(e.target))setQuick(false)});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')setQuick(false)});
+
+  // 상점 버튼 바로 위에 붙임 (하단 바가 숨겨지거나 창이 열리면 같이 숨김)
+  function place(){
+    const shop=document.querySelector('#bar .bb[data-p="shop"]'),bar=$('bar'),modal=$('modal');
+    const r=shop&&shop.getBoundingClientRect();
+    const cs=bar&&getComputedStyle(bar);
+    const vis=r&&r.width>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&!(modal&&modal.classList.contains('open'));
+    control.hidden=!vis;
+    if(!vis){setQuick(false);return}
+    control.style.left=Math.round(r.left+r.width/2-26)+'px';control.style.top=Math.round(r.top-58)+'px';
+  }
+  addEventListener('resize',place);setInterval(place,250);place();
 
   function receive({id,emote,ch}) {
     if(ch!==CHAP||!valid(emote)||typeof id!=='string')return;

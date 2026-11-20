@@ -12,7 +12,7 @@
   }
   let PREM = false, ADMIN_LIST = null;
   function fetchPrem(extra) {
-    return fetch('/api/pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ token: localStorage.getItem('xp_token') }, extra || {})) })
+    return fetch('/api/pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ token: (sessionStorage.xp_tok||'') }, extra || {})) })
       .then(r => r.json()).then(j => { if (j.err) toast(j.err); PREM = !!j.prem; if (j.list) ADMIN_LIST = j.list; if (panel === 'pass') draw() }).catch(() => {});
   }
   fetchPrem(); setInterval(() => fetchPrem(), 120000);

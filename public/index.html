@@ -66,8 +66,10 @@ async function enter(token){
  const prevNick=localStorage.getItem('xp_nick');let local=null;try{local=JSON.parse(localStorage.getItem('camp_save_v2')||'null')}catch(e){}
  if(!me.nick){$('auth').className='hide';$('nickBox').className='';$('err').textContent='';$('nick').focus();return}
  localStorage.setItem('xp_token',token);localStorage.setItem('xp_nick',me.nick);localStorage.setItem('xp_admin',me.admin?'1':'0');localStorage.setItem('xp_ep',String(me.epoch||0));
+ // 계정 정보·기록은 탭마다 따로(sessionStorage): 다른 탭에서 다른 계정으로 들어가도 섞이지 않게
+ sessionStorage.xp_tok=token;sessionStorage.xp_uid=me.id||'';sessionStorage.xp_nick=me.nick;sessionStorage.xp_admin=me.admin?'1':'0';sessionStorage.xp_ep=String(me.epoch||0);
  // 링피지 방식: 들어올 때는 항상 서버 기록을 씀 (기기 안 기록은 캐시일 뿐, 다른 계정 기록도 여기서 지워짐)
- if(me.save)localStorage.setItem('camp_save_v2',JSON.stringify(me.save));else localStorage.removeItem('camp_save_v2');
+ localStorage.removeItem('camp_save_v2');if(me.save)sessionStorage.xp_boot=JSON.stringify(me.save);else sessionStorage.removeItem('xp_boot');
  sessionStorage.xp_rev=me.rev||0;sessionStorage.removeItem('xp_push');
  sessionStorage.xp_save_seq=me.saveSeq||0;sessionStorage.setItem('xp_enter',token);location.replace('game.html');
 }
@@ -83,6 +85,6 @@ $('nickGo').onclick=async()=>{$('nickGo').disabled=true;try{await api('nick',{to
 for(const i of['id','pw','pw2'])$(i).addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
 $('nick').addEventListener('keydown',e=>{if(e.key==='Enter')$('nickGo').click()});
 // 이미 로그인돼 있으면 바로 입장
-(async()=>{const t=localStorage.getItem('xp_token');if(!t)return;tok=t;try{await enter(t)}catch(e){localStorage.removeItem('xp_token');if(e&&e.kick)fail({err:'다시 로그인해 주세요'})}})();
+(async()=>{const t=sessionStorage.xp_tok||localStorage.getItem('xp_token');if(!t)return;tok=t;try{await enter(t)}catch(e){if(sessionStorage.xp_tok===t)sessionStorage.removeItem('xp_tok');if(localStorage.getItem('xp_token')===t)localStorage.removeItem('xp_token');if(e&&e.kick)fail({err:'다시 로그인해 주세요'})}})();
 </script>
 </body></html>

@@ -1,12 +1,13 @@
-.emote-control{position:relative}
-#emote-toggle{border:0;padding:0;background:transparent url('assets/hud_emote.webp') center/contain no-repeat;touch-action:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
+.emote-control{position:fixed;z-index:30;width:52px;height:52px}
+.emote-control[hidden]{display:none}
+#emote-toggle{width:52px;height:52px;filter:drop-shadow(0 2px 0 #1c1830);-webkit-tap-highlight-color:transparent;border:0;padding:0;background:transparent url('assets/hud_emote.webp') center/contain no-repeat;touch-action:none;user-select:none;-webkit-touch-callout:none;cursor:pointer}
 #emote-toggle:active{transform:scale(.94)}
-.emote-quick{position:absolute;left:calc(100% + 7px);top:50%;transform:translateY(-50%);display:flex;gap:4px;padding:4px;background:#26343aeb;border:1px solid #c69c5a;border-radius:13px;box-shadow:0 4px 12px #15162185;animation:emote-quick-in .16s ease-out}
+.emote-quick{position:absolute;right:0;bottom:calc(100% + 8px);display:flex;gap:4px;padding:4px;background:#26343aeb;border:1px solid #c69c5a;border-radius:13px;box-shadow:0 4px 12px #15162185;animation:emote-quick-in .16s ease-out}
 .emote-quick[hidden]{display:none}
 .emote-quick button,.emote-slots button,.emote-grid button{border:1px solid #8c7656;background:#34454a;border-radius:10px;color:#fff0cb;cursor:pointer;padding:3px}
 .emote-quick button{width:44px;height:44px}
 .emote-icon{display:block;width:100%;aspect-ratio:1;background-repeat:no-repeat;background-size:500% 300%;pointer-events:none}
-@keyframes emote-quick-in{from{opacity:0;transform:translate(-6px,-50%) scale(.94)}to{opacity:1;transform:translateY(-50%) scale(1)}}
+@keyframes emote-quick-in{from{opacity:0;transform:translateY(6px) scale(.94)}to{opacity:1;transform:none}}
 .emote-settings{width:min(94%,425px);max-height:85%;color:#fff0cb;background:#24363c;border:2px solid #c69c5a;border-radius:21px;padding:15px;box-shadow:0 12px 44px #090c12bb;overflow:auto;font-family:Jua,sans-serif;overscroll-behavior:contain}
 .emote-settings::backdrop{background:#161827b3}
 .emote-settings header{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -23,7 +24,9 @@
 @media(prefers-reduced-motion:reduce){.emote-quick{animation:none}}
 .emote-empty{display:grid;place-items:center;color:#f4d897;font-size:23px;height:100%;min-height:34px}
 .emote-locked .emote-icon{opacity:.68}
-.emote-locked::after{content:'◆ 20';color:#c4ddff;font-size:10px;line-height:12px;display:block}
+.emote-locked::after{content:'20';display:block;margin:1px auto 0;width:max-content;padding-left:15px;min-height:13px;background:url('assets/icon_gem.webp') left center/13px 13px no-repeat;color:#fff;font-size:11px;line-height:13px}
 .emote-shop{position:sticky;bottom:-15px;margin-top:10px;min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:6px;background:#24363c;padding:6px 0}
 .emote-shop button{flex:none;color:#24221b;background:#f5d182;border:1px solid #ffe8a8;border-radius:9px;padding:8px;font:inherit;cursor:pointer}
 .emote-shop button:disabled{opacity:.45;cursor:default}
+
+.emote-shop :is(button,span){display:inline-flex;align-items:center;gap:3px}.emote-shop :is(button,span) :is(img,svg){width:18px;height:18px;object-fit:contain}

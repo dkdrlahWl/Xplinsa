@@ -154,7 +154,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, out);
     }
     if (p === '/api/market') return market(u, b, res);
-    if (p === '/api/me') return send(res, 200, { nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, rev: u.rev || 0, epoch: db.epoch || 0 });
+    if (p === '/api/me') return send(res, 200, { id: u.id, nick: u.nick, save: u.save, admin: u.id === 'ehgus', saveSeq:u.saveSeq||0, rev: u.rev || 0, epoch: db.epoch || 0 });
     if (p === '/api/nick') {
       const n = String(b.nick || '').trim();
       if (!/^[가-힣a-zA-Z0-9_]{2,8}$/.test(n)) return send(res, 400, { err: '닉네임은 한글·영어·숫자 2~8자' });
@@ -164,6 +164,8 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/save') {
       if (!b.save || typeof b.save !== 'object') return send(res, 400, { err: 'bad' });
       // 진행도(챕터→레벨→경험치)가 서버 기록보다 낮은 저장은 받지 않음: 옛날 탭·옛날 기기가 최신 기록을 덮어쓰는 것 방지
+      // 다른 계정 기록이 섞여 들어온 저장은 거절 (기록에 찍힌 계정 id가 다르면) → 기기는 서버 기록 다시 불러옴
+      if (b.save.uid && b.save.uid !== u.id) return send(res, 409, { conflict: 1, rev: u.rev || 0 });
       const stale = u.save && prog(b.save) < prog(u.save);
       if (db.epoch && u.id !== 'ehgus' && Number(b.save.ep) !== db.epoch) return send(res, 409, { reset: 1, err: '정식 오픈으로 초기화됐어요' });
       const pending = clients.get(u.id)?.handoff;

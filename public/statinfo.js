@@ -62,7 +62,7 @@
   }
   // 관리자 모드: 유저 현황 (대장간 레벨·레벨·챕터·승급·크리스탈)
   async function adminUsers() {
-    const j = await fetch('/api/adminusers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: localStorage.getItem('xp_token') }) }).then(r => r.json()).catch(() => ({}));
+    const j = await fetch('/api/adminusers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok||'') }) }).then(r => r.json()).catch(() => ({}));
     if (!j.list) { toast(j.err || '불러오지 못했어요'); return }
     let d = document.getElementById('statpop'); if (d) d.remove(); d = document.createElement('div'); d.id = 'statpop';
     d.innerHTML = `<div class="sp" style="width:min(94vw,420px)"><div class="sph"><b>유저 현황</b><button class="spx">✕</button></div>

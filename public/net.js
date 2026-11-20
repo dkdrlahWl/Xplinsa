@@ -1,6 +1,6 @@
 // 멀티플레이: 서버 저장 + 다른 플레이어 보이기
 (function(){
-window.IS_ADMIN=localStorage.getItem('xp_admin')==='1';const TOKEN=localStorage.getItem('xp_token'),NICK=localStorage.getItem('xp_nick')||'';
+window.IS_ADMIN=(sessionStorage.xp_admin||localStorage.getItem('xp_admin'))==='1';const TOKEN=sessionStorage.xp_tok||'',NICK=sessionStorage.xp_nick||localStorage.getItem('xp_nick')||''; // 탭마다 자기 계정
 if(!TOKEN || !window.saveReady){location.replace('index.html');return}
 const others=new Map();let ME=null,ws=null,sc=0,lastSw=0,sendT=0,kicked=false,retry=0,saveT=0,saveDirty=false;
 const DELAY=110;
@@ -10,7 +10,7 @@ function resetGo(){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}loc
  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.88);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
  d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:26px 24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:24px;margin-bottom:10px">🎉 정식 오픈!</div><div style="color:#cfc8ee;font-size:15px;margin-bottom:18px">테스트 기록이 초기화됐어요.<br>처음부터 새로 시작해요!</div><button style="font:inherit;font-size:19px;padding:10px 28px;border-radius:14px;border:3px solid #1c1830;background:#7be36a;color:#1c1830">시작하기</button></div>';
  d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}
-function kick(msg){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}localStorage.removeItem('xp_token');
+function kick(msg){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}if(localStorage.getItem('xp_token')===TOKEN)localStorage.removeItem('xp_token');sessionStorage.removeItem('xp_tok');
  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.85);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
  d.innerHTML='<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:26px 24px;text-align:center;color:#fff;width:min(84vw,320px)"><div style="font-size:22px;margin-bottom:10px">접속이 끊겼어요</div><div style="color:#cfc8ee;font-size:15px;margin-bottom:18px">'+(msg||'다른 기기에서 로그인했어요.')+'</div><button style="font:inherit;font-size:19px;padding:10px 28px;border:3px solid #1c1830;border-radius:14px;background:#ffd23c;color:#1c1830">다시 로그인</button></div>';
  d.querySelector('button').onclick=()=>location.replace('index.html');document.body.appendChild(d)}
@@ -104,7 +104,7 @@ window.addEventListener('pagehide',()=>{if(saveDirty&&!kicked)pushSave(true)});
 
 async function logout(){kicked=true;try{ws&&ws.close()}catch(e){}
   try{await saveNow()}catch(e){}
- for(const k of['xp_token','xp_admin','xp_nick','camp_save_v2'])localStorage.removeItem(k);location.replace('index.html')}
+ for(const k of['xp_token','xp_admin','xp_nick','camp_save_v2'])localStorage.removeItem(k);for(const k of['xp_tok','xp_uid','xp_nick','xp_admin','xp_boot'])sessionStorage.removeItem(k);location.replace('index.html')}
 // 새 버전 감시: 서버가 업데이트되면 저장 후 자동 새로고침
 let VER=null;async function chkVer(){try{const v=await (await fetch('/version',{cache:'no-store'})).text();if(VER===null)VER=v;else if(v!==VER&&!kicked){VER=v;try{await saveNow()}catch(e){}
   const d=document.createElement('div');d.style.cssText='position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:99999;background:#2b2546;border:3px solid #1c1830;border-radius:16px;padding:14px 20px;color:#ffe066;font-family:Jua,sans-serif;font-size:18px';d.textContent='새 버전 적용 중…';document.body.appendChild(d);setTimeout(()=>location.reload(),900)}}catch(e){}}
@@ -117,7 +117,7 @@ async function emote(emote,sync){
  if(!on())return false;
  ws.send(JSON.stringify({t:"emote",emote}));return true
 }
-const NETO={logout,on,hit,emote,remote,defense,raid,admBoss,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
+const NETO={logout,on,saveNow,hit,emote,remote,defense,raid,admBoss,me:()=>ME,tick,draw,list,markSave,nick:NICK};window.NET=NETO;
 connect();
 // 관리자 여부는 아이디(ehgus) 기준으로 서버에 매번 물어봄
 fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})}).then(r=>r.json()).then(j=>{if(j&&'admin' in j){window.IS_ADMIN=!!j.admin;localStorage.setItem('xp_admin',j.admin?'1':'0')}}).catch(()=>{});
