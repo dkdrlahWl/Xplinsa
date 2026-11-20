@@ -42,6 +42,7 @@ let mk = { list: [], mail: {}, seq: 0 };
 try { mk = Object.assign(mk, JSON.parse(fs.readFileSync(MK_FILE, 'utf8'))); } catch (e) {}
 const saveMk = () => { const t = MK_FILE + '.tmp'; fs.writeFile(t, JSON.stringify(mk), e => { if (!e) fs.rename(t, MK_FILE, () => {}); }); };
 const MK_LIMIT = { gold: 1e15, gem: 1e6 }, MK_FEE = .1, MK_MAX = 10;
+const SEND_RES = ['gold', 'gem', 'cry', 'orb', 'rb', 'scr', 'myth', 'scl'], SEND_KEYS = ['b1', 'b2', 'b3', 'pet', 'mount'];
 // 운영 우편: 정식 오픈(19:00) 이후 모든 계정(새로 가입한 계정 포함)이 우편함에서 1번 받음
 const SYS_MAIL = [{ id: 'launch-1', t: '🎉 정식 오픈 보상', gem: 500, keys: { b2: 3, pet: 2 } }];
 function sysMail(u) { if (Date.now() < LAUNCH_AT) return []; const g = u.gifts || {}; return SYS_MAIL.filter(m => !g[m.id]).map(m => ({ ...m })); }
@@ -50,7 +51,7 @@ function mailPing(id) { const c = clients.get(id); if (c) wsSend(c.sock, { t: 'm
 function market(u, b, res) {
   const mail = mk.mail[u.id] || [];
   if (b.a === 'list') return send(res, 200, { list: mk.list.slice(-300).reverse(), mail: mail.length, me: u.id });
-  if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(mail.map(({ gold, gem, w, t }) => ({ gold, gem, w, t })).reverse()) });
+  if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(mail.map(m => { const o = { w: m.w, t: m.t, keys: m.keys }; for (const k of SEND_RES) if (m[k]) o[k] = m[k]; return o; }).reverse()) });
   if (b.a === 'sell') {
     const key = String(b.key || ''), q = Math.round(Number(b.q) * 100) / 100, price = Math.floor(Number(b.price)), cur = b.cur === 'gem' ? 'gem' : 'gold';
     if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-6]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
@@ -132,8 +133,19 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/adminusers') { // 관리자 전용: 유저 현황 (대장간 레벨 등)
       if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
-      const list = Object.values(db.users).filter(x => x.save).map(x => { const s = x.save; return { n: x.nick || x.id, lv: s.lv || 0, smith: (s.step || 0) + 1, sxp: s.sxp || 0, ch: s.ch || 1, promo: s.promotion || 0, cry: s.cry || 0, gold: s.gold || 0, gem: s.gem || 0, on: clients.has(x.id) }; }).sort((a, b) => b.smith - a.smith || b.lv - a.lv);
+      const list = Object.values(db.users).filter(x => x.save).map(x => { const s = x.save; return { id: x.id, n: x.nick || x.id, scr: s.scr || 0, tw: (s.tower && s.tower.clear) || 0, lv: s.lv || 0, smith: (s.step || 0) + 1, sxp: s.sxp || 0, ch: s.ch || 1, promo: s.promotion || 0, cry: s.cry || 0, gold: s.gold || 0, gem: s.gem || 0, on: clients.has(x.id) }; }).sort((a, b) => b.smith - a.smith || b.lv - a.lv);
       return send(res, 200, { list });
+    }
+    if (p === '/api/admsend') { // 관리자 전용 송금: 고른 유저 우편함으로 재화·열쇠 보냄 (실시간 알림)
+      if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
+      const to = db.users[String(b.to || '')], r = String(b.res || ''), n = Math.floor(Number(b.n));
+      if (!to) return send(res, 400, { err: '받는 유저를 찾을 수 없어요' });
+      if (to.id === u.id) return send(res, 400, { err: '자신에게는 보낼 수 없어요' });
+      if (!(n >= 1 && n <= 1e15)) return send(res, 400, { err: '수량을 확인해 주세요' });
+      const m = { t: '💌 운영자 송금' };
+      if (SEND_RES.includes(r)) m[r] = n; else if (SEND_KEYS.includes(r)) { if (n > 10000) return send(res, 400, { err: '열쇠는 1만 개까지' }); m.keys = { [r]: n }; } else return send(res, 400, { err: '보낼 재화를 골라 주세요' });
+      (mk.mail[to.id] = mk.mail[to.id] || []).push(m); saveMk(); mailPing(to.id);
+      return send(res, 200, { ok: 1, to: to.nick || to.id, res: r, n });
     }
     if (p === '/api/gift') { // 운영자 선물 (모든 유저 1번씩)
       u.gifts = u.gifts || {}; const got = GIFTS.filter(g => !u.gifts[g.id]);

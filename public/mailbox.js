@@ -23,7 +23,8 @@
   const openPanel = () => panel === 'mailbox';
   const refreshPanel = () => { if (openPanel()) draw(); };
   const KN = { b1: '초보자의 무기상자 열쇠', b2: '전문가의 무기상자 열쇠', b3: '전사의 무기상자 열쇠', pet: '펫 알 상자 교환권', mount: '탈것 상자 교환권' };
-  const amount = m => ['gold', 'gem'].filter(k => m[k] > 0).map(k => `${RWN[k]} ${number.format(m[k])}`).concat(Object.entries(m.keys || {}).map(([k, n]) => `${KN[k] || k} ${n}개`)).concat(m.w ? [wName(m.w.key) + ' (' + Math.round(m.w.q * 100) + '%)'] : []).join(' · ');
+  const RES = ['gold', 'gem', 'cry', 'orb', 'rb', 'scr', 'myth', 'scl'];
+  const amount = m => RES.filter(k => m[k] > 0).map(k => `${RWN[k]} ${number.format(m[k])}`).concat(Object.entries(m.keys || {}).map(([k, n]) => `${KN[k] || k} ${n}개`)).concat(m.w ? [wName(m.w.key) + ' (' + Math.round(m.w.q * 100) + '%)'] : []).join(' · ');
 
   async function refresh() {
     if (loading || claiming) return;
@@ -50,7 +51,7 @@
       if (!Array.isArray(result.mail)) throw Error('mail');
       const rewards = {}, gotKeys = [];
       for (const m of result.mail) {
-        for (const k of ['gold', 'gem']) if (m[k] > 0) rewards[k] = (rewards[k] || 0) + m[k];
+        for (const k of RES) if (m[k] > 0) rewards[k] = (rewards[k] || 0) + m[k];
         if (m.w && /^[a-z]+_[0-6]$/.test(m.w.key)) { addWq(m.w.key, m.w.q); gotKeys.push(wName(m.w.key)); }
         for (const [k, n] of Object.entries(m.keys || {})) { if (!KN[k] || !(n > 0)) continue; S.keys = S.keys || {}; S.keys[k] = (S.keys[k] || 0) + n; gotKeys.push(KN[k] + ' ' + n + '개') }
       }

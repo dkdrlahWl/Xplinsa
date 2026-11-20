@@ -1322,7 +1322,7 @@ let banner={t:0,a:'',b:''};function showBanner(a,b){banner={t:2.4,a,b}}
 /* ---------- helpers ---------- */
 function num(x,y,t,c,big){nums.push({x:x+rnd(-8,8),y,t,c,life:.8,big})}
 let toastT=0;function toast(t){$('toast').textContent=t;$('toast').className='hud ts show';toastT=2}
-function give(rw){window.SFX&&SFX.play('reward',{v:.6,gap:.15});const a=[];for(const k in rw){S[k]+=rw[k];a.push(RWN[k]+' +'+fmt(rw[k]))}rewardFly(rw);return a.join(', ')}
+function give(rw){window.SFX&&SFX.play('reward',{v:.6,gap:.15});const a=[];for(const k in rw){S[k]=(S[k]||0)+rw[k];a.push(RWN[k]+' +'+fmt(rw[k]))}rewardFly(rw);return a.join(', ')}
 function qev(type,key,n){featureEvent(type,key,n);const q=Q[S.q];if(S.qok||!q||q.type!==type||q.type==='build')return;if(q.key&&q.key!==key)return;S.qp+=n||1;if(S.qp>=q.need)qdone()}
 function qdone(){if(S.qok)return;S.qok=1;S.qp=Math.max(S.qp,(Q[S.q]||{}).need||0);save()}
 function qclaim(){const q=Q[S.q];if(!q||!S.qok)return false;markRewardOrigin($('qc0'));
@@ -2587,8 +2587,8 @@ qlv();loadAssets();requestAnimationFrame(frame);
 <script src="events.js?v=1"></script>
 <script src="talent.js?v=4"></script>
 <script src="pass.js?v=10"></script>
-<script src="statinfo.js?v=5"></script>
-<script src="mailbox.js?v=4"></script>
+<script src="statinfo.js?v=6"></script>
+<script src="mailbox.js?v=5"></script>
 <script src="sfx.js?v=6"></script>
 </body>
 </html>
