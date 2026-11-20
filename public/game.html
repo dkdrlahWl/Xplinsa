@@ -451,7 +451,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
   </div>
 </div>
 <script>window.saveReady=!!sessionStorage.xp_enter && sessionStorage.xp_enter===localStorage.xp_token;sessionStorage.removeItem("xp_enter");if(!window.saveReady)location.replace("index.html")</script>
-<script src="net.js?v=28"></script>
+<script src="net.js?v=29"></script>
 <script src="chief-patterns.js?v=3"></script>
 <script src="boss-patterns.js?v=5"></script>
 <script src="weapon-skill-fx.js?v=4"></script>
@@ -1041,8 +1041,7 @@ function specialBonus(key){return specialUnlocked(key)?specialPercent(specialLev
 const ADVENTURER_TITLES=['초보 모험가','견습 탐험가','숙련 탐험가','정예 모험가','영웅 모험가','전설의 모험가','신화의 모험가','초월자','별의 수호자','천상의 영웅','링구의 전설'];
 let promotionPlaying=false;
 function adventurerTitle(rank=promotionRank()){return ADVENTURER_TITLES[rank]||ADVENTURER_TITLES[0]}
-const RANK_HUE=[0,0,0,0,0,0,200,280,170,320,40];
-function rankBadge(rank){const own=AURL['adventurer_rank_'+rank];return '<img src="'+(own||'assets/adventurer_rank_'+Math.min(rank,5)+'.webp')+'" alt="'+adventurerTitle(rank)+' 휘장"'+(own||rank<=5?'':' style="filter:hue-rotate('+RANK_HUE[rank]+'deg) saturate(1.3) drop-shadow(0 0 6px #fff8)"')+'>'}
+function rankBadge(rank){const key='adventurer_rank_'+rank;return '<img src="'+(AURL[key]||'assets/'+key+'.webp')+'" alt="'+adventurerTitle(rank)+' 휘장">'}
 function playPromotion(rank){
  promotionPlaying=true;joy.on=false;joy.x=joy.y=0;for(const key in keys)delete keys[key];
  const overlay=document.createElement('div');overlay.id='promotion-scene';overlay.className='promotion-scene';
