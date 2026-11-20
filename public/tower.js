@@ -1,6 +1,18 @@
 /* Solo tower: isolated combat state, durable pending rewards, KST tickets. */
 window.TOWER=(()=>{
  const WORLD_W=800,WORLD_H=1280;
+ // 기준층 사이의 체력·공격력은 비율로 보간해 장비 성장 구간의 난이도를 잇는다.
+ const growth=[
+  [1,55,7],[10,240,48],[20,1000,180],[30,4400,620],[40,15000,1700],
+  [50,63000,5500],[60,165000,12000],[70,420000,25000],
+  [80,950000,47000],[90,2100000,85000],[100,4500000,140000]
+ ];
+ function floorStats(f){
+  const i=growth.findIndex(row=>row[0]>=f),hi=growth[i],lo=growth[Math.max(0,i-1)];
+  const t=hi===lo?1:(f-lo[0])/(hi[0]-lo[0]);
+  const scale=k=>Math.round(lo[k]*(hi[k]/lo[k])**t);
+  return {hp:scale(1),attack:scale(2),total:13+Math.floor(f*1.35),active:8+Math.floor(f/34)};
+ }
  let visible=false,mode='lobby',floor=1,run=null,paused=false,stick=null,particles=[],selected=null;
  const root=document.createElement('section');root.id='tower-screen';root.hidden=true;root.setAttribute('aria-label','도전의 탑');$('game').appendChild(root);
  const art=k=>'assets/tower_'+k+'.webp';
@@ -23,14 +35,15 @@ window.TOWER=(()=>{
    if(enemy.hp>0)return;
    run.kills++;
    window.SFX?.play(enemy.d.boss?'kill_boss':'kill',{v:enemy.d.boss?.8:.45,x:enemy.x,y:enemy.y});
- });Object.assign(run,{floor:f,time:30,spawned:0,total:12+f*2,kills:0,spawn:2,age:0});
+ });Object.assign(run,floorStats(f),{floor:f,time:30,spawned:0,kills:0,spawn:2,age:0});
  Object.assign(run.player,{x:WORLD_W/2,y:WORLD_H*.69,hp:ST.maxhp,walk:0,dir:-Math.PI/2});mode='battle';paused=false;root.dataset.mode='battle';root.innerHTML='<canvas id="tw-canvas"></canvas><div id="tw-ready" class="tw-ready">2</div><div class="tw-battle-head"><b>'+f+'층</b><div><strong id="tw-count"></strong><i><em id="tw-progress"></em></i><span id="tw-time">30</span></div><button data-t="pause" aria-label="일시정지">Ⅱ</button></div><div class="tw-health"><span id="tw-hp"></span><i><em id="tw-hpbar"></em></i></div><div class="tw-bag">가방 ∞<small>골드·보석·주문서 보상</small></div>';bindCanvas();save()}
  function spawn(){
   const r=run,f=r.floor,boss=r.spawned===r.total-1;
-  const hp=Math.round(55*1.18**(f-1)*(boss?9:1)),angle=Math.random()*TAU,h=r.player;
-  const x=clamp(h.x+Math.cos(angle)*220,28,WORLD_W-28),y=clamp(h.y+Math.sin(angle)*250,95,WORLD_H-70);
+  const hp=Math.round(r.hp*(boss?8+f*.035:1)),angle=Math.random()*TAU,h=r.player;
+  const distance=boss?145:225;
+  const x=clamp(h.x+Math.cos(angle)*distance,28,WORLD_W-28),y=clamp(h.y+Math.sin(angle)*distance,95,WORLD_H-70);
   r.enemies.push({x,y,z:0,hp,dead:false,sprite:'tower_mon_'+(boss?monster(f):(monster(f)+1)%6),
-   d:{r:boss?38:21,hp,boss,n:f+'층 수호자'},cd:.7,hitT:0,spawnT:.3,ph:Math.random()*TAU,speed:boss?36:47+f*.25});
+   d:{r:boss?38:21,hp,boss,n:f+'층 수호자'},cd:.7,hitT:0,spawnT:.3,ph:Math.random()*TAU,speed:boss?52+f*.20:47+f*.25});
   r.spawned++;
  }
  function tick(dt){
@@ -41,7 +54,7 @@ window.TOWER=(()=>{
   r.time=Math.max(0,r.time-(Math.max(0,r.age-2)-Math.max(0,oldAge-2)));
   const ready=document.getElementById('tw-ready');
   ready.hidden=r.age>=2;ready.textContent=Math.max(1,Math.ceil(2-r.age));
-  r.spawn-=dt;h.hp=Math.min(ST.maxhp,h.hp+ST.regen*dt);
+  r.spawn=Math.max(-dt,r.spawn-dt);h.hp=Math.min(ST.maxhp,h.hp+ST.regen*dt);
   let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
   if(stick){dx=stick.dx;dy=stick.dy}
   const len=Math.hypot(dx,dy);h.moving=len>.08;
@@ -50,8 +63,8 @@ window.TOWER=(()=>{
    h.x=clamp(h.x+dx*v,22,WORLD_W-22);h.y=clamp(h.y+dy*v,80,WORLD_H-60);
    h.walk+=dt*11*Math.min(1.5,ST.spd/190);if(h.swingT<=0)h.dir=Math.atan2(dy,dx);
   }
-  if(r.age+1e-8>=2&&r.spawn<=1e-8&&r.spawned<r.total&&r.enemies.length<8){
-   spawn();r.spawn=Math.min(.45,22/r.total);
+  if(r.age+1e-8>=2&&r.spawn<=1e-8&&r.spawned<r.total&&r.enemies.length<r.active){
+   spawn();r.spawn+=Math.min(.45,20/(r.total-1));
   }
   withArenaCombat(r,()=>{
    for(const m of r.enemies){
@@ -61,7 +74,7 @@ window.TOWER=(()=>{
     if(d>26){m.x+=(h.x-m.x)/d*m.speed*dt;m.y+=(h.y-m.y)/d*m.speed*dt}
     else if(m.cd<=0){
      m.cd=.85;
-     const damage=Math.round((5+r.floor*2)*1.1**(r.floor-1)*(m.d.boss?2:1));
+     const damage=Math.round(r.attack*(m.d.boss?2:1));
      h.hp-=damage;h.hitT=.2;window.SFX?.play(h.hp<=0?'die':'hurt',{v:.6,gap:.25});num(h.x,h.y-56,'-'+fmt(damage),'#ff6b6b');
     }
    }

@@ -52,11 +52,15 @@ window.WeaponSkillFX = (() => {
     }
   }
 
-  function illustrated(c, f, p) {
+  function illustrated(c, f, p, compact) {
     const myth = f.grade === 6, size = (myth ? 265 : 208) * (f.third ? .60 : 1);
     const kind = f.third ? 'third' : 'skill';
     const paint = (x,y,a,s,opacity=1,stretch=1) =>
       sprite(c,f.type,f.grade,kind,x,y,a,s*size,opacity,stretch);
+    if(compact&&!f.third){
+      paint(0,-12,f.type==='axe'?p*TAU*2:0,.7+ease(p)*.37);
+      return;
+    }
     if (f.third) {
       const thrust = ['spear','bow','gun'].includes(f.type);
       paint(thrust?size*p*.62:0,0,0,.72+ease(p)*.45);
@@ -127,7 +131,7 @@ window.WeaponSkillFX = (() => {
     fxs.push({weaponSkill:true,type,grade,t,T:t,x:anchor.x,y:anchor.y-(ground?0:18),angle:directed?angle:0,follow:type==='axe'});
   }
 
-  function draw(c, f, player) {
+  function draw(c, f, player, compact = false) {
     const p=1-f.t/f.T;
     c.save();
     c.translate(f.follow?player.x:f.x,f.follow?player.y-18:f.y);
@@ -135,7 +139,7 @@ window.WeaponSkillFX = (() => {
     c.globalAlpha=Math.min(1,.2+p*12,(1-p)*5)*.9;
     c.lineJoin='round'; c.lineCap='round';
     if(f.grade===4)legendary(c,f,p);
-    else illustrated(c,f,p);
+    else illustrated(c,f,p,compact);
     c.restore();
   }
   function projectile(c, shot) {
