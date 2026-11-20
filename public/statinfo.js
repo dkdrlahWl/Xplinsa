@@ -118,6 +118,41 @@
     q('#asN').addEventListener('input', () => { const n = N(); q('#asN').value = n ? n.toLocaleString('ko-KR') : ''; sync() });
     form();
   }
+  // 전체 우편: 멘트 + 보상 여러 개 → 모든 유저 우편함으로
+  async function adminMailAll() {
+    const items = {}; let res = 'gem', busy = false, review = false;
+    const d = document.createElement('div'); d.id = 'admSend';
+    d.innerHTML = `<div class="sp" style="width:min(94vw,400px);max-height:88vh;overflow:auto"><div class="sph"><b>📮 전체 우편</b><button class="spx">✕</button></div>
+      <div id="amForm"><div class="sps" style="margin-top:0">우편 내용 (최대 80자)</div><textarea id="amMsg" maxlength="80" rows="2" placeholder="예) 점검 보상이에요! 즐거운 모험 되세요"></textarea>
+      <div class="sps">보상 (없어도 됨) · 재화 고르고 수량 넣고 추가</div><div class="as-res">${SEND.filter(([k]) => k !== 'lv').map(([k, n]) => `<button type="button" data-res="${k}">${sIcon(k)}<span>${n}</span></button>`).join('')}</div>
+      <div class="am-add"><input id="amN" inputmode="numeric" placeholder="수량" autocomplete="off"><button type="button" class="btn" id="amAdd">추가</button></div>
+      <div id="amList"></div></div><div id="asReview" hidden></div><div id="asSt"></div>
+      <div class="as-act"><button type="button" class="btn" id="asBack" hidden>뒤로</button><button type="button" class="btn" id="asGo" disabled>우편 내용 확인</button></div></div>`;
+    document.body.appendChild(d);
+    const q = s => d.querySelector(s), N = () => Number(q('#amN').value.replace(/[^0-9]/g, '')) || 0, msg = () => q('#amMsg').value.trim();
+    const list = () => Object.entries(items).map(([k, n]) => `<span class="am-it" data-del="${k}">${sIcon(k)} ${SN[k]} ${n.toLocaleString('ko-KR')} ✕</span>`).join('');
+    const sync = () => { d.querySelectorAll('[data-res]').forEach(b => b.classList.toggle('on', b.dataset.res === res)); q('#amList').innerHTML = list() || '<small>보상 없음 (멘트만)</small>'; q('#asGo').disabled = busy || !msg() };
+    const form = () => { review = false; q('#amForm').hidden = false; q('#asReview').hidden = true; q('#asBack').hidden = true; q('#asGo').textContent = '우편 내용 확인'; sync() };
+    d.addEventListener('click', async e => {
+      if (e.target === d || e.target.closest('.spx')) { if (!busy) d.remove(); return }
+      const r = e.target.closest('[data-res]'); if (r) { res = r.dataset.res; sync(); q('#amN').focus(); return }
+      const del = e.target.closest('[data-del]'); if (del) { delete items[del.dataset.del]; sync(); return }
+      if (e.target.closest('#amAdd')) { const n = N(); if (n >= 1) { items[res] = n; q('#amN').value = '' } sync(); return }
+      if (e.target.closest('#asBack')) { if (!busy) form(); return }
+      if (!e.target.closest('#asGo') || q('#asGo').disabled) return;
+      if (!review) { review = true; q('#amForm').hidden = true; q('#asReview').hidden = false; q('#asBack').hidden = false; q('#asGo').textContent = '전체 발송';
+        q('#asReview').innerHTML = `<b>모든 유저</b> 우편함에 보냅니다.<br>📮 ${msg().replace(/[<>&]/g, '')}<br>${list().replace(/ ✕/g, '') || '<small>보상 없음</small>'}`; return }
+      busy = true; sync(); q('#asSt').textContent = '보내는 중…';
+      const k = await fetch('/api/admmail', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok || ''), msg: msg(), items }) }).then(r => r.json()).catch(() => ({ err: '연결이 끊겼어요. 다시 보내기 전에 우편이 갔는지 확인해 주세요.' }));
+      busy = false;
+      if (k.ok) { toast(`우편 ${k.cnt}명에게 보냈어요!`); for (const x in items) delete items[x]; q('#amMsg').value = ''; form(); q('#asSt').textContent = `✔ ${k.cnt}명에게 보냈어요` }
+      else { q('#asSt').textContent = k.err || '보내지 못했어요'; sync() }
+    });
+    q('#amMsg').addEventListener('input', sync);
+    q('#amN').addEventListener('input', () => { const n = N(); q('#amN').value = n ? n.toLocaleString('ko-KR') : '' });
+    q('#amN').addEventListener('keydown', e => { if (e.key === 'Enter') q('#amAdd').click() });
+    form();
+  }
   const sendCss = document.createElement('style'); sendCss.textContent = `
 #admSend{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(15,12,29,.6);font-family:Jua,sans-serif}
 #admSend .sp{background:#2b2546;border:4px solid #1c1830;border-radius:18px;padding:12px 14px 14px;color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.35)}
@@ -139,8 +174,12 @@
 #admSend #asReview :is(img,svg){display:inline-block;width:22px;height:22px;vertical-align:-5px}
 #admSend #asReview small{color:#cfc8ee}
 #admSend #asSt{min-height:20px;margin-top:8px;color:#ffe066;font-size:13px;text-align:center}
+#admSend textarea{width:100%;box-sizing:border-box;border:2px solid #1c1830;border-radius:10px;background:#1c1830;color:#fff;font:inherit;font-size:15px;padding:8px 10px;resize:none}
+#admSend .am-add{display:flex;gap:6px;margin-top:6px}#admSend .am-add input{flex:1}#admSend .am-add .btn{flex:0 0 80px}
+#admSend #amList{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;color:#cfc8ee}#admSend .am-it{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:10px;background:#6b5a2b;border:2px solid #ffd23c;font-size:13px;cursor:pointer}#admSend .am-it :is(img,svg){width:18px;height:18px}
+#admSend #asReview span{display:inline-flex;align-items:center;gap:3px;margin:2px 4px}#admSend #asReview span :is(img,svg){width:18px;height:18px}
 #admSend .as-act{display:flex;gap:6px;margin-top:6px}#admSend .as-act .btn{flex:1}`; document.head.appendChild(sendCss);
-  draw = function () { const r = _draw2.apply(this, arguments); if (panel === 'admin' && window.IS_ADMIN && !document.getElementById('admUsersBtn')) { const b = document.createElement('button'); b.id = 'admUsersBtn'; b.className = 'btn'; b.textContent = '👥 유저 현황 (대장간 레벨 등)'; b.style.cssText = 'width:100%;margin:0 0 10px'; b.onclick = adminUsers; const s = document.createElement('button'); s.id = 'admSendBtn'; s.className = 'btn'; s.textContent = '💸 재화 송금 (모든 재화·열쇠)'; s.style.cssText = 'width:100%;margin:0 0 10px'; s.onclick = adminSend; $('mbody').prepend(b, s) } return r };
+  draw = function () { const r = _draw2.apply(this, arguments); if (panel === 'admin' && window.IS_ADMIN && !document.getElementById('admUsersBtn')) { const b = document.createElement('button'); b.id = 'admUsersBtn'; b.className = 'btn'; b.textContent = '👥 유저 현황 (대장간 레벨 등)'; b.style.cssText = 'width:100%;margin:0 0 10px'; b.onclick = adminUsers; const s = document.createElement('button'); s.id = 'admSendBtn'; s.className = 'btn'; s.textContent = '💸 재화 송금 (모든 재화·열쇠)'; s.style.cssText = 'width:100%;margin:0 0 10px'; s.onclick = adminSend; const m = document.createElement('button'); m.id = 'admMailBtn'; m.className = 'btn'; m.textContent = '📮 전체 우편 (멘트 + 보상)'; m.style.cssText = 'width:100%;margin:0 0 10px'; m.onclick = adminMailAll; $('mbody').prepend(b, s, m) } return r };
   const _act = act;
   act = function (a) { if (a === 'powinfo') { show(); return } return _act.apply(this, arguments) };
 })();

@@ -136,6 +136,17 @@ const server = http.createServer(async (req, res) => {
       const list = Object.values(db.users).filter(x => x.save).map(x => { const s = x.save; return { id: x.id, n: x.nick || x.id, scr: s.scr || 0, tw: (s.tower && s.tower.clear) || 0, lv: s.lv || 0, smith: (s.step || 0) + 1, sxp: s.sxp || 0, ch: s.ch || 1, promo: s.promotion || 0, cry: s.cry || 0, gold: s.gold || 0, gem: s.gem || 0, on: clients.has(x.id) }; }).sort((a, b) => b.smith - a.smith || b.lv - a.lv);
       return send(res, 200, { list });
     }
+    if (p === '/api/admmail') { // 관리자 전용: 모든 유저 우편함에 멘트 + 보상 보내기
+      if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
+      const msg = String(b.msg || '').replace(/[<>]/g, '').trim().slice(0, 80);
+      if (!msg) return send(res, 400, { err: '우편 내용을 써 주세요' });
+      const m = { t: '📮 ' + msg }, items = b.items || {};
+      for (const k of SEND_RES) { const n = Math.floor(Number(items[k])); if (n >= 1 && n <= 1e15) m[k] = n; }
+      for (const k of SEND_KEYS) { const n = Math.floor(Number(items[k])); if (n >= 1 && n <= 10000) (m.keys = m.keys || {})[k] = n; }
+      let cnt = 0;
+      for (const x of Object.values(db.users)) { if (x.id === u.id || !x.nick) continue; (mk.mail[x.id] = mk.mail[x.id] || []).push({ ...m, keys: m.keys && { ...m.keys } }); cnt++; mailPing(x.id); }
+      saveMk(); return send(res, 200, { ok: 1, cnt });
+    }
     if (p === '/api/admsend') { // 관리자 전용 송금: 고른 유저 우편함으로 재화·열쇠 보냄 (실시간 알림)
       if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
       const to = db.users[String(b.to || '')], r = String(b.res || ''), n = Math.floor(Number(b.n));

@@ -13,7 +13,9 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .hud{position:absolute;pointer-events:none;z-index:2}
 .ts{text-shadow:-1.5px -1.5px 0 #1c1830,1.5px -1.5px 0 #1c1830,-1.5px 1.5px 0 #1c1830,1.5px 1.5px 0 #1c1830,0 2.5px 0 #1c1830}
 #top{top:10px;left:8px;right:8px;display:flex;gap:6px;align-items:center}
-#lvbox{display:flex;align-items:center;flex:1.5;min-width:0}
+#lvbox{position:relative;display:flex;align-items:center;flex:1.5;min-width:0}
+#wkxp{position:absolute;left:62px;top:calc(100% + 6px);z-index:3;padding:2px 9px;border:2px solid #1c1830;border-radius:10px;background:linear-gradient(#ff8a3d,#e8504a);color:#fff;font-size:12px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 0 #1c1830;animation:wkp 1.6s ease-in-out infinite}
+#wkxp[hidden]{display:none}@keyframes wkp{50%{transform:scale(1.06)}}
 #lv{width:38px;height:38px;flex:none;background:#3a3550;border:3px solid #1c1830;border-radius:9px;transform:rotate(45deg);display:grid;place-items:center;z-index:1}
 #lv b{transform:rotate(-45deg);font-size:17px;font-weight:400}
 #xpbar{position:relative;flex:1;height:26px;margin-left:-12px;background:#1c1830cc;border-radius:0 13px 13px 0;overflow:hidden;min-width:0}
@@ -424,7 +426,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 <div id="game">
   <canvas id="cv"></canvas>
   <div id="top" class="hud ts">
-    <div id="lvbox"><div id="lv"><b id="lvn">1</b></div><div id="xpbar"><div id="xpfill"></div><div id="xptxt"></div></div></div>
+    <div id="lvbox"><span id="wkxp" hidden>🔥 주말 경험치 2배</span><div id="lv"><b id="lvn">1</b></div><div id="xpbar"><div id="xpfill"></div><div id="xptxt"></div></div></div>
     <div class="pill"><span data-ic="gold"></span><span id="cGold">0</span></div>
     <div class="pill"><span data-ic="gem"></span><span id="cGem">0</span></div>
     <div class="pill"><span data-ic="cry"></span><span id="cCry">0</span></div>
@@ -1335,8 +1337,10 @@ function sqCheck(){if(S.sq.g>=sqG()){S.sq.g=0;S.sq.gi++;toast('임무 완료! '+
 function qlv(){const q=Q[S.q];if(q&&((q.type==='up'&&(S.qp>=q.need||(UP[q.key]&&(S.up[q.key]||0)>=UP[q.key].max)))||(q.type==='lv'&&S.lv>=q.need)||(q.type==='build'&&S.built[q.key])))qdone()}
 function drop(x,y,kind,v){const a=rnd(0,TAU),s=rnd(60,150);drops.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,t:0,kind,v})}
 function dmg(m,d,crit,quiet){if(m.dead)return;m.myT=performance.now();if(window.SFX&&!quiet){const t=wType();SFX.weapon(t,true,{v:crit?.54:.42,x:m.x,y:m.y})}const h0=m.hp;m.hp-=d;if(ST.ls&&quiet!==1)P.hp=Math.min(ST.maxhp,P.hp+Math.max(0,Math.min(d,h0))*ST.ls);m.hitT=.15;m.agg=true;IF('atk_hit',{x:m.x+rnd(-6,6),y:m.y-m.d.r*1.1+rnd(-6,6),t:.16,s0:16,s1:30,rot:rnd(0,6)});num(m.x,m.y-m.d.r*2-6,fmt(d),crit?'#ffd93c':'#fff',crit);if(combatArena){combatArena.hit(m,d);if(m.hp<=0)m.dead=true;return}if(m.d.boss&&window.NET&&NET.on()){NET.hit(m,d);if(m.hp<1)m.hp=1}else if(m.hp<=0)kill(m)}
+// 주말(한국 시간 토·일) 경험치 2배 이벤트
+function isWeekend(){const d=new Date(Date.now()+9*3600e3).getUTCDay();return d===0||d===6}function wkXp(){return isWeekend()?2:1}
 function kill(m){if(m.dead)return;const d=m.d;window.SFX&&SFX.play(d.boss?'kill_boss':'kill',{v:d.boss?1:.5,x:m.x,y:m.y});if(!combatArena&&d.c2ch){const sc=d.boss?(Math.random()<.3?Math.max(1,Math.round((6+Math.max(0,ZS.indexOf(ZS[m.z])))*.3)):0):d.elite?2:d.chest?3:d.cry===3&&!d.boss&&!d.elite?1:Math.random()<.02?1:0;if(sc){S.scl=(S.scl||0)+sc;num(m.x,m.y-d.r*2-30,'용의 비늘 +'+sc,'#ff8a4a')}}const book=collectionState();book.monsters[m.type]=(book.monsters[m.type]||0)+1;m.dead=true;if(d.boss)refreshBossMapMarker(m);m.respT=d.resp;m.slam=null;fxs.push({x:m.x,y:m.y-d.r,t:.3,r:d.r*2.2,c:'#fff'});
- const n=d.boss?10:d.elite?5:Math.min(3,d.xp);for(let i=0;i<n;i++)drop(m.x,m.y,'xp',d.xp/n*(1+(heroOf().fx.xp||0)+(window.PET?PET.b('xp'):0)));
+ const n=d.boss?10:d.elite?5:Math.min(3,d.xp);for(let i=0;i<n;i++)drop(m.x,m.y,'xp',d.xp/n*(1+(heroOf().fx.xp||0)+(window.PET?PET.b('xp'):0))*wkXp());
  const g=d.boss?8:d.elite?4:1;for(let i=0;i<g;i++)drop(m.x,m.y,'gold',d.gold/g*(1+(heroOf().fx.gold||0)+(window.PET?PET.b('gold'):0)));
  for(const k of['orb','cry','gem','rb','scr'])for(let i=0;i<(d[k]||0);i++)drop(m.x,m.y,k,1);if(d.boss){trackTask('boss');if(m.type===ZS[m.z].boss){S.stageClears=S.stageClears||{};S.stageClears[m.z]=true;toast('지역 대장보스 격파! 지도에서 보석 보상을 받으세요')}S.bk[m.z]=1;if(m.type===ZS[m.z].boss&&Math.random()<.2){S.keys=S.keys||{};S.keys.b1=(S.keys.b1||0)+1;num(m.x,m.y-d.r*2-80,'🔑 초보자 상자 열쇠 획득!','#7be36a',true);save()}S.bossKills=S.bossKills||{};S.bossKills[m.type]=(S.bossKills[m.type]||0)+1;}if(d.chest)qev('chest',null,1);
  qev('kill',m.type,1);if(window.PET)PET.onKill(m);if(d.boss)save()}
@@ -2082,7 +2086,7 @@ const nowT=performance.now();let g=null;for(const m of mons)if(m.d.boss&&!m.dead
 /* ---------- HUD ---------- */
 const cache={};function setT(id,v){if(cache[id]!==v){cache[id]=v;$(id).textContent=v}}
 function afford(c){return S.gold>=c.gold&&(!c.scl||(S.scl||0)>=c.scl)&&(!c.orb||S.orb>=c.orb)&&(!c.rb||S.rb>=c.rb)&&(!c.scr||S.scr>=c.scr)}
-function hud(){
+function hud(){{const w=document.getElementById("wkxp");if(w)w.hidden=!isWeekend()}
  refreshRewardNotices();
  setT('lvn',S.lv);setT('xptxt',(Math.floor(clamp(S.xp/need(S.lv),0,1)*1000)/10).toFixed(1)+'%');const w=Math.round(clamp(S.xp/need(S.lv),0,1)*100)+'%';if(cache.xw!==w){cache.xw=w;$('xpfill').style.width=w}
  setT('cGold',fmt(S.gold));setT('cGem',fmt(S.gem));setT('cCry',fmt(S.cry));
@@ -2589,7 +2593,7 @@ qlv();loadAssets();requestAnimationFrame(frame);
 <script src="events.js?v=1"></script>
 <script src="talent.js?v=4"></script>
 <script src="pass.js?v=10"></script>
-<script src="statinfo.js?v=7"></script>
+<script src="statinfo.js?v=8"></script>
 <script src="mailbox.js?v=5"></script>
 <script src="sfx.js?v=6"></script>
 </body>
