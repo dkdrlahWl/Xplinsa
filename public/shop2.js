@@ -72,6 +72,25 @@
 .s2vip li .vi{flex:0 0 30px;height:30px}.s2vip li .vi>img,.s2vip li .vi>svg{width:100%;height:100%;object-fit:contain}
 .s2vip li b{color:#ffe066;font-weight:normal}
 .s2pack.vip .stat{font-size:13px;color:#cfc8ee;margin:2px 0 4px}
+.s2car{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:10px;margin:0 0 4px;overscroll-behavior-x:contain}
+.s2car::-webkit-scrollbar{display:none}
+.s2car>.s2pack{flex:0 0 100%;scroll-snap-align:center;margin:0}
+.s2dots{display:flex;justify-content:center;gap:8px;margin:6px 0 12px}
+.s2dots button{width:10px;height:10px;padding:0;border-radius:50%;border:2px solid #1c1830;background:#6b6488;cursor:pointer;transition:width .2s,background .2s}
+.s2dots button.on{width:24px;border-radius:6px;background:#ffd23c}
+.s2pack.mc{background:linear-gradient(160deg,#c2306e,#5a1240);color:#fff}
+.s2pack.mc .art{background:radial-gradient(circle at 50% 50%,rgba(255,200,240,.35),transparent 65%)}
+.s2pack.mc .art>img{animation:mcf 2.4s ease-in-out infinite}
+@keyframes mcf{50%{transform:translateY(-4px) rotate(-2deg)}}
+.s2pack.mc .stat{font-size:13px;color:#ffd6ea;margin:2px 0 4px}
+.s2pack.mc .stat b{color:#7dff6a;font-weight:normal}
+.s2pack.mc .s2vip li{background:rgba(0,0,0,.3)}
+.s2pack.mc .s2vip li .vi{display:grid;place-items:center;font-size:20px}
+.s2pack.mc .mctot{display:inline-block;margin:2px 0 4px;padding:2px 12px;border-radius:10px;background:#ffe066;color:#5a1240;font-size:14px;border:2px solid #1c1830}
+.s2pack.mc .mctot :is(img,svg){width:16px;height:16px;vertical-align:-3px}
+.s2pack.mc .mcbar{height:8px;margin:4px 2px 2px;border-radius:5px;background:rgba(0,0,0,.35);overflow:hidden}
+.s2pack.mc .mcbar i{display:block;height:100%;background:linear-gradient(90deg,#ff8ad0,#ffe066)}
+.s2pack.mc .buy{background:linear-gradient(#ff6fb4,#d0307a)}
 `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -193,15 +212,52 @@
         <li><span class="vi">${featureImage('exchange')}</span><span>교환소 무료 <b>3회</b> / 일</span></li>
       </ul></div>
       <button class="buy" data-a="buyvip" ${S.gem < VIP_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(VIP_PRICE)}${on ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
+    const mc = mcState(), left = mc.left || 0, gotToday = left > 0 && mc.last === kstDay();
+    const card = `<div class="s2pack mc"><div class="val">${Math.round(MC_TOTAL / MC_PRICE * 100)}%<small>가치</small></div><div class="art">${img('pack_monthly', AURL.shop_vip)}</div>
+      <div class="body"><h3>월정액 보석 카드</h3><div class="stat">${left > 0 ? '이용 중 · <b>' + left + '일 남음</b>' + (gotToday ? ' · 오늘 받음 ✔' : '') : '구매 즉시 + 30일 동안 매일 지급'}</div>
+      <ul class="s2vip">
+        <li><span class="vi">${IC.gem}</span><span>구매 즉시 보석 <b>${MC_NOW}</b></span></li>
+        <li><span class="vi">📅</span><span>매일 보석 <b>${MC_DAY}</b> × <b>${MC_DAYS}일</b></span></li>
+      </ul><div class="mctot">총 ${IC.gem} ${fmt(MC_TOTAL)}</div>${left > 0 ? `<div class="mcbar"><i style="width:${Math.round((MC_DAYS - Math.min(MC_DAYS, left)) / MC_DAYS * 100)}%"></i></div>` : ''}</div>
+      <button class="buy" data-a="buymc" ${S.gem < MC_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(MC_PRICE)}${left > 0 ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
     const next = STAGEP.find(p => !ps[p.id]);
     const stage = next ? packHTML(next, '스테이지 ' + (next.stage + 1) + ' 패키지', '', img('pack_stage', AURL.shop_chest3), '1회 구매 가능', stageClear(next.stage) ? '' : '스테이지 ' + (next.stage + 1) + ' <b>보스 처치</b> 시 해금') : '<div class="s2note">스테이지 패키지를 모두 구매했어요</div>';
     const upg = ps.upgrade ? '' : `<div class="s2head ts">무기 업그레이드 팩</div>` + packHTML(UPG, '무기 업그레이드 팩', '', img('pack_upgrade', 'assets/icon_anvil.webp'), '1회 구매 가능', S.lv >= 15 ? '' : '<b>Lv.15</b> 달성 시 해금');
     const wk = packHTML(WEEK, '주간 탐험 패키지', 'wk', img('pack_weekly', AURL.shop_petbox), '이번 주 ' + (1 - (ps.weekly || 0)) + '/1', ps.weekly ? '이번 주 구매 완료' : '');
     return `<div class="s2ban">${img('shop_banner_special', AURL.shop_banner)}</div><div class="s2rib ts">• 스페셜 •</div>
-      <div class="s2head ts">VIP 멤버십</div>${vip}
+      <div class="s2head ts">VIP 멤버십 · 월정액</div><div class="s2car" id="s2car">${vip}${card}</div><div class="s2dots" id="s2dots"><button class="on" data-slide="0" aria-label="VIP"></button><button data-slide="1" aria-label="월정액 카드"></button></div>
       <div class="s2head ts">스테이지 패키지</div>${stage}${upg}
       <div class="s2head ts">주간 패키지</div>${wk}`;
   }
+  // 월정액 보석 카드: 1200 → 즉시 200 + 30일 동안 매일 100 (못 들어온 날 것도 다음 접속 때 몰아서)
+  const MC_PRICE = 1200, MC_NOW = 200, MC_DAY = 100, MC_DAYS = 30, MC_TOTAL = MC_NOW + MC_DAY * MC_DAYS;
+  const kstDay = () => Math.floor((Date.now() + 9 * 3600e3) / 86400e3);
+  const mcState = () => S.mc = S.mc || { left: 0, last: 0 };
+  function mcClaim() {
+    if (typeof S === 'undefined' || !S) return; const mc = mcState(); if (!(mc.left > 0)) return;
+    const today = kstDay(), n = Math.min(mc.left, Math.max(0, today - (mc.last || today - 1))); if (n <= 0) return;
+    mc.left -= n; mc.last = today; S.gem += MC_DAY * n; save();
+    window.rewardFly && rewardFly({ gem: MC_DAY * n }); window.SFX && SFX.play('gem', { v: .6 });
+    window.showBanner && showBanner('💎 월정액 보석 카드', '보석 ' + fmt(MC_DAY * n) + '개 지급' + (n > 1 ? ' (' + n + '일치)' : '') + ' · ' + mc.left + '일 남음');
+    if (panel === 'benefits') draw();
+  }
+  function mcBuy() {
+    if (S.gem < MC_PRICE) { toast('보석이 부족해요'); return }
+    const mc = mcState(), fresh = !(mc.left > 0);
+    S.gem -= MC_PRICE; S.gem += MC_NOW; mc.left = (mc.left || 0) + MC_DAYS; if (fresh) mc.last = kstDay() - 1;
+    save(); toast('월정액 보석 카드 구매! 보석 ' + MC_NOW + '개 즉시 지급'); window.rewardFly && rewardFly({ gem: MC_NOW });
+    mcClaim();
+  }
+  setTimeout(mcClaim, 2500); setInterval(mcClaim, 30000);
+  // VIP ↔ 월정액 카드 좌우 넘기기 + 점 표시
+  function carBind() {
+    const car = document.getElementById('s2car'), dots = document.getElementById('s2dots'); if (!car || car.dataset.b) return; car.dataset.b = 1;
+    const set = () => { const i = Math.round(car.scrollLeft / Math.max(1, car.clientWidth)); dots.querySelectorAll('button').forEach((b, j) => b.classList.toggle('on', j === i)); carIdx = i };
+    car.addEventListener('scroll', set, { passive: true });
+    dots.addEventListener('click', e => { const b = e.target.closest('[data-slide]'); if (b) car.scrollTo({ left: +b.dataset.slide * car.clientWidth, behavior: 'smooth' }) });
+    if (carIdx) { car.scrollLeft = carIdx * car.clientWidth; set() }
+  }
+  let carIdx = 0;
   function packBuy(id) {
     const ps = packState(), p = id === 'upgrade' ? UPG : id === 'weekly' ? WEEK : STAGEP.find(x => x.id === id); if (!p) return;
     if (id === 'weekly' ? ps.weekly : ps[id]) return;
@@ -244,6 +300,7 @@
     if (panel === 'daily') { const B = $('mbody'), F = $('mfoot'); $('mtitle').textContent = '상점 · 충전'; cur(['gem', 'gold']); B.innerHTML = dailyPanel(); F.innerHTML = shopTabs('daily'); queueMicrotask(() => refreshRewardNotices(true)); return }
     const r = _draw.apply(this, arguments);
     if (panel === 'benefits') $('mtitle').textContent = '상점 · 스페셜';
+    carBind();
     return r;
   };
   const _act = act;
@@ -253,6 +310,7 @@
     if (k === 'sdbuy') { dailyBuy(+v); draw(); return }
     if (k === 'sdref') { const d = dstate(); if (d.ref >= MAXREF) return; d.ref++; d.items = genList(); d.sold = []; d.buys = 0; save(); toast('상품 목록을 새로고침했어요'); draw(); return }
     if (k === 'spack') { packBuy(v); draw(); return }
+    if (k === 'buymc') { mcBuy(); draw(); return }
     if (k === 'buyvip') { const was = vipActive(), r = _act.apply(this, arguments); if (!was && vipActive() && S.tower) { S.tower.tickets = (S.tower.tickets || 0) + 1; save() } return r }
     return _act.apply(this, arguments);
   };

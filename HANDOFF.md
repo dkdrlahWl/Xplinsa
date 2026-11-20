@@ -150,4 +150,5 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 - 방치 귀환: 방향키·조이스틱 입력 없이 30분(IDLE_HOME) 지나면 필드(기지 밖, 탑·레이드·방어전 제외)에서 모닥불로 자동 이동 + 배너. P.idleAt(Date 기준)이라 앱 내려놨다 와도 적용.
 - 관리자 송금에 '레벨 설정'(res=lv): 서버 기록 lv=n, xp=0, rev+1 → 접속 중이면 WS {t:'admset'}로 index 거쳐 다시 불러옴.
 - 관리자 "📮 전체 우편": 멘트(80자) + 보상 여러 개(재화·열쇠) → /api/admmail(ehgus만)이 닉네임 있는 모든 유저 mk.mail에 넣고 mailPing. 제목은 '📮 '+멘트.
-- 주말 경험치 2배: isWeekend()(KST 토·일) → kill()의 경험치 드랍 ×wkXp(). 주말엔 레벨바 아래 "🔥 주말 경험치 2배" 표시(#wkxp, hud()에서 토글).
+- 주말 경험치 2배: isWeekend()(KST 토·일) → kill()의 경험치 드랍 ×wkXp() — 보스(월드보스 포함) 제외, 일반·정예 몬스터만. 주말엔 레벨바 아래 "🔥 주말 경험치 2배" 표시(#wkxp, hud()에서 토글).
+- 월정액 보석 카드(shop2.js): 1200 → 즉시 200 + 30일 매일 100(S.mc={left,last}, KST 날짜, 못 들어온 날 몰아서, 이용 중 구매 시 +30일). 스페셜 탭 VIP 카드와 좌우 스와이프(scroll-snap) + 점 2개. 그림 pack_monthly.webp(manifest 추가).
