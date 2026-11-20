@@ -409,6 +409,17 @@ window.MOUNT = (() => {
   function card(r, big) { const m = r.m, tag = r.nw ? '<i class="gnew">NEW</i>' : r.up ? '<i class="gnew" style="background:#ffb020">★' + r.up + '</i>' : r.gem ? '<i class="gnew" style="background:#5ab4ff">보석+' + r.gem + '</i>' : '';
     return '<div class="gc gcb gb' + r.g + (r.g >= 3 ? ' hi' + r.g : '') + (big ? ' big' : '') + '" data-g="' + r.g + '"><img src="' + url(m.k) + '" style="transform:none;width:86%;height:58%;margin-top:6px"><span class="gg ts">' + GN[r.g] + '</span><span class="gn ts">' + m.n + '</span>' + tag + '</div>' }
   function admin() { st(); for (const m of MS) st()[m.k] = { st: MAXST }; S.mount = 'griffin'; calc(); save(); bSig = '' }
+  // PC: 스페이스바로 언제든 타기/내리기 (입력창에 글 쓰는 중·창 열려 있을 땐 무시)
+  const typing = e => { const t = e.target; return t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) };
+  addEventListener('keydown', e => {
+    if (e.code !== 'Space' && e.key !== ' ') return;
+    if (typing(e)) return;
+    e.preventDefault();
+    if (e.repeat || (typeof panel !== 'undefined' && panel) || document.querySelector('dialog[open]')) return;
+    if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    toggle();
+  }, true);
+  addEventListener('keyup', e => { if ((e.code === 'Space' || e.key === ' ') && !typing(e)) e.preventDefault() }, true);
   return { MS, BY, apply, riding, toggle, update, riderDraw, drawFx, rollBox, card, panel: panelHTML, act, admin, url, get key() { return riding() ? S.mount : '' } };
 })();
 // 그리기 감싸기: 탄 상태면 탈것 위에 캐릭터를 올려 그림(내 캐릭터·다른 유저 모두)
