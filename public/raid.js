@@ -5,14 +5,24 @@ window.RAID = (() => {
   const NAMES = ['빙결 여제', '염옥 마신', '뇌신 골렘', '심연의 괴수'], FLOOR = ['#a9d6ea', '#4a2620', '#55576e', '#251d3a'];
   // 혼자 기준 능력치 (하루 3시간 성장 계산으로 맞춤)
   const bossHp = lv => Math.round(4.5e7 * Math.pow(1.22, lv - 1)), bossAtk = lv => Math.round(1e5 * Math.pow(1.15, lv - 1));
-  const rw = lv => ({ myth: 2 + Math.floor(lv / 3), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
+  // 보스마다 주 보상이 다름 (주 보상은 조금 많이, 나머지는 적게) — 0 빙결: 신화석 / 1 염옥: 용의 비늘 / 2 뇌신: 금화+크리스탈 / 3 심연: 보석+주문서
+  const FOCUS = ['신화석', '용의 비늘', '금화 · 크리스탈', '보석 · 주문서'];
+  const rw = (lv, b = 0) => {
+    const base = { myth: 2 + Math.floor(lv / 3), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 }, lo = v => Math.max(1, Math.round(v * .4));
+    const r = { myth: lo(base.myth), gem: lo(base.gem), scl: lo(base.scl), goldK: lo(base.goldK), cry: 0, scr: 0 };
+    if (b === 0) r.myth = Math.round(base.myth * 1.3);
+    else if (b === 1) r.scl = Math.round(base.scl * 1.5);
+    else if (b === 2) { r.goldK = Math.round(base.goldK * 1.5); r.cry = 5 + lv; }
+    else { r.gem = Math.round(base.gem * 1.5); r.scr = 10 + lv * 2; }
+    return r;
+  };
   const root = document.createElement('section'); root.id = 'raid-screen'; root.hidden = true; $('game').appendChild(root);
   let visible = false, mode = 'lobby', run = null, arena = null, boss = null, pointer = null, selBoss = 0, selLv = 1, floorPat = null, floorKey = '';
   let surface = null, renderElapsed = 0, hudElapsed = 0;
   const RENDER_INTERVAL = 1 / 30, HUD_INTERVAL = .1;
   const btn = (a, label, dis = false) => '<button type="button" data-raid="' + a + '"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
   const topGold = () => MT[ZS[topZone()].m[0]].gold;
-  const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>' + (window.PET && S.raidEggDay !== today() ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알(오늘 첫 클리어)</span>' : '');
+  const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>' + (r.cry ? '<span>' + IC.cry + ' ' + r.cry + '</span>' : '') + (r.scr ? '<span>' + IC.scr + ' ' + r.scr + '</span>' : '') + (window.PET && S.raidEggDay !== today() ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알(오늘 첫 클리어)</span>' : '');
   function st() { const day = calendarKey(); const r = S.raid || (S.raid = { day, wins: 0, best: [0, 0, 0, 0] }); if (r.day !== day) { r.day = day; r.wins = 0; } if (!Array.isArray(r.best)) r.best = [0, 0, 0, 0]; return r; }
   const left = () => Math.max(0, DAILY - st().wins);
   function lobby() {
@@ -22,7 +32,7 @@ window.RAID = (() => {
     const best = st().best, max = (best[selBoss] || 0) + 1, remaining = left();
     selLv = clamp(selLv, 1, max);
     const cards = NAMES.map((name, i) =>
-      `<button type="button" class="raid-pick raid-pick-${i}" data-raid="boss" data-b="${i}" aria-pressed="${i === selBoss}"><span><b>${name}</b><small>${best[i] ? '최고 Lv.' + best[i] : '미격파'}</small></span></button>`
+      `<button type="button" class="raid-pick raid-pick-${i}" data-raid="boss" data-b="${i}" aria-pressed="${i === selBoss}"><span><b>${name}</b><small>${best[i] ? '최고 Lv.' + best[i] : '미격파'}</small><small class="raid-focus">${FOCUS[i]} ↑</small></span></button>`
     ).join('');
     root.innerHTML = `<header class="raid-header"><h1>보스 레이드</h1>${btn('exit', '닫기')}</header>
       <main class="raid-scroll">
@@ -34,7 +44,7 @@ window.RAID = (() => {
             <div class="raid-stat-row"><b>보스</b><span>체력 <strong>${fmt(bossHp(selLv))}</strong></span><span>공격 <strong>${fmt(bossAtk(selLv))}</strong></span></div>
             <div class="raid-stat-row"><b>나</b><span>체력 <strong>${fmt(ST.maxhp)}</strong></span><span>공격 <strong>${fmt(ST.atk)}</strong></span></div>
           </section>
-          <section class="raid-rewards"><h2>${remaining ? '클리어 보상' : '오늘 보상 소진'}</h2>${remaining ? '<div class="raid-reward-items">' + items(rw(selLv)) + '</div>' : '<p>연습 모드로 계속 도전할 수 있어요. 연습 클리어는 단계가 오르지 않아요.</p>'}</section>
+          <section class="raid-rewards"><h2>${remaining ? '클리어 보상' : '오늘 보상 소진'}</h2>${remaining ? '<div class="raid-reward-items">' + items(rw(selLv, selBoss)) + '</div>' : '<p>연습 모드로 계속 도전할 수 있어요. 연습 클리어는 단계가 오르지 않아요.</p>'}</section>
           <p class="raid-rules">1인 도전 · 제한 시간 ${TIME}초 · 붉은 장판을 피해요</p>
         </div>
       </main>
@@ -65,7 +75,7 @@ window.RAID = (() => {
     c.onpointerup = c.onpointercancel = c.onlostpointercapture = e => { if (pointer?.id === e.pointerId) pointer = null; };
   }
   function finish(win) {
-    mode = 'result'; const r = run, s = st(), got = win && s.wins < DAILY ? rw(r.lv) : null;
+    mode = 'result'; const r = run, s = st(), got = win && s.wins < DAILY ? rw(r.lv, r.b) : null;
     if (win) {
       if (got) { s.wins++; if (r.lv > (s.best[r.b] || 0)) s.best[r.b] = r.lv; }
       const bk = collectionState(); bk.monsters['raid' + r.b] = (bk.monsters['raid' + r.b] || 0) + 1; S.bossKills = S.bossKills || {}; S.bossKills['raid' + r.b] = (S.bossKills['raid' + r.b] || 0) + 1;
@@ -154,7 +164,7 @@ window.RAID = (() => {
     else if (a === 'lvm') { selLv--; lobby(); } else if (a === 'lvp') { selLv++; lobby(); }
     else if (a === 'start') start();
     else if (a === 'again') lobby();
-    else if (a === 'claim' && run?.reward) { const r = run.reward; run.reward = null; markRewardOrigin(c); give({ myth: r.myth, scl: r.scl, gem: r.gem, gold: r.goldK * topGold() }); if (window.PET && S.raidEggDay !== today()) { S.raidEggDay = today(); PET.egg('raid') } save(); c.remove(); }
+    else if (a === 'claim' && run?.reward) { const r = run.reward; run.reward = null; markRewardOrigin(c); give({ myth: r.myth, scl: r.scl, gem: r.gem, gold: r.goldK * topGold(), ...(r.cry ? { cry: r.cry } : {}), ...(r.scr ? { scr: r.scr } : {}) }); if (window.PET && S.raidEggDay !== today()) { S.raidEggDay = today(); PET.egg('raid') } save(); c.remove(); }
   });
   function tick(dt) {
     if (!visible || mode !== 'battle' || !run) return;
