@@ -122,9 +122,10 @@ window.RAID = (() => {
     if (!surface?.ctx || !arena) return;
     const { canvas: c, ctx: g } = surface;
     const w = c.clientWidth, h = c.clientHeight; if (!w || !h) return;
-    const dp = Math.min(1.25, devicePixelRatio || 1); if (c.width !== Math.round(w * dp) || c.height !== Math.round(h * dp)) { c.width = Math.round(w * dp); c.height = Math.round(h * dp); }
-    const zoom = w / 470, sc = zoom * dp, p = arena.player, vw = w / zoom, vh = h / zoom;
+    const dp = Math.max(.75, Math.min(1.25, devicePixelRatio || 1, Math.sqrt(3.6e6 / (w * h)))); if (c.width !== Math.round(w * dp) || c.height !== Math.round(h * dp)) { c.width = Math.round(w * dp); c.height = Math.round(h * dp); }
+    const zoom = Math.max((window.viewZoom ? viewZoom(w, h, 470) : w / 470), h / H), sc = zoom * dp, p = arena.player, vw = w / zoom, vh = h / zoom;
     const follow = (v, s, view) => view >= s ? s / 2 : clamp(v, view / 2, s - view / 2), cx = follow(p.x, W, vw), cy = follow(p.y - 20, H, vh);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#1c1830'; g.fillRect(0, 0, c.width, c.height);
     g.setTransform(sc, 0, 0, sc, c.width / 2 - cx * sc, c.height / 2 - cy * sc);
     const fl = AI('raid_floor_' + run.b);
     if (fl) { const fk = run.b + ':' + c.width; if (!floorPat || floorKey !== fk) { floorPat = g.createPattern(fl, 'repeat'); floorKey = fk; } g.fillStyle = floorPat; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); } else { g.fillStyle = FLOOR[run.b]; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); }

@@ -10,6 +10,11 @@
 html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',system-ui,sans-serif;color:#fff}
 #game{position:relative;width:100%;max-width:480px;height:100vh;height:100dvh;margin:0 auto;overflow:hidden;background:#5a9c4a}
 #cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+/* 넓은 화면(PC): 게임 화면을 꽉 채우고 UI는 화면 크기에 맞춰 키움 */
+body.wide #game{max-width:none}
+body.wide :is(#top,#menu,#quests,#lb,#bar,#bagw,#toast){zoom:var(--uiz,1)}
+body.wide #top{right:auto;width:560px}
+body.wide #modal{left:0;right:0;width:560px;margin:0 auto;zoom:var(--uiz,1);border-left:3px solid #1c1830;border-right:3px solid #1c1830;box-shadow:0 0 0 100vmax rgba(10,8,20,.55)}
 .hud{position:absolute;pointer-events:none;z-index:2}
 .ts{text-shadow:-1.5px -1.5px 0 #1c1830,1.5px -1.5px 0 #1c1830,-1.5px 1.5px 0 #1c1830,1.5px 1.5px 0 #1c1830,0 2.5px 0 #1c1830}
 #top{top:10px;left:8px;right:8px;display:flex;gap:6px;align-items:center}
@@ -1562,7 +1567,16 @@ const IDLE_HOME=30*60e3;function update(dt){T+=dt;ambSfx(dt);if(P.recall){if(P.d
 
 /* ---------- render ---------- */
 let cw=400,ch=800,sc=1,dpr=1;const cam={x:P.x,y:P.y};
-function resize(){const g=$('game');cw=g.clientWidth||400;ch=g.clientHeight||800;dpr=Math.min(window.devicePixelRatio||1,1.5);cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);sc=cw/430}
+// 화면 비율별 시야: 세로(폰)는 가로폭 기준 그대로, 가로로 넓은 화면(PC·태블릿)은 세로 높이 기준으로 맞춰 양옆으로 더 넓게 보임
+// FHD·QHD·4K 상관없이 같은 높이 비율이면 같은 시야, 너무 넓은 울트라와이드는 최대 시야 제한
+function isWide(w,h){return w/h>.75}
+function viewZoom(w,h,ref){ref=ref||430;return isWide(w,h)?Math.max(h/(ref*2.05),w/(ref*4.2)):w/ref}
+window.viewZoom=viewZoom;
+function resize(){const wide=isWide(innerWidth,innerHeight);document.body.classList.toggle('wide',wide);
+ document.documentElement.style.setProperty('--uiz',wide?String(Math.min(1.6,Math.max(1,innerHeight/950))):'1');
+ const g=$('game');cw=g.clientWidth||400;ch=g.clientHeight||800;
+ dpr=Math.min(window.devicePixelRatio||1,1.5,Math.sqrt(3.6e6/Math.max(1,cw*ch)));dpr=Math.max(dpr,.75);
+ cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);sc=viewZoom(cw,ch,430)}
 window.addEventListener('resize',resize);resize();
 const OLC='rgba(30,22,46,.62)';
 const LTC=new Map();function lt(c,a){const k=c+a;let v=LTC.get(k);if(v)return v;const n=parseInt(c.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;if(a>0){r+=(255-r)*a;g+=(255-g)*a;b+=(255-b)*a}else{r*=1+a;g*=1+a;b*=1+a}v='rgb('+(r|0)+','+(g|0)+','+(b|0)+')';LTC.set(k,v);return v}
@@ -2583,9 +2597,9 @@ window.__G={WW,WH,CX,CY,gz,ZC,buyBox,BOX,useSkill,openPop,renderPop,gptGuide,AI,
 qlv();loadAssets();requestAnimationFrame(frame);
 </script>
 <script src="emotes.js?v=2"></script>
-<script src="tower.js?v=9"></script>
-<script src="defense.js?v=11"></script>
-<script src="raid.js?v=13"></script>
+<script src="tower.js?v=10"></script>
+<script src="defense.js?v=12"></script>
+<script src="raid.js?v=14"></script>
 <script src="pet.js?v=11"></script>
 <script src="mount.js?v=27"></script>
 <script src="unlock.js?v=4"></script>

@@ -245,11 +245,11 @@ window.DEFENSE = (() => {
     if (!canvas || !state) return;
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
-    const dp = Math.min(2, devicePixelRatio || 1);
+    const dp = Math.max(.75, Math.min(2, devicePixelRatio || 1, Math.sqrt(3.6e6 / (w * h))));
     if (canvas.width !== Math.round(w * dp) || canvas.height !== Math.round(h * dp)) {
       canvas.width = Math.round(w * dp); canvas.height = Math.round(h * dp);
     }
-    const g = canvas.getContext('2d'), zoom=Math.max(w/430,h/HEIGHT), scale=zoom*dp;
+    const g = canvas.getContext('2d'), zoom=Math.max(window.viewZoom?viewZoom(w,h,430):w/430,h/HEIGHT), scale=zoom*dp;
     const time=performance.now(), alive=new Set();
     function smooth(key, entity){
       alive.add(key);

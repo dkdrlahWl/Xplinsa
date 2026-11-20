@@ -112,13 +112,14 @@ window.TOWER=(()=>{
   if(!run||mode!=='battle')return;
   const c=document.getElementById('tw-canvas'),w=c.clientWidth,h=c.clientHeight;
   if(!w||!h)return;
-  const dp=Math.min(2,window.devicePixelRatio||1);
+  const dp=Math.max(.75,Math.min(2,window.devicePixelRatio||1,Math.sqrt(3.6e6/(w*h))));
   const pxW=Math.round(w*dp),pxH=Math.round(h*dp);
   if(c.width!==pxW||c.height!==pxH){c.width=pxW;c.height=pxH}
   const g=c.getContext('2d'),r=run,hero=r.player;
-  const zoom=Math.max(w/430,h/WORLD_H),scale=zoom*dp;
+  const zoom=Math.max(window.viewZoom?viewZoom(w,h,430):w/430,h/WORLD_H),scale=zoom*dp;
   const vw=w/zoom,vh=h/zoom;
-  const cx=clamp(hero.x,vw/2,WORLD_W-vw/2),cy=clamp(hero.y-20,vh/2,WORLD_H-vh/2);
+  const fol=(v,s,view)=>view>=s?s/2:clamp(v,view/2,s-view/2),cx=fol(hero.x,WORLD_W,vw),cy=fol(hero.y-20,WORLD_H,vh); // 넓은 화면: 탑이 화면보다 좁으면 가운데 정렬
+  g.setTransform(1,0,0,1,0,0);g.fillStyle='#1c1830';g.fillRect(0,0,pxW,pxH);
   g.setTransform(scale,0,0,scale,pxW/2-cx*scale,pxH/2-cy*scale);
   drawArenaGround(g,WORLD_W,WORLD_H,'tile_4','#525365',false);
   withArenaCombat(r,()=>{
