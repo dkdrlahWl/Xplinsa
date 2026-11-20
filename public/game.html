@@ -412,6 +412,7 @@ html,body{height:100%;background:#1c1830;overflow:hidden;font-family:'Jua',syste
 .map-boss.world{border-color:#d2b9ff;background:#38245d}
 .mapw>.map-player{z-index:4}
 .map-boss-caption{min-height:1.4em;text-align:center;color:#ffe1a4;margin:4px 0;font-size:13px}
+.promo-req{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin:8px 4px 10px;font-size:14px}.promo-req span{background:#2e2a48;border:2px solid #1c1830;border-radius:10px;padding:3px 9px}
 </style>
 <link rel="stylesheet" href="tower.css?v=40">
 <link rel="stylesheet" href="defense.css?v=3">
@@ -1023,17 +1024,25 @@ function exchangePanel(){
  const rows=exchangeOffers();
  return '<div class="feature-head">'+featureImage('exchange')+'<div><b>재화 교환</b><small>무료 골드 = 현재 가방 용량 × 0.75 (소수점 버림)<br>무료 교환은 재화별 하루 '+(vipActive()?'3회 (VIP)':'1회 · VIP 3회')+'</small></div></div><div class="exchange-grid">'+rows.map(([kind,amount,cost],index)=>{const remaining=cost?0:freeExchangeRemaining(kind),used=!cost&&remaining===0;return '<button class="collection-item" data-a="exchange:'+index+'" '+(used||S.gem<cost?'disabled':'')+'>'+IC[kind]+'<strong>'+fmt(amount)+'</strong><small>'+(cost?'보석 '+cost:used?'오늘 수령 완료':'무료 받기 · '+remaining+'회 남음')+'</small></button>'}).join('')+'</div>';
 }
-function promotionRank(){return clamp(Math.floor(Number(S.promotion)||0),0,5)}
+const PROMO_MAX=10;
+function promotionRank(){return clamp(Math.floor(Number(S.promotion)||0),0,PROMO_MAX)}
+// 승급 조건: 1~5차는 기존 그대로, 6~10차는 2챕 보스 처치 + 오브·무지개 오브까지 필요한 어려운 조건
+const PROMO_HARD={6:{lv:55,gold:3e6,orb:300,rb:0,boss:'c2kraken'},7:{lv:65,gold:1e7,orb:600,rb:100,boss:'c2hydra'},8:{lv:75,gold:3e7,orb:1000,rb:250,boss:'c2crysk'},9:{lv:85,gold:8e7,orb:1600,rb:500,boss:'c2storm'},10:{lv:95,gold:2e8,orb:2500,rb:1000,boss:'c2dragon'}};
+const PROMO_BOSSN={c2kraken:'크라켄',c2hydra:'늪 히드라',c2crysk:'수정 거인',c2storm:'폭풍 군주',c2dragon:'용왕'};
+function promoReq(r){return PROMO_HARD[r]||{lv:r*10,gold:5000*r*r,orb:0,rb:0,boss:null}}
+function promoChecks(r){const q=promoReq(r),L=[['Lv.'+q.lv,S.lv>=q.lv],['금화 '+fmt(q.gold),S.gold>=q.gold]];if(q.orb)L.push(['오브 '+fmt(q.orb),(S.orb||0)>=q.orb]);if(q.rb)L.push(['무지개 오브 '+fmt(q.rb),(S.rb||0)>=q.rb]);if(q.boss)L.push([(PROMO_BOSSN[q.boss]||q.boss)+' 처치 (2챕)',!!(S.bossKills||{})[q.boss]]);return L}
+function promoReady(r){return promoChecks(r).every(c=>c[1])}
 function specialUnlocked(key){const rank=promotionRank(),requirement=SPU[key].rank||0;return rank>=requirement}
-const SPECIAL_LEVEL_CAPS=[5,10,20,30,40,50];
+const SPECIAL_LEVEL_CAPS=[5,10,20,30,40,50,55,60,65,70,75];
 function specialLevelCap(rank=promotionRank()){return SPECIAL_LEVEL_CAPS[rank]}
 function specialLevel(key){return clamp(Math.floor(Number(S.sp?.[key])||0),0,specialLevelCap())}
 function specialPercent(level,key){const v=(Math.min(10,level)+2*Math.max(0,level-10))/10;return key==='ls'?Math.round(v*4)/10:v}
 function specialBonus(key){return specialUnlocked(key)?specialPercent(specialLevel(key),key)/100:0}
-const ADVENTURER_TITLES=['초보 모험가','견습 탐험가','숙련 탐험가','정예 모험가','영웅 모험가','전설의 모험가'];
+const ADVENTURER_TITLES=['초보 모험가','견습 탐험가','숙련 탐험가','정예 모험가','영웅 모험가','전설의 모험가','신화의 모험가','초월자','별의 수호자','천상의 영웅','링구의 전설'];
 let promotionPlaying=false;
 function adventurerTitle(rank=promotionRank()){return ADVENTURER_TITLES[rank]||ADVENTURER_TITLES[0]}
-function rankBadge(rank){return '<img src="assets/adventurer_rank_'+rank+'.webp" alt="'+adventurerTitle(rank)+' 휘장">'}
+const RANK_HUE=[0,0,0,0,0,0,200,280,170,320,40];
+function rankBadge(rank){const own=AURL['adventurer_rank_'+rank];return '<img src="'+(own||'assets/adventurer_rank_'+Math.min(rank,5)+'.webp')+'" alt="'+adventurerTitle(rank)+' 휘장"'+(own||rank<=5?'':' style="filter:hue-rotate('+RANK_HUE[rank]+'deg) saturate(1.3) drop-shadow(0 0 6px #fff8)"')+'>'}
 function playPromotion(rank){
  promotionPlaying=true;joy.on=false;joy.x=joy.y=0;for(const key in keys)delete keys[key];
  const overlay=document.createElement('div');overlay.id='promotion-scene';overlay.className='promotion-scene';
@@ -1045,8 +1054,9 @@ function playPromotion(rank){
  setTimeout(()=>{button.disabled=false;button.focus()},1900);
 }
 function promotionPanel(){
- const rank=promotionRank(),cost=5000*(rank+1)**2,need=(rank+1)*10,eligible=S.lv>=need;
- return '<div class="feature-head adventurer-rank">'+rankBadge(rank)+'<div><b>'+adventurerTitle(rank)+'</b><small>승급 '+rank+' / 5 · 누적 공격력 +'+(rank*5)+'%<br>특수 능력 최대 Lv.'+specialLevelCap(rank)+(rank<5?' → Lv.'+specialLevelCap(rank+1):'')+'<br>'+(rank<5?'다음 · '+adventurerTitle(rank+1):'최고 등급 도달')+'</small></div></div><button class="growth-button" data-a="promote" '+(rank>=5||!eligible||S.gold<cost?'disabled':'')+'>'+(rank>=5?'최대 승급':'Lv.'+need+' · 금화 '+fmt(cost)+' · '+(rank+1)+'차 승급')+'</button>';
+ const rank=promotionRank(),nx=rank+1,mx=rank>=PROMO_MAX,ok=!mx&&promoReady(nx);
+ const req=mx?'':'<div class="promo-req">'+promoChecks(nx).map(([t,d])=>'<span style="color:'+(d?'#7be36a':'#ff8a7a')+'">'+(d?'✔':'✘')+' '+t+'</span>').join('')+'</div>';
+ return '<div class="feature-head adventurer-rank">'+rankBadge(rank)+'<div><b>'+adventurerTitle(rank)+'</b><small>승급 '+rank+' / '+PROMO_MAX+' · 누적 공격력 +'+(rank*5)+'%<br>특수 능력 최대 Lv.'+specialLevelCap(rank)+(!mx?' → Lv.'+specialLevelCap(nx):'')+'<br>'+(!mx?'다음 · '+adventurerTitle(nx):'최고 등급 도달')+'</small></div></div>'+req+'<button class="growth-button" data-a="promote" '+(!ok?'disabled':'')+'>'+(mx?'최대 승급':nx+'차 승급 · '+adventurerTitle(nx))+'</button>';
 }
 function featureAct(action,value){
  if(action==='collection'){panel='collection';bookFocus=null}
@@ -1097,8 +1107,8 @@ function featureAct(action,value){
   S.gem-=cost;S[key]+=amount;save();toast(RWN[key]+' '+fmt(amount)+'개 획득');
  }
  else if(action==='promote'){
-  const rank=promotionRank(),cost=5000*(rank+1)**2;if(promotionPlaying||rank>=5||S.lv<(rank+1)*10||S.gold<cost)return true;
-  S.gold-=cost;S.promotion=rank+1;calc();save();playPromotion(rank+1);
+  const rank=promotionRank(),nx=rank+1;if(promotionPlaying||rank>=PROMO_MAX||!promoReady(nx))return true;const q=promoReq(nx);
+  S.gold-=q.gold;S.orb=(S.orb||0)-q.orb;S.rb=(S.rb||0)-q.rb;S.promotion=nx;calc();save();playPromotion(nx);
  }
  else return false;
  draw();return true;
@@ -1941,7 +1951,7 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(30,22,46,.7)';ctx.lineWidth=7.5;ctx.beginPath();P.scarf.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();ctx.strokeStyle='#e8402f';ctx.lineWidth=5;ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2}
  if(P.recall&&!window.REM&&!PV){const k=1-P.recall.t/2;bar(x,y-96,54,7,k,'#7fd0ff');label('귀환 중',x,y-109,13,'#d8f9ff')}
  if(P.hitT>0){ctx.globalAlpha=.35;ell(x,y-28,17,27,'#ff5a5a',1);ctx.globalAlpha=1}
- if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0){label(adventurerTitle(rank),x+7,y-105,11,'#ffe4a2');const badge=AI('adventurer_rank_'+rank);if(badge)ctx.drawImage(badge,x-48,y-116,16,16)}}}
+ if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0){label(adventurerTitle(rank),x+7,y-105,11,'#ffe4a2');const badge=AI('adventurer_rank_'+rank)||AI('adventurer_rank_'+Math.min(rank,5));if(badge)ctx.drawImage(badge,x-48,y-116,16,16)}}}
 function crown(y){ctx.beginPath();ctx.moveTo(-14,y);ctx.lineTo(-14,y-16);ctx.lineTo(-7,y-8);ctx.lineTo(0,y-18);ctx.lineTo(7,y-8);ctx.lineTo(14,y-16);ctx.lineTo(14,y);ctx.closePath();ctx.fillStyle='#ffc93c';ctx.fill();ctx.stroke()}
 function drawMon(m){const d=m.d,x=m.x,y=m.y,r=d.r,sq=Math.sin(m.ph)*.08,hs=m.hitT>0?1.12:1,sp=m.spawnT>0?1-m.spawnT/.3:1,c=d.c,c2=d.c2,fly=d.sh==='bat'?12+Math.sin(m.ph)*4:0;let top=r*2.2;
  shadow(x,y,r*1.05);ctx.save();ctx.translate(x,y-fly);ctx.scale(hs*sp,hs*sp);
