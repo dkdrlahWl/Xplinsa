@@ -47,7 +47,7 @@
     d = document.createElement('div'); d.id = 'statpop';
     d.innerHTML = `<div class="sp"><div class="sph"><b>대장간 Lv.${st + 1}${mx ? ' (최대)' : ''}</b><button class="spx" aria-label="닫기">✕</button></div>
       <div class="sps" style="margin-top:0">${mx ? '최고 레벨이에요' : '경험치 ' + fmt(S.sxp || 0) + ' / ' + fmt(SXP[st]) + ' · 다 차면 모루를 눌러 승급 (금화 ' + fmt(SMITH_PROMOTION_GOLD[st]) + ')'}</div>
-      <div class="sps">모루 1번 = 크리스탈 5개 · 무기 제작 확률 (지금${mx ? '' : ' → 다음 레벨'})</div>${rows}
+      <div class="sps">모루 1번 = 크리스탈 ${smithCost()}개${mx?'':' (다음 레벨 '+SMITH_COST[Math.min(st+1,SMITH_COST.length-1)]+'개)'} · 무기 제작 확률 (지금${mx ? '' : ' → 다음 레벨'})</div>${rows}
       <div class="sps">같은 무기 3개를 합성하면 한 등급 위 무기가 돼요</div></div>`;
     d.addEventListener('click', e => { if (e.target === d || e.target.closest('.spx')) d.remove() });
     document.body.appendChild(d);
