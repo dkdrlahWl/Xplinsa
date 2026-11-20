@@ -2238,11 +2238,13 @@ document.addEventListener('click',event=>{
  const caption=marker.closest('.mapw').nextElementSibling;
  caption.textContent=marker.getAttribute('aria-label')+(marker.classList.contains('down')?' · 재등장 대기':'');
 });
-function mergeHint(g){return g===4&&maxMergeG()===4?'화산 군주를 처치하면 고대 합성이 열려요':g===5?(maxMergeG()<6?'챕터 2가 열리면 신화 합성이 열려요':'신화석 '+MYTH_COST+'개 필요 (보유 '+(S.myth||0)+') · 보스 레이드 보상'):''}
+function mergeHint(g){return g===4&&maxMergeG()===4?'화산 군주를 처치하면 고대 합성이 열려요':g===4?'무지개 오브 '+ANC_COST+'개 필요 (보유 '+(S.rb||0)+') · 대장 보스·교환소':g===5?(maxMergeG()<6?'챕터 2가 열리면 신화 합성이 열려요':'신화석 '+MYTH_COST+'개 필요 (보유 '+(S.myth||0)+') · 보스 레이드 보상'):''}
 // 신화: 고대 3개 + 신화석(보스 레이드 보상). 2챕이 열려야 가능
 const MYTH_COST=60;
+// 고대: 전설 3개 + 무지개 오브 (대장 보스·교환소·패스·패키지)
+const ANC_COST=40;
 function maxMergeG(){return (S.bossKills||{}).volc?(ch2Open()?6:5):4}
-function merge1(k,auto){const[t,g]=k.split('_');if(+g>=maxMergeG()||(S.weapons[k]||0)-eqFree(k)<3)return null;if(+g===5){if(auto||(S.myth||0)<MYTH_COST)return null;S.myth-=MYTH_COST}remW(k,3);const nk=t+'_'+(+g+1);addW(nk);return nk}
+function merge1(k,auto){const[t,g]=k.split('_');if(+g>=maxMergeG()||(S.weapons[k]||0)-eqFree(k)<3)return null;if(+g===5){if(auto||(S.myth||0)<MYTH_COST)return null;S.myth-=MYTH_COST}if(+g===4){if(auto||(S.rb||0)<ANC_COST)return null;S.rb-=ANC_COST}remW(k,3);const nk=t+'_'+(+g+1);addW(nk);return nk}
 function mergeFx(list){if(!list.length)return;if(window.SFX){SFX.play('anvil',{v:.7});setTimeout(()=>SFX.play('merge',{v:.8}),180);if(list.some(k=>+k.split('_')[1]>=4))setTimeout(()=>SFX.play('fanfare',{v:.7,fixed:1}),400)}let el=document.getElementById('mfx');if(!el){el=document.createElement('div');el.id='mfx';document.body.appendChild(el)}const cnt={};for(const k of list)cnt[k]=(cnt[k]||0)+1;const ks=Object.keys(cnt).sort((a,b)=>b.split('_')[1]-a.split('_')[1]).slice(0,8);
  el.innerHTML=`<div class="mfxt ts">합성 성공!</div><div class="mfxr">${ks.map((k,i)=>`<div class="mfxc gb${k.split('_')[1]}" style="animation-delay:${i*.06}s">${wIcon(k)}<b class="ts" style="color:${GR[+k.split('_')[1]].c}">${GR[+k.split('_')[1]].n}</b>${cnt[k]>1?`<i class="ts">x${cnt[k]}</i>`:''}</div>`).join('')}</div>`;el.className='';void el.offsetWidth;el.className='on';clearTimeout(el._t);el._t=setTimeout(()=>el.className='',1500)}
 function eqFree(k){return 0}
@@ -2370,7 +2372,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
  else if(panel==='heroDetail'){$('mtitle').textContent='영웅 성장';cur(['orb']);B.innerHTML=heroDetails()}
  else if(panel==='heroEffects'){$('mtitle').textContent='영웅 효과';cur(['orb']);const bonus=heroBonuses();
  B.innerHTML='<div class="note">장착 성장 · 공격력 +'+Math.round(bonus.atk*100)+'% · 체력 +'+Math.round(bonus.hp*100)+'%<br>스킬 피해 +'+Math.round(bonus.skill*100)+'% · 대기시간 -'+Math.round((1-bonus.cooldown)*100)+'%</div><div class="note">보유 영웅의 Lv.10·25·40·55·70·85·100·115 효과는 장착과 관계없이 합산돼요.</div>'+HERO.filter(h=>S.heroes[h.k]).map(h=>growthRow('star',h.n+' Lv.'+heroLevel(h.k)+' · '+heroStar(h.k)+'성 · 전체 스킬 +'+Math.max(0,Math.floor((heroLevel(h.k)+5)/15))+'%','보유',true)).join('')+'<button class="btn eq" data-a="hdetail:'+(heroFocus||S.hero)+'" style="width:100%">돌아가기</button>'}
- else if(panel==='merge'){$('mtitle').textContent='무기 합성';const mk=mergeSel,g=mk?+mk.split('_')[1]:0,ok=mk&&g<maxMergeG()&&S.weapons[mk]>=3&&(g!==5||(S.myth||0)>=MYTH_COST);cur(g===5?['myth','gold']:['gold']);
+ else if(panel==='merge'){$('mtitle').textContent='무기 합성';const mk=mergeSel,g=mk?+mk.split('_')[1]:0,ok=mk&&g<maxMergeG()&&S.weapons[mk]>=3&&(g!==5||(S.myth||0)>=MYTH_COST)&&(g!==4||(S.rb||0)>=ANC_COST);cur(g===5?['myth','gold']:g===4?['rb','gold']:['gold']);
   const cards=[];for(const k of Object.keys(S.weapons))for(let j=0;j<S.weapons[k];j++)cards.push(k);cards.sort((a,b)=>(+b.split('_')[1]-+a.split('_')[1])||(a<b?-1:1));
   B.innerHTML=`<div class="forge"><div class="fbox top ${mk?'gb'+Math.min(6,g+(g<maxMergeG()?1:0)):''}" id="fres">${mk&&g<maxMergeG()?wIcon(mk.split('_')[0]+'_'+(g+1)):mk?wIcon(mk):'+'}</div><div class="fbox bot ${mk?'gb'+g:''}">${mk?wIcon(mk):'+'}</div>
   <div style="position:absolute;left:120px;top:24px;right:12px;font-size:15px;line-height:1.5">${mk?`<b style="color:${GR[g].c}">${wName(mk)}</b> 3개<br>→ ${g<maxMergeG()?`<b style="color:${GR[g+1].c}">${wName(mk.split('_')[0]+'_'+(g+1))}</b> 1개<br><span style="font-size:12px">같은 종류 · 공격력 80~120% 무작위</span>`:'최고 등급'}<br><span style="font-size:12px">보유 ${S.weapons[mk]}개</span>${mergeHint(g)?`<br><span style="font-size:12px;color:#ffd23c">${mergeHint(g)}</span>`:''}`:'아래에서 합성할 무기를 고르세요.<br><span style="font-size:12px">같은 무기 3개 → 같은 종류 한 등급 위 무기 1개</span>'}</div></div>
