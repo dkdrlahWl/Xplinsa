@@ -159,3 +159,4 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 - UI는 --uiz = 높이/950 (1~1.6)로 zoom: #top(폭 560 왼쪽 정렬), #menu, #quests, #lb, #bar, #bagw, #toast, #modal(가운데 560px + 바깥 어둡게).
 - 캔버스 픽셀 예산 약 360만(dpr 자동 낮춤) — 메인·탑·방어전·레이드.
 - 탑·방어전·레이드도 viewZoom 사용, 경기장이 화면보다 좁으면 가운데 정렬 + 바깥 어두운 색.
+- PC 렉: 바닥 조각 캐시 12개 고정 → 넓은 화면에서 매 프레임 재생성(바닥 21ms). statinfo.js에서 groundChunk/drawGround 덮어써서 보이는 조각+여유만큼 캐시(2.6ms). game.html/net.js/index.html은 안 건드려서(/version 그대로) 접속 중 강제 새로고침 없이 다음 접속부터 적용. 나중에 game.html 고칠 때 본체에 합치기.

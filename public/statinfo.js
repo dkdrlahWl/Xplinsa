@@ -183,3 +183,24 @@
   const _act = act;
   act = function (a) { if (a === 'powinfo') { show(); return } return _act.apply(this, arguments) };
 })();
+
+// PC 넓은 화면 렉 수정: 바닥 조각 캐시가 12개로 고정이라 넓은 화면(15개 이상 보임)에서 매 프레임 바닥을 다시 그렸음
+// → 화면에 보이는 조각 수 + 여유만큼 캐시하도록 바꿈 (game.html은 안 건드려서 접속 중인 사람은 새로고침 안 됨, 다음 접속부터 적용)
+(function () {
+  if (typeof groundChunk !== 'function' || typeof drawGround !== 'function' || typeof GC_ === 'undefined') return;
+  let lim = 12;
+  const _dg = drawGround;
+  drawGround = function (x0, y0, x1, y1) {
+    lim = Math.max(12, (Math.floor(x1 / GCS) - Math.floor(x0 / GCS) + 3) * (Math.floor(y1 / GCS) - Math.floor(y0 / GCS) + 3));
+    return _dg.apply(this, arguments);
+  };
+  groundChunk = function (cx, cy, K) {
+    const key = cx + ',' + cy; let c = GC_.map.get(key);
+    if (c) { GC_.map.delete(key); GC_.map.set(key, c); return c }
+    const W = Math.ceil(GCS * K) + 2; c = document.createElement('canvas'); c.width = W; c.height = W; const g = c.getContext('2d'); if (!g) return null;
+    g.setTransform(K, 0, 0, K, -cx * GCS * K + 1, -cy * GCS * K + 1); g.lineWidth = 2.2; g.strokeStyle = OLC; g.lineJoin = 'round';
+    const old = ctx; ctx = g; try { groundStatic(cx * GCS - 4, cy * GCS - 4, (cx + 1) * GCS + 4, (cy + 1) * GCS + 4) } catch (e) { console.error(e) } ctx = old;
+    GC_.map.set(key, c); while (GC_.map.size > lim) GC_.map.delete(GC_.map.keys().next().value);
+    return c;
+  };
+})();
