@@ -162,3 +162,4 @@ XP Hero(Supercent) 방식의 2D 웹 게임. 친구 8명 멀티플레이용.
 - PC 렉: 바닥 조각 캐시 12개 고정 → 넓은 화면에서 매 프레임 재생성(바닥 21ms). statinfo.js에서 groundChunk/drawGround 덮어써서 보이는 조각+여유만큼 캐시(2.6ms). game.html/net.js/index.html은 안 건드려서(/version 그대로) 접속 중 강제 새로고침 없이 다음 접속부터 적용. 나중에 game.html 고칠 때 본체에 합치기.
 - 스페이스바 타기/내리기(mount.js 전역 keydown, 입력창·창 열림 무시, 포커스된 버튼 blur로 중복 방지).
 - 보스 레이드 보스별 주 보상(raid.js rw(lv,b)): 주 보상 ×1.3~1.5, 나머지 ×0.4. 빙결=신화석, 염옥=용의 비늘, 뇌신=금화+크리스탈(5+lv), 심연=보석+주문서(10+2lv). 카드에 '○○ ↑' 표시(raid.css).
+- 스테이지 패키지 해금: shop2.js pkgClear — 현재 챕터 stageClears 또는 S.chs[*].stageClears 아무 챕터에서 클리어했으면 해금(2챕 넘어간 유저 1챕 기록 인정).

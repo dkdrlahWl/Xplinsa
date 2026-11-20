@@ -221,7 +221,7 @@
       </ul><div class="mctot">총 ${IC.gem} ${fmt(MC_TOTAL)}</div>${left > 0 ? `<div class="mcbar"><i style="width:${Math.round((MC_DAYS - Math.min(MC_DAYS, left)) / MC_DAYS * 100)}%"></i></div>` : ''}</div>
       <button class="buy" data-a="buymc" ${S.gem < MC_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(MC_PRICE)}${left > 0 ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
     const next = STAGEP.find(p => !ps[p.id]);
-    const stage = next ? packHTML(next, '스테이지 ' + (next.stage + 1) + ' 패키지', '', img('pack_stage', AURL.shop_chest3), '1회 구매 가능', stageClear(next.stage) ? '' : '스테이지 ' + (next.stage + 1) + ' <b>보스 처치</b> 시 해금') : '<div class="s2note">스테이지 패키지를 모두 구매했어요</div>';
+    const stage = next ? packHTML(next, '스테이지 ' + (next.stage + 1) + ' 패키지', '', img('pack_stage', AURL.shop_chest3), '1회 구매 가능', pkgClear(next.stage) ? '' : '스테이지 ' + (next.stage + 1) + ' <b>보스 처치</b> 시 해금') : '<div class="s2note">스테이지 패키지를 모두 구매했어요</div>';
     const upg = ps.upgrade ? '' : `<div class="s2head ts">무기 업그레이드 팩</div>` + packHTML(UPG, '무기 업그레이드 팩', '', img('pack_upgrade', 'assets/icon_anvil.webp'), '1회 구매 가능', S.lv >= 15 ? '' : '<b>Lv.15</b> 달성 시 해금');
     const wk = packHTML(WEEK, '주간 탐험 패키지', 'wk', img('pack_weekly', AURL.shop_petbox), '이번 주 ' + (1 - (ps.weekly || 0)) + '/1', ps.weekly ? '이번 주 구매 완료' : '');
     return `<div class="s2ban">${img('shop_banner_special', AURL.shop_banner)}</div><div class="s2rib ts">• 스페셜 •</div>
@@ -258,10 +258,12 @@
     if (carIdx) { car.scrollLeft = carIdx * car.clientWidth; set() }
   }
   let carIdx = 0;
+  // 스테이지 패키지 해금: 어느 챕터에서든 그 스테이지 보스를 잡았으면 OK (2챕 넘어가도 1챕 기록 인정)
+  const pkgClear = i => stageClear(i) || Object.values(S.chs || {}).some(c => c && c.stageClears && c.stageClears[i]);
   function packBuy(id) {
     const ps = packState(), p = id === 'upgrade' ? UPG : id === 'weekly' ? WEEK : STAGEP.find(x => x.id === id); if (!p) return;
     if (id === 'weekly' ? ps.weekly : ps[id]) return;
-    if (p.stage != null && (!stageClear(p.stage) || STAGEP.find(x => !ps[x.id]) !== p)) return;
+    if (p.stage != null && (!pkgClear(p.stage) || STAGEP.find(x => !ps[x.id]) !== p)) return;
     if (id === 'upgrade' && S.lv < 15) return;
     if (S.gem < p.cost) { toast('보석이 부족해요'); return }
     S.gem -= p.cost; if (id === 'weekly') ps.weekly = 1; else ps[id] = 1;
