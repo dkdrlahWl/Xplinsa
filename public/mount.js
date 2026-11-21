@@ -32,7 +32,8 @@ window.MOUNT = (() => {
   function give(k) { const o = own(k); if (!o) { st()[k] = { st: 1 }; if (!S.mount) S.mount = k; return { nw: 1 } } if (o.st < MAXST) { o.st++; return { up: o.st } } const gm = DUPGEM[BY[k].g]; S.gem += gm; return { gem: gm } }
   function rollOf(g) { const pool = MS.filter(m => m.g === g); let r = Math.random() * pool.reduce((a, m) => a + m.w, 0), m = pool[0]; for (const q of pool) { if ((r -= q.w) <= 0) { m = q; break } } return { m, g, ...give(m.k) } }
   function pickGrade(odds) { let r = Math.random() * odds.reduce((a, v) => a + v, 0), g = 0; while (g < 4 && r >= odds[g]) { r -= odds[g]; g++ } return g }
-  function rollBox() { const bx = BOX.mount; S.pity = S.pity || {}; let g = pickGrade(bx.odds);
+  function rollBox() { if (MS.some(m => m.g === 5) && Math.random() < (window.ANC_BOX_P ?? .003)) return rollOf(5); // 0.3% 고대 탈것
+    const bx = BOX.mount; S.pity = S.pity || {}; let g = pickGrade(bx.odds);
     for (const [pg, pn] of bx.pity) { const key = 'mount_' + pg; S.pity[key] = (S.pity[key] || 0) + 1; if (g < pg && S.pity[key] >= pn) g = pg }
     for (const [pg] of bx.pity) if (g >= pg) S.pity['mount_' + pg] = 0; return rollOf(g) }
   function toggle() { st(); if (S.lv < UNLOCK) return toast('Lv.' + UNLOCK + '부터 탈 수 있어요'); if (!cur()) return toast('탈것이 없어요'); if (combatArena) return;

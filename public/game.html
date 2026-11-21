@@ -191,6 +191,11 @@ body.wide #modal{left:0;right:0;width:560px;margin:0 auto;zoom:var(--uiz,1);bord
 .sban{position:relative;height:120px;border-radius:14px;overflow:hidden;background:radial-gradient(circle at 50% 80%,#7a4a2a,#2a1a14);border:3px solid #1c1830}
 .sban img{width:100%;height:100%;object-fit:cover}.sban0{font-size:60px;text-align:center;line-height:120px}
 .srib{margin:-14px auto 10px;position:relative;width:70%;text-align:center;background:linear-gradient(#8a5a34,#5e3a1e);border:3px solid #1c1830;border-radius:10px;font-size:24px;padding:2px 0}
+.sodds.in{position:static;display:inline-grid;place-items:center;width:20px;height:20px;font-size:13px;margin-left:5px;vertical-align:middle;box-shadow:0 1px 0 #1c1830}.sbig .sbt h3{padding-right:26px}
+.sodds{position:absolute;top:6px;right:6px;z-index:3;width:26px;height:26px;padding:0;border-radius:50%;border:2px solid #1c1830;background:#ffe066;color:#1c1830;font:900 16px/1 Jua,sans-serif;box-shadow:0 2px 0 #1c1830;cursor:pointer}
+#oddsPop{position:fixed;inset:0;z-index:9600;background:rgba(15,12,29,.6);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif}
+#oddsPop .op{width:min(86vw,320px);background:#2b2546;border:4px solid #1c1830;border-radius:18px;padding:14px 16px;color:#fff}
+#oddsPop h3{margin:0 0 8px;font-size:19px;color:#ffe066;font-weight:normal}#oddsPop .or{display:flex;justify-content:space-between;padding:6px 10px;border-radius:9px;background:#3a3358;margin:4px 0;font-size:15px}#oddsPop .on2{color:#cfc8ee;font-size:12px;margin-top:8px;line-height:1.5}#oddsPop button{margin-top:10px;width:100%}
 .sbig{position:relative;display:grid;grid-template-columns:42% 58%;border:3px solid #1c1830;border-radius:16px;overflow:hidden;margin-bottom:10px;background:linear-gradient(160deg,#c56bff,#ffb84a 70%);box-shadow:inset 0 -60px 0 #7a3fd8}
 .sbig.hero{background:linear-gradient(160deg,#58c4ff,#a8f08a 75%);box-shadow:inset 0 -60px 0 #2f8a9a}
 .sbi{display:grid;place-items:center;padding:8px}.sbi img{width:100%;max-height:120px;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35));animation:bob 2s ease-in-out infinite}
@@ -1193,9 +1198,7 @@ function featureAct(action,value){
  else if(action==='chapter'){const n=+value;if(n<1||n>4||!Number.isInteger(n))return true;mapChapter=n;panel='map'}
  else if(action==='stageclaim'){
   const i=+value;if(!Number.isInteger(i)||i<0||i>=NZ||!stageClear(i)||(S.stageClaimed||{})[i])return true;
-  S.stageClaimed=S.stageClaimed||{};S.stageClaimed[i]=true;S.gem+=STAGE_GEMS[i];if(CHAP===3){
-   if(i===7)MOUNT.give('nightwolf');
-  }calc();save(true);rewardFly({gem:STAGE_GEMS[i]});toast('스테이지 '+(i+1)+' · 보석 '+STAGE_GEMS[i]+'개 획득!');
+  S.stageClaimed=S.stageClaimed||{};S.stageClaimed[i]=true;S.gem+=STAGE_GEMS[i];calc();save(true);rewardFly({gem:STAGE_GEMS[i]});toast('스테이지 '+(i+1)+' · 보석 '+STAGE_GEMS[i]+'개 획득!');
  }
  else if(action==='benefits'){panel='benefits'}
  else if(action==='buyraidvip'){window.RAID?.buyVip()}
@@ -1462,7 +1465,6 @@ function kill(m){if(m.dead)return;const d=m.d;window.SFX&&SFX.play(d.boss?'kill_
  }if(d.boss){trackTask('boss');if(m.type===ZS[m.z].boss){S.stageClears=S.stageClears||{};S.stageClears[m.z]=true;toast('지역 대장보스 격파! 지도에서 보석 보상을 받으세요')}S.bk[m.z]=1;if(m.type===ZS[m.z].boss&&Math.random()<.2){S.keys=S.keys||{};S.keys.b1=(S.keys.b1||0)+1;num(m.x,m.y-d.r*2-80,'🔑 초보자 상자 열쇠 획득!','#7be36a',true);save()}S.bossKills=S.bossKills||{};S.bossKills[m.type]=(S.bossKills[m.type]||0)+1;}if(d.chest)qev('chest',null,1);
  qev('kill',m.type,1);if(window.PET)PET.onKill(m);if(d.boss){
   if(CHAP===3&&Math.random()<.05){
-   if(m.type===ZS[7].boss&&S.mounts?.nightwolf){MOUNT.give('nightwolf');toast('야월 흑랑 추가 획득!');calc()}
   }
   save();
  }}
@@ -2299,9 +2301,15 @@ function rollBox(id){const b=BOX[id];let r=Math.random()*100,g=0;while(g<4&&r>=b
  for(const[pg,pn]of(b.pity||[])){const key=id+'_'+pg;S.pity[key]=(S.pity[key]||0)+1;if(g<pg&&S.pity[key]>=pn)g=pg}
  for(const[pg]of(b.pity||[]))if(g>=pg)S.pity[id+'_'+pg]=0;
  const ts=Object.keys(WT),k=ts[Math.floor(Math.random()*ts.length)]+'_'+g,nw=!collectionState().weapons[k];addW(k);return{k,g,nw}}
+// 상자 확률표 (! 버튼)
+const ANC_BOX=.3; // 영혼·펫·탈것 상자 고대 확률(%)
+function boxOdds(id){const b=BOX[id];if(id==='hero')return [45,30,16,7,2-ANC_BOX,ANC_BOX];if(!b||!b.odds)return null;const o=b.odds.slice(0,5);if(id==='pet'||id==='mount'){const t=o.reduce((a,v)=>a+v,0);return [...o.map(v=>v/t*(100-ANC_BOX)),ANC_BOX]}return o}
+function showOdds(id){const b=BOX[id],o=boxOdds(id);if(!o)return;document.getElementById('oddsPop')?.remove();const nm=['일반','희귀','레어','에픽','전설','고대'],f=v=>(v>=1?+v.toFixed(2):+v.toFixed(3))+'%';const d=document.createElement('div');d.id='oddsPop';
+ d.innerHTML=`<div class="op"><h3>${b.n} 확률</h3>${o.map((v,g)=>v>0?`<div class="or"><b style="color:${GCOL[g]}">${nm[g]}</b><span>${f(v)}</span></div>`:'').join('')}<div class="on2">${[...(b.pity||[]).map(([pg,pn,n])=>pn+'회 안에 '+n+' 이상 확정'),...(id==='hero'?['영웅 파편 3~20개 · 같은 등급 안에서는 영웅마다 같은 확률']:[]),...(id==='pet'?['고대 펫은 알 없이 바로 지급']:[])].join(' · ')}</div><button class="btn">닫기</button></div>`;
+ d.onclick=e=>{if(e.target===d||e.target.closest('button'))d.remove()};document.body.appendChild(d)}
 function buyBox(id,n){if(/^egg\d$/.test(id)){window.PET&&PET.hatch();return}if(id==='pet'&&window.PET&&!PET.room(n)){toast('알 가방 자리가 부족해요 ('+PET.bagN()+'/'+PET.EGG_CAP+') · 부화기에 먼저 넣어주세요');return}const b=BOX[id];let cost=n===10?b.c10:b.cost,free=false,useKey=false;if(b.free&&n===1&&S.freeDay!==today()){free=true;cost=0}S.keys=S.keys||{};if(S.key3){S.keys.b3=(S.keys.b3||0)+S.key3;S.key3=0}if(!free&&(S.keys[id]||0)>=n){useKey=true;cost=0}
  if(S.gem<cost){toast('보석이 부족해요 (보석 '+cost+')');return}S.gem-=cost;if(free)S.freeDay=today();if(useKey)S.keys[id]-=n;const res=[];
- if(id==='hero'){for(let i=0;i<n;i++){const rr=Math.random()*100,hg=rr<45?0:rr<75?1:rr<91?2:rr<98?3:ch3Open()&&rr>=99.5?5:4,pool=HERO.filter(h=>h.k!=='adv'&&h.g===hg),h=pool[Math.floor(Math.random()*pool.length)],r=Math.random(),q=r<.6?3:r<.9?6:r<.98?10:20;const nw=!S.heroes[h.k]&&!S.shards[h.k];S.shards[h.k]=(S.shards[h.k]||0)+q;res.push({h,q,g:h.g,nw})}}
+ if(id==='hero'){for(let i=0;i<n;i++){const rr=Math.random()*100,hg=rr<45?0:rr<75?1:rr<91?2:rr<98?3:rr>=99.7?5:4,pool=HERO.filter(h=>h.k!=='adv'&&h.g===hg),h=pool[Math.floor(Math.random()*pool.length)],r=Math.random(),q=r<.6?3:r<.9?6:r<.98?10:20;const nw=!S.heroes[h.k]&&!S.shards[h.k];S.shards[h.k]=(S.shards[h.k]||0)+q;res.push({h,q,g:h.g,nw})}}
  else if(id==='mount'){for(let i=0;i<n;i++)res.push(MOUNT.rollBox())}
  else if(id==='pet'){try{for(let i=0;i<n;i++)res.push(PET.rollBox())}catch(e){console.error(e);S.gem+=cost;toast('펫 알 상자 오류 · 보석을 돌려드렸어요');return}}
  else for(let i=0;i<n;i++)res.push(rollBox(id));
@@ -2569,9 +2577,9 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   <div class="note">현재 Lv.${S.lv} · 공격력 ${fmt(ST.atk)} · 체력 ${fmt(ST.maxhp)}</div>`}
  else if(panel==='shop'){$('mtitle').textContent='상점';cur(['gem','gold']);const bu=AURL.shop_banner;
   const card=(id)=>{const b=BOX[id],u=chestUrl(b),free=b.free&&S.freeDay!==today();const item=window.ShopBoxItem,itemIcon=item?.icon(id),itemName=item?.name(id)||'상자 이용권';const itemBadge=itemIcon?`<span class="shop-key-icon" aria-hidden="true">${itemIcon}</span>`:'';const pt=(b.pity||[]).map(([pg,pn,nm])=>`<div><b style="color:${GCOL[pg]}">${pn-(S.pity[id+'_'+pg]||0)}</b>회 오픈 내 <b style="color:${GCOL[pg]}">${nm}</b> 확정</div>`).join('');
-   if(b.big||id==='hero')return `<div class="sbig ${id==='hero'?'hero':''}"><div class="sbi">${u?`<img src="${u}">`:'🎁'}</div><div class="sbt"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}${(id==='hero'||id==='pet')&&ch3Open()?(id==='hero'?' · 고대 파편 0.5%':' · 고대 펫 0.5%'):''}${['hero','pet','mount'].includes(id)&&itemIcon?`<span class="shop-token-label">${itemIcon}${itemName}</span>`:''}</div>${pt?`<div class="spity">${pt}</div>`:id==='hero'?`<div class="spity">${`영웅 ${HERO.length-1}종 · 일반 45% 희귀 30% 레어 16% 에픽 7% 전설 2%<br>보유 ${Object.keys(S.heroes).length}/${HERO.length} · 제작 가능 <b style="color:#ffe066">${HERO.filter(h=>!S.heroes[h.k]&&(S.shards[h.k]||0)>=hneed(h)).length}</b>`}</div>`:''}</div>
+   if(b.big||id==='hero')return `<div class="sbig ${id==='hero'?'hero':''}"><button class="sodds" data-a="odds:${id}" aria-label="확률표">!</button><div class="sbi">${u?`<img src="${u}">`:'🎁'}</div><div class="sbt"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}${['hero','pet','mount'].includes(id)&&itemIcon?`<span class="shop-token-label">${itemIcon}${itemName}</span>`:''}</div>${pt?`<div class="spity">${pt}</div>`:id==='hero'?`<div class="spity">${`영웅 ${HERO.length-1}종 · 확률은 ! 버튼<br>보유 ${Object.keys(S.heroes).length}/${HERO.length} · 제작 가능 <b style="color:#ffe066">${HERO.filter(h=>!S.heroes[h.k]&&(S.shards[h.k]||0)>=hneed(h)).length}</b>`}</div>`:''}</div>
     ${id==='pet'&&window.PET?`<div class="spity" style="margin:4px 0 0">알 가방 <b style="color:${PET.room(10)?'#fff':'#ff8a7a'}">${PET.bagN()}/${PET.EGG_CAP}</b>${PET.room(1)?'':' · 가득 찼어요! 펫 화면 부화기에 넣어주세요'}</div>`:''}<div class="sbb"><button class="sbtn2 yel" data-a="buy:${id}|1">1개 열기<br><span>${((S.keys||{})[id]||0)>0?`${itemBadge} ${itemName} ${S.keys[id]}개`:IC.gem+b.cost}</span></button>${b.c10?`<button class="sbtn2 grn" data-a="buy:${id}|10">10개 열기<br><span>${((S.keys||{})[id]||0)>=10?`${itemBadge} ${itemName} 10개`:IC.gem+fmt(b.c10)}</span></button>`:''}</div></div>`;
-   return `<div class="shalf ${b.col}"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}</div><div class="shi">${u?`<img src="${u}">`:'🎁'}</div>${pt?`<div class="spity sm">${pt}</div>`:'<div class="spity sm">하루 1번 무료</div>'}<button class="sbtn2 grn wide" data-a="buy:${id}|1">${free?'무료 열기':((S.keys||{})[id]||0)>0?`<span>${itemBadge} ${itemName} ${S.keys[id]}개</span>`:`<span>${IC.gem}${b.cost}</span>`}</button></div>`};
+   return `<div class="shalf ${b.col}"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}<button class="sodds in" data-a="odds:${id}" aria-label="확률표">!</button></div><div class="shi">${u?`<img src="${u}">`:'🎁'}</div>${pt?`<div class="spity sm">${pt}</div>`:'<div class="spity sm">하루 1번 무료</div>'}<button class="sbtn2 grn wide" data-a="buy:${id}|1">${free?'무료 열기':((S.keys||{})[id]||0)>0?`<span>${itemBadge} ${itemName} ${S.keys[id]}개</span>`:`<span>${IC.gem}${b.cost}</span>`}</button></div>`};
   B.innerHTML=`<div class="sban">${bu?`<img src="${bu}">`:'<div class="sban0">🛒</div>'}</div><div class="srib ts">• 상자 •</div>${card('b3')}<div class="shalves">${card('b1')}${card('b2')}</div><div class="shead ts">영웅 상자</div>${card('hero')}<div class="shead ts">펫 상자</div>${card('pet')}<div class="shead ts">탈것 상자</div>${card('mount')}`;
   F.innerHTML=shopTabs(false)}
  else if(panel==='heroes'){$('mtitle').textContent='영웅';cur(['gem']);B.innerHTML=`<div class="note">영혼 파편을 모으면 영웅을 제작해요 (일반 10 · 희귀 20 · 레어 30 · 에픽 50 · 전설 80개). 파편은 상점 영혼 상자에서 나와요.</div><div class="slots">${HERO.map(h=>{const own=S.heroes[h.k],on=S.hero===h.k,u=AURL['hero_'+h.k+'_head'];return `<div class="slot hslot${on?' on':''}" data-a="hdetail:${h.k}" style="border-color:${GR[h.g].c}">${u?`<img src="${u}" class="hface">`:`<div class="hface hnone" style="background:${GR[h.g].c}33;border-color:${GR[h.g].c}">${h.n[0]}</div>`}<b style="color:${GR[h.g].c}">${GR[h.g].n}</b><b>${on?'사용 중':own?'보유':(S.shards[h.k]||0)>=hneed(h)?'제작 가능!':'파편 '+(S.shards[h.k]||0)+'/'+hneed(h)}</b>${h.n}<br>Lv.${heroLevel(h.k)} · ${heroStar(h.k)}성<br><i style="font-size:11px">${h.d}</i>${own&&!on?`<button class="btn" data-a="hero:${h.k}" style="width:100%;min-width:0;margin-top:auto;font-size:15px">장착</button>`:''}</div>`}).join('')}</div><button class="btn eq" data-a="back" style="width:100%;margin-top:8px">장비로 돌아가기</button>`}
@@ -2627,7 +2635,7 @@ function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  else if(k==='soon'){toast('준비 중이에요');return}
  if(k==='up'){const u=UP[v];if(!u)return;const l=S.up[v];if(!upOpen(v)){toast('Lv.'+UPLV[v]+'에 해금돼요');return}if(v==='triple'&&S.up.dbl<20){toast('이중 공격 Lv.20에 해금돼요');return}if(l>=u.max)return;const c=u.cost(l);if(!afford(c)){toast('재화가 부족해요');return}S.gold-=c.gold;if(c.orb)S.orb-=c.orb;if(c.rb)S.rb-=c.rb;S.up[v]++;window.SFX&&SFX.play('upgrade',{v:.6});const oh=ST.maxhp;calc();if(v==='hp')P.hp+=ST.maxhp-oh;qev('up',v,1);save()}
  else if(k==='sel'){selSlot=+v}
- else if(k==='buy'){const[id,n]=v.split('|');buyBox(id,+n);return}
+ else if(k==='odds'){showOdds(v);return}if(k==='buy'){const[id,n]=v.split('|');buyBox(id,+n);return}
  else if(k==='wp'){const[kk,si]=v.split('|');openPop(kk,+si);return}
  else if(k==='slot'){const i=+v;if(swapKey){if(i>=slotCount()){toast('Lv.'+SLOT_LV[i]+'에 열리는 슬롯이에요');return}if(swapFrom>=0){const t=S.slots[i];S.slots[i]=S.slots[swapFrom];S.slots[swapFrom]=t;toast('위치를 옮겼어요')}else if(S.weapons[swapKey]>eqCount(swapKey)){S.slots[i]=swapKey;toast(wName(swapKey)+' 장착')}else toast('남는 무기가 없어요');if(i===0)S.manual0=0;calc();save();swapKey=null;swapFrom=-1}else if(S.slots[i])openPop(S.slots[i],i);else toast('아래에서 무기를 눌러 장착하세요')}
  else if(k==='slk'){toast('Lv.'+SLOT_LV[+v]+'에 열려요');return}
@@ -2748,8 +2756,8 @@ loadAssets();requestAnimationFrame(frame);
 <script src="tower.js?v=12"></script>
 <script src="defense.js?v=13"></script>
 <script src="raid.js?v=15"></script>
-<script src="pet.js?v=13"></script>
-<script src="mount.js?v=29"></script>
+<script src="pet.js?v=14"></script>
+<script src="mount.js?v=30"></script>
 <script src="unlock.js?v=5"></script>
 <script>if(window.saveReady){if(questSaveNeeded)save();qlv()}</script>
 <script src="shop2.js?v=9"></script>
