@@ -36,9 +36,9 @@ function chapterThreeMonsters(mt) {
   mt[z.e]={...mt.c2dknight,img:'c2dknight',n:z.n+' 무사대장',lv:z.req+4,hp:Math.round(mt.c2dknight.hp*2*scale),
    atk:Math.round(base.atk*1.12*scale),xp:Math.round(NEEDF(z.req)*.09),gold:gold*8};
   mt[z.boss]={...base,img:CHAPTER_THREE[i][4],n:CHAPTER_THREE[i][3],lv:z.req+8,hp:Math.round(base.hp*2.4*scale),
-   atk:Math.round(base.atk*2.1*1.29**i),xp:Math.round(NEEDF(z.req)*.8),gold:gold*110,gem:120+20*i,rb:8+2*i};
+   atk:Math.round(base.atk*2.1*1.29**i),xp:Math.round(NEEDF(z.req)*.8),gold:gold*110,gem:(3+i)*4,rb:8+2*i}; // 보석: 2챕 기준(나중에 /4 → 3~10개)
   mt[z.boss2]={...mt[z.boss],img:'c2dknight',n:z.n+' 수문장',hp:Math.round(mt[z.boss].hp*.65),
-   atk:Math.round(mt[z.boss].atk*.8),gold:gold*70,gem:80+12*i,rb:4+i};
+   atk:Math.round(mt[z.boss].atk*.8),gold:gold*70,gem:(3+i)*4,rb:4+i};
   mt[z.ch]={...mt.c2chest5,img:'chest6',lv:z.req,hp:Math.round(mt.c2chest5.hp*2*scale),gold:gold*20};
   mt[p+'crys']={...mt[z.m[0]],img:'crys0',n:'수정 슬라임',hp:mt[z.m[0]].hp*2,cry:3};
  });
