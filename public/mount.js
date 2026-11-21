@@ -13,9 +13,9 @@ window.MOUNT = (() => {
     ['bigfrog', '왕개구리', 2, '#4ac860', 345, 'water', 20], ['whitehorse', '백마', 2, '#f4f0ea', 350, 'shine', 18], ['saber', '검치호', 2, '#e8a040', 360, 'sand', 13], ['goldstag', '황금뿔 수사슴', 2, '#c8963a', 365, 'gold', 10],
     ['crystalbear', '수정 곰', 3, '#9ad0ff', 400, 'frost', 28], ['frostwolf', '서리 늑대', 3, '#d8f0ff', 405, 'frost', 25], ['reindeer', '얼음 순록', 3, '#8fd8ff', 410, 'frost', 22],
     ['lion', '화염 사자', 3, '#ff8a3a', 410, 'fire', 22], ['nightmare', '그림자 말', 3, '#5a3a8a', 420, 'shadow', 16], ['lavadrake', '용암 도마뱀', 3, '#ff5a2a', 425, 'fire', 12], ['pegasus', '페가수스', 3, '#ffffff', 430, 'feather', 9],
-    ['nightwolf', '야월 흑랑', 5, '#986cdd', 560, 'shadow', 1],
     ['whitetiger', '백호왕', 4, '#f4f4ff', 480, 'storm', 25], ['stardeer', '별빛 사슴', 4, '#a8b8ff', 485, 'star', 22], ['kirin', '번개 기린', 4, '#4ad8c8', 490, 'storm', 20],
     ['phoenixsteed', '불사조 말', 4, '#ff7a2a', 495, 'fire', 15], ['griffin', '황금 그리핀', 4, '#ffc83c', 500, 'gfeather', 12], ['seraph', '천상의 천마', 4, '#fff6d8', 510, 'gfeather', 8], ['dragon', '붉은 용', 4, '#e83a3a', 520, 'fire', 6],
+    ['nightwolf', '야월 흑랑', 5, '#986cdd', 560, 'shadow', 1],
   ];
 
   const MS = L.map(([k, n, g, c, sp, fx, w]) => ({ k, n, g, c, sp, fx, w }));
@@ -41,7 +41,7 @@ window.MOUNT = (() => {
   // 그림 부품: mount_<키>_body(다리 없는 몸·머리·꼬리·안장, 오른쪽 보기), mount_<키>_leg(다리 1개, 위=몸에 붙는 쪽), 날개 달린 건 mount_<키>_wing(위=어깨)
   // RIG: 다리 붙는 위치(몸통 그림 비율 x,y), 다리 길이(몸 폭 비율), 안장(비율), 걸음 폭, 날개
   const RIG = {
-    nightwolf: { fl: [.71,.77], bl: [.33,.76], leg:.40, seat:[.49,.31], amp:.62 },
+    nightwolf: { fl: [.71,.77], bl: [.33,.76], leg:.40, seat:[.35,.46], amp:.62 },
     pony: { fl: [.66, .86], bl: [.27, .80], leg: .38, seat: [0.48, 0.54], amp: .55 },
     boar: { fl: [.66, .82], bl: [.26, .86], leg: .28, seat: [0.37, 0.39], amp: .6 },
     wolf: { fl: [.66, .80], bl: [.25, .82], leg: .38, seat: [0.41, 0.45], amp: .65 },
@@ -343,7 +343,7 @@ window.MOUNT = (() => {
     if (P.moving) {
       F.gT -= dt;
       if (m.g >= 4 && F.gT <= 0) { F.gT = .13; F.ghosts.push({ x: P.x, y: P.y, f: Math.cos(P.dir) >= 0 ? 1 : -1, ph: F.ph, side: F.side, l: 1 }) }
-      const n = dt * [10, 14, 18, 24, 30][m.g], col = FXC[m.fx] || '#ffffff';
+      const n = dt * [10, 14, 18, 24, 30, 34][m.g], col = FXC[m.fx] || '#ffffff';
       if (Math.random() < n) F.parts.push({ x: P.x - Math.cos(P.dir) * 26 + rnd(-10, 10), y: P.y + rnd(-4, 4), vx: -Math.cos(P.dir) * rnd(20, 60), vy: rnd(-30, -6), l: rnd(.35, .6), c: col, r: m.g >= 2 ? rnd(2.5, 4.5) : rnd(4, 7), glow: m.g >= 2, fx: m.fx, spin: rnd(-4, 4) })
     }
     for (let i = F.ghosts.length - 1; i >= 0; i--) { F.ghosts[i].l -= dt * 4; if (F.ghosts[i].l <= 0) F.ghosts.splice(i, 1) }

@@ -9,7 +9,7 @@ window.WeaponSkillFX = (() => {
   const gold = new Image();
   gold.src = 'assets/weapon_skill_4.webp?v=1';
   atlases['4skill'] = gold;
-  for (const grade of [5,6]) for (const kind of ['skill','third']) {
+  for (const grade of [5,6,7]) for (const kind of ['skill','third']) {
     const image = new Image();
     image.src = `assets/weapon_${kind}_${grade}.webp?v=2`;
     atlases[grade + kind] = image;
@@ -53,7 +53,7 @@ window.WeaponSkillFX = (() => {
   }
 
   function illustrated(c, f, p, compact) {
-    const myth = f.grade === 6, size = (myth ? 265 : 208) * (f.third ? .60 : 1);
+    const myth = f.grade >= 6, size = (f.grade === 7 ? 280 : myth ? 265 : 208) * (f.third ? .60 : 1);
     const kind = f.third ? 'third' : 'skill';
     const paint = (x,y,a,s,opacity=1,stretch=1) =>
       sprite(c,f.type,f.grade,kind,x,y,a,s*size,opacity,stretch);
@@ -90,7 +90,7 @@ window.WeaponSkillFX = (() => {
       case 'bow':
         for(let i=0;i<(myth?7:5);i++){
           const q=phase(p,i*.048,.62), x=(i-(myth?3:2))*38;
-          if(q>0)paint(x,-182*(1-q),Math.PI*.43,.46+q*.12,1-q*.48);
+          if(q>0)paint(x,-182*(1-q),f.grade===7?0:Math.PI*.43,.46+q*.12,1-q*.48);
         }
         break;
       case 'gun':
@@ -117,18 +117,22 @@ window.WeaponSkillFX = (() => {
 
   function add(fxs, type, grade, player, target, angle, third = false) {
     if (grade === 4 && ['sword','bow','gun'].includes(type)) return;
-    const t=third?(type==='staff'?.56:.38):durations[grade][type];
+    const t=third?(type==='staff'?.56:.38):durations[Math.min(grade,6)][type];
     if(third) {
       const directed=['sword','spear','bow','gun'].includes(type);
       const anchor=['axe','mace','spear','bow','gun'].includes(type)?player:target;
       fxs.push({weaponSkill:true,type,grade,third,t,T:t,x:anchor.x,y:anchor.y-18,angle:directed?angle:0});
       return;
     }
-    const aimed=type==='dagger'||type==='staff'||(type==='bow'&&grade>=5)||(type==='sword'&&grade===6);
+    const aimed=type==='dagger'||type==='staff'||(type==='bow'&&grade>=5)||(type==='sword'&&grade>=6);
     const anchor=aimed?target:player;
     const directed=type==='spear'||type==='gun'||(type==='sword'&&grade<6)||(type==='bow'&&grade===4);
     const ground=type==='mace'||type==='staff'||type==='bow'&&grade>=5;
     fxs.push({weaponSkill:true,type,grade,t,T:t,x:anchor.x,y:anchor.y-(ground?0:18),angle:directed?angle:0,follow:type==='axe'});
+  }
+
+  function impact(fxs, type, grade, x, y, size, third = false, t = .35) {
+    fxs.push({weaponSkill:true,type,grade,x,y,size,third,impact:true,t,T:t,angle:0});
   }
 
   function draw(c, f, player, compact = false) {
@@ -138,13 +142,16 @@ window.WeaponSkillFX = (() => {
     c.rotate(f.angle);
     c.globalAlpha=Math.min(1,.2+p*12,(1-p)*5)*.9;
     c.lineJoin='round'; c.lineCap='round';
-    if(f.grade===4)legendary(c,f,p);
+    if(f.impact)sprite(c,f.type,f.grade,f.third?'third':'skill',0,0,0,f.size*(.6+.4*ease(p)),1);
+    else if(f.grade===4)legendary(c,f,p);
     else illustrated(c,f,p,compact);
     c.restore();
   }
   function projectile(c, shot) {
     const f=shot.weaponArt;
-    return f ? sprite(c,f.type,f.grade,f.third?'third':'skill',-8,0,f.type==='staff'?-Math.PI/2:0,f.type==='sword'?118:64,.92) : false;
+    if(!f)return false;
+    const turn=f.type==='staff'||(f.grade===7&&f.type==='bow'&&!f.third);
+    return sprite(c,f.type,f.grade,f.third?'third':'skill',-8,0,turn?-Math.PI/2:0,f.type==='sword'?118:64,.92);
   }
-  return {add,draw,projectile};
+  return {add,draw,projectile,impact};
 })();
