@@ -16,6 +16,9 @@ window.MOUNT = (() => {
     ['whitetiger', '백호왕', 4, '#f4f4ff', 480, 'storm', 25], ['stardeer', '별빛 사슴', 4, '#a8b8ff', 485, 'star', 22], ['kirin', '번개 기린', 4, '#4ad8c8', 490, 'storm', 20],
     ['phoenixsteed', '불사조 말', 4, '#ff7a2a', 495, 'fire', 15], ['griffin', '황금 그리핀', 4, '#ffc83c', 500, 'gfeather', 12], ['seraph', '천상의 천마', 4, '#fff6d8', 510, 'gfeather', 8], ['dragon', '붉은 용', 4, '#e83a3a', 520, 'fire', 6],
     ['nightwolf', '야월 흑랑', 5, '#986cdd', 560, 'shadow', 1],
+    ['thunderqilin', '뇌금 기린', 5, '#42d7ce', 560, 'storm', 1],
+    ['shrinefox', '홍련 구미호', 5, '#ee7051', 560, 'fire', 1],
+    ['glacierbear', '빙정 수호곰', 5, '#9cdbff', 560, 'frost', 1],
   ];
 
   const MS = L.map(([k, n, g, c, sp, fx, w]) => ({ k, n, g, c, sp, fx, w }));
@@ -43,6 +46,9 @@ window.MOUNT = (() => {
   // RIG: 다리 붙는 위치(몸통 그림 비율 x,y), 다리 길이(몸 폭 비율), 안장(비율), 걸음 폭, 날개
   const RIG = {
     nightwolf: { fl: [.71,.77], bl: [.33,.76], leg:.40, seat:[.35,.46], amp:.62 },
+    thunderqilin: { fl: [.71,.89], bl: [.35,.89], leg: .34, seat: [.48,.59], amp: .58 },
+    shrinefox: { fl: [.78,.87], bl: [.43,.88], leg: .29, seat: [.53,.45], amp: .64 },
+    glacierbear: { fl: [.73,.89], bl: [.29,.88], leg: .26, seat: [.40,.37], amp: .46 },
     pony: { fl: [.66, .86], bl: [.27, .80], leg: .38, seat: [0.48, 0.54], amp: .55 },
     boar: { fl: [.66, .82], bl: [.26, .86], leg: .28, seat: [0.37, 0.39], amp: .6 },
     wolf: { fl: [.66, .80], bl: [.25, .82], leg: .38, seat: [0.41, 0.45], amp: .65 },
@@ -192,9 +198,9 @@ window.MOUNT = (() => {
     biped: { cycle: 90, stance: .53, lift: 10, bob: 2.2, pitch: .019, phases: [0, .50, 0, .50] },
   };
   const GAIT_GROUPS = {
-    horse: 'donkey goat pony elk zebra camel whitehorse goldstag reindeer nightmare stardeer kirin phoenixsteed',
-    bound: 'shiba wolf panther saber frostwolf lion whitetiger nightwolf',
-    heavy: 'boar sheep bear rhino mammoth crystalbear',
+    horse: 'donkey goat pony elk zebra camel whitehorse goldstag reindeer nightmare stardeer kirin phoenixsteed thunderqilin',
+    bound: 'shiba wolf panther saber frostwolf lion whitetiger nightwolf shrinefox',
+    heavy: 'boar sheep bear rhino mammoth crystalbear glacierbear',
   };
   const groundGaits = Object.fromEntries(Object.entries(GAIT_GROUPS).flatMap(([group, keys]) => keys.split(' ').map(key => [key, GAITS[group]])));
   const gaitFor = m => RIG[m.k].biped ? GAITS.biped : groundGaits[m.k] || GAITS.low;
@@ -236,6 +242,37 @@ window.MOUNT = (() => {
     piece(kneeX, kneeY, fx, fy, split - overlap, source.height - split + overlap, 2);
   }
 
+  const ancientGlows = new Map();
+  function drawAncientGlow(m, h) {
+    let glow = ancientGlows.get(m.k);
+    if (!glow) {
+      glow = document.createElement('canvas');
+      glow.width = glow.height = 128;
+      const g = glow.getContext('2d'), fade = g.createRadialGradient(64, 64, 10, 64, 64, 64);
+      fade.addColorStop(0, m.c + 'a0');
+      fade.addColorStop(.55, m.c + '5c');
+      fade.addColorStop(1, m.c + '00');
+      g.fillStyle = fade;
+      g.fillRect(0, 0, 128, 128);
+      ancientGlows.set(m.k, glow);
+    }
+    ctx.save();
+    ctx.globalAlpha *= .82 + Math.sin(T * 2.6) * .15;
+    ctx.drawImage(glow, -24, -18, W + 48, h + 57);
+    const sparkle = AI('mount_spark') || AI('fx_star');
+    if (sparkle) {
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 5; i++) {
+        const t = T * (.8 + i * .13) + i * TAU / 5;
+        const x = W * .5 + Math.cos(t) * (W * .5 + 8);
+        const y = h * .52 + Math.sin(t) * (h * .5 + 12);
+        const size = 8 + 5 * (.5 + Math.sin(t * 2 + i) * .5);
+        ctx.drawImage(sparkle, x - size * .5, y - size * .5, size, size);
+      }
+    }
+    ctx.restore();
+  }
+
   // 몸 전체를 그리고 안장 위치(화면 좌표)를 돌려줌
   function drawMount(m, x, y, face, mv, ph, alpha, side = 1) {
     const r = RIG[m.k], body = part(m.k, 'body'), leg = part(m.k, 'leg'), h = W * body.height / body.width;
@@ -245,6 +282,7 @@ window.MOUNT = (() => {
     const legLen = W * r.leg, legW = legLen * leg.width / leg.height * (r.biped ? .88 : .92), top = y - legLen - h * (1 - r.fl[1]) - bob + 4;
     const pitch = r.fly ? (mv ? -.06 : 0) + Math.sin(T * 3) * .03 : mv ? Math.sin(ph * 2) * gait.pitch : 0;
     ctx.save(); if (alpha != null) ctx.globalAlpha *= alpha; ctx.translate(x, top + h * .6); ctx.scale(face, 1); ctx.rotate(pitch); ctx.translate(-W / 2, -h * .6);
+    if (m.g === 5 && alpha == null) drawAncientGlow(m, h);
     const L = (a, phase, far) => {
       const rear = a === r.bl, tucked = rear && r.backTuck;
       const ax = a[0] * W, ay = a[1] * h;
