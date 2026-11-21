@@ -538,7 +538,7 @@ async function idbAll(){const db=await idb();return new Promise(res=>{const out=
 async function idbPut(k,v){const db=await idb();return new Promise(res=>{const tx=db.transaction('a','readwrite');tx.objectStore('a').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>res()})}
 async function idbDel(k){const db=await idb();return new Promise(res=>{const tx=db.transaction('a','readwrite');tx.objectStore('a').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res()})}
 const BAKED={};
-async function loadAssets(){try{const r=await fetch('assets/manifest.json',{cache:'no-cache'});if(r.ok){const j=await r.json();for(const f of(j.files||[])){const n=f.replace(/\.(png|webp|jpe?g|gif)$/i,'');BAKED[n]='assets/'+f;setAsset(n,'assets/'+f+(n==='bld_fire'?'?v=2041':/^wpn_.*_7$/.test(n)?'?v=2':/^wpn_.*_5$/.test(n)?'?v=2057':/^hero_moonbushi_/.test(n)?'?v=3':/^hero_/.test(n)?'?v=2040':/^(tile|obs)/.test(n)?'?v=2037':/^fx_(boom|meteor)$/.test(n)?'?v=2101':''))}}}catch(e){}
+async function loadAssets(){try{const r=await fetch('assets/manifest.json',{cache:'no-cache'});if(r.ok){const j=await r.json();for(const f of(j.files||[])){const n=f.replace(/\.(png|webp|jpe?g|gif)$/i,'');BAKED[n]='assets/'+f;setAsset(n,'assets/'+f+(n==='bld_fire'?'?v=2041':/^wpn_.*_7$/.test(n)?'?v=2':/^wpn_.*_5$/.test(n)?'?v=2057':/^hero_moonbushi_/.test(n)?'?v=4':/^hero_/.test(n)?'?v=2040':/^(tile|obs)/.test(n)?'?v=2037':/^fx_(boom|meteor)$/.test(n)?'?v=2101':''))}}}catch(e){}
  try{for(const[k,v]of await idbAll()){LOCAL[k]=1;setAsset(k,URL.createObjectURL(v))}}catch(e){}}
 const SHAPE={sprout:'머리에 새싹 잎이 난 동글동글한 몸',slime:'말랑한 젤리 슬라임',mush:'버섯 갓을 쓴 작은 몸',spider:'다리 8개 달린 벌레형',golem:'큼직한 돌덩이 골렘',tall:'키 큰 인간형(로브·갑옷)',bat:'날개를 편 박쥐형',chest:'보물상자(때리면 부서짐)',cactus:'선인장'};
 const HERO_LOOK={archer:'초록 후드와 가죽 조끼의 견습 궁수',farmer:'밀짚모자와 멜빵바지의 농부',mage:'파란 뾰족 모자와 로브의 수습 마법사',miner:'노란 안전모와 헤드랜턴, 갈색 작업복의 광부',monk:'주황 승복과 민머리의 수도승',pirate:'삼각 해적모자와 빨간 두건, 안대의 해적',viking:'뿔 달린 투구와 털망토, 갈색 수염의 바이킹',samurai:'빨간 일본 갑옷과 투구의 사무라이',icewitch:'하늘색 마녀 모자와 얼음 결정 장식 로브의 마녀',dragon:'붉은 용비늘 갑옷과 용머리 투구의 용기사',adv:'얼굴 없는 노란 마네킹 같은 기본 캐릭터, 몸 전체가 노란색',knight:'은색 갑옷, 가슴에 파란 천, 빨간 깃털 달린 투구',rogue:'짙은 보라색 후드와 옷, 어두운 얼굴에 빛나는 노란 눈 두 개'};
@@ -1151,7 +1151,7 @@ function specialBonus(key){return specialUnlocked(key)?specialPercent(specialLev
 const ADVENTURER_TITLES=['초보 모험가','견습 탐험가','숙련 탐험가','정예 모험가','영웅 모험가','전설의 모험가','신화의 모험가','초월자','별의 수호자','천상의 영웅','링구의 전설','벚꽃 검객','월영 무사','흑철 대장군','뇌명 정복자','황금 쇼군'];
 let promotionPlaying=false;
 function adventurerTitle(rank=promotionRank()){return ADVENTURER_TITLES[rank]||ADVENTURER_TITLES[0]}
-function rankBadge(rank){const key='adventurer_rank_'+Math.min(rank,10);return '<img src="'+(AURL[key]||'assets/'+key+'.webp')+'" alt="'+adventurerTitle(rank)+' 휘장">'}
+function rankBadge(rank){const key='adventurer_rank_'+rank;return '<img src="'+(AURL[key]||'assets/'+key+'.webp')+'" alt="'+adventurerTitle(rank)+' 휘장">'}
 function playPromotion(rank){
  promotionPlaying=true;joy.on=false;joy.x=joy.y=0;for(const key in keys)delete keys[key];
  const overlay=document.createElement('div');overlay.id='promotion-scene';overlay.className='promotion-scene';
@@ -2151,7 +2151,18 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='rgba(30,22,46,.7)';ctx.lineWidth=7.5;ctx.beginPath();P.scarf.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();ctx.strokeStyle='#e8402f';ctx.lineWidth=5;ctx.stroke();ctx.lineCap='butt';ctx.strokeStyle=OLC;ctx.lineWidth=2}
  if(P.recall&&!window.REM&&!PV){const k=1-P.recall.t/2;bar(x,y-96,54,7,k,'#7fd0ff');label('귀환 중',x,y-109,13,'#d8f9ff')}
  if(P.hitT>0){ctx.globalAlpha=.35;ell(x,y-28,17,27,'#ff5a5a',1);ctx.globalAlpha=1}
- if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0){label(adventurerTitle(rank),x+7,y-105,11,'#ffe4a2');const badge=AI('adventurer_rank_'+rank)||AI('adventurer_rank_'+Math.min(rank,5));if(badge)ctx.drawImage(badge,x-48,y-116,16,16)}if(!combatArena)window.EMOTES?.draw(ctx,RM?.id||window.NET?.me(),x,y-(rank>0?119:103));}}
+ if(!PV){const RM=window.REM,nk=RM?(RM.n||''):(window.NET?NET.nick:'');bar(x,y-82,44,6,RM?RM.hp:P.hp/ST.maxhp,RM?'#ff5a5a':'#5fe06f');label('Lv.'+S.lv+(nk?' '+nk:''),x,y-88,15,RM?'#ffd0d0':'#fff');const rank=RM?(RM.rank||0):promotionRank();if(rank>0)drawRankTitle(rank,x,y-105);if(!combatArena)window.EMOTES?.draw(ctx,RM?.id||window.NET?.me(),x,y-(rank>0?119:103));}}
+function drawRankTitle(rank,x,y){
+ const title=adventurerTitle(rank),badge=AI('adventurer_rank_'+rank);
+ if(!badge){label(title,x,y,11,'#ffe4a2');return}
+ const size=17,gap=3;
+ ctx.font='11px Jua,sans-serif';
+ const textWidth=ctx.measureText(title).width;
+ const left=x-(size+gap+textWidth)/2;
+ ctx.drawImage(badge,left,y-13,size,size);
+ label(title,left+size+gap+textWidth/2,y,11,'#ffe4a2');
+}
+
 function crown(y){ctx.beginPath();ctx.moveTo(-14,y);ctx.lineTo(-14,y-16);ctx.lineTo(-7,y-8);ctx.lineTo(0,y-18);ctx.lineTo(7,y-8);ctx.lineTo(14,y-16);ctx.lineTo(14,y);ctx.closePath();ctx.fillStyle='#ffc93c';ctx.fill();ctx.stroke()}
 function drawMon(m){const d=m.d,x=m.x,y=m.y,r=d.r,sq=Math.sin(m.ph)*.08,hs=m.hitT>0?1.12:1,sp=m.spawnT>0?1-m.spawnT/.3:1,c=d.c,c2=d.c2,fly=d.sh==='bat'?12+Math.sin(m.ph)*4:0;let top=r*2.2;
  shadow(x,y,r*1.05);ctx.save();ctx.translate(x,y-fly);ctx.scale(hs*sp,hs*sp);
