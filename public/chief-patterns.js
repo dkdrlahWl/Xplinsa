@@ -4,6 +4,8 @@
 const CHIEF_LOADOUTS = {
   elder:[0,0,1,2,3], lord:[0,4,5,6,7], queen:[0,8,9,10,11], volc:[0,12,13,14,15],
   c2kraken:[1,0,4,8,12], c2hydra:[1,1,5,9,13], c2crysk:[1,2,6,10,14], c2storm:[1,3,7,11,15],
+  c3_0_boss:[0,0,5,9,15],c3_1_boss:[2,1,6,8,13],c3_2_boss:[1,2,4,10,14],c3_3_boss:[0,3,7,11,12],
+  c3_4_boss:[1,0,6,10,15],c3_5_boss:[2,2,5,11,13],c3_6_boss:[0,1,4,8,14],c3_7_boss:[2,3,7,9,12],
   c2lich:[2,0,5,10,15], c2dragon:[2,1,6,11,12],
 };
 const CHIEF_NAMES = [
@@ -18,7 +20,7 @@ function startChiefPattern(m,arena,index,enraged) {
   const [group,...layouts]=CHIEF_LOADOUTS[m.type];
   const rotation=[layouts[0],16,layouts[1],17+group,layouts[2],layouts[3]];
   const kind=rotation[index%rotation.length];
-  const tier=m.z+(CHAP===2?4:-2);
+  const tier=m.z+(CHAP===3?7:CHAP===2?4:-2);
   return {chief:true,kind,arena,tier,enraged,elapsed:0,wave:0,
     waves:2+Math.floor(tier/3)+(enraged?1:0),
     warn:1.28-tier*.037-(enraged?.12:0)+([10,12,14].includes(kind)?.25:0)};

@@ -32,15 +32,16 @@ window.PET = (() => {
     ['phoenix', '불사조 병아리', 4, '#ff7a2a', 1, { atk: .05, revive: 1 }, { k: 'shot', cd: 1.6, c: '#ff6a1a', s: 'fire', aoe: 70 }],
     ['kirin', '번개 기린', 4, '#4ad8c8', 1, { crit: .05, critd: .2 }, { k: 'bolt', cd: 1.8, c: '#bff6ff', r: 70 }],
     ['whale', '하늘 고래', 4, '#7ab8ff', 1, { gold: .2 }, { k: 'nova', cd: 2.4, c: '#8fd8ff', r: 120 }],
+    ['twinfox', '벚꽃 쌍미호', 5, '#3ee0c8', 0, { atk: .14, crit: .04 }, { k: 'chain', cd: 1.25, c: '#ffb8df', n: 5 }],
     ['tiger', '아기 백호', 4, '#f4f4ff', 0, { atk: .08, crit: .03 }, { k: 'bite', cd: .9, hits: 2 }],
   ];
   const PETS = L.map(([k, n, g, c, fly, pa, at]) => ({ k, n, g, c, fly: !!fly, pa, at }));
   const BY = Object.fromEntries(PETS.map(p => [p.k, p]));
-  const GN = ['일반', '희귀', '레어', '에픽', '전설'];
-  const GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c'];
-  const DPS = [.05, .08, .12, .17, .24]; // 공격력 대비 초당 피해(플레이어 ≈ 공격력×2 기준)
+  const GN = ['일반', '희귀', '레어', '에픽', '전설', '고대'];
+  const GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c', '#3ee0c8'];
+  const DPS = [.05, .08, .12, .17, .24, .34]; // 공격력 대비 초당 피해(플레이어 ≈ 공격력×2 기준)
   const KF = { bite: 1, shot: 1, chain: .45, nova: .5, aura: .35, breath: .55, bolt: .7 };
-  const MAXLV = 50, MAXST = 5, DUPGEM = [5, 10, 20, 40, 100];
+  const MAXLV = 50, MAXST = 5, DUPGEM = [5, 10, 20, 40, 100, 250];
   const PN = { mag: '줍는 범위', spd: '이동 속도', gold: '금화 획득', xp: '경험치 획득', hp: '체력', regen: '체력 회복', atk: '공격력', crit: '치명타 확률', critd: '치명타 피해', ls: '흡혈', dr: '받는 피해 감소' };
   const AN = { bite: '달려들어 물기', shot: '원거리 공격', chain: '연쇄 번개', nova: '주변 충격파', aura: '냉기 오라(적 느려짐)', breath: '화염 브레스', bolt: '번개 낙하' };
   const HATCH = { field: [35, 35, 20, 8, 2], elite: [55, 30, 12, 3, 0], raid: [0, 30, 45, 20, 5] };
@@ -305,6 +306,6 @@ window.PET = (() => {
   function eggCard(r, big) { return '<div class="gc gcb gb' + r.g + (r.g >= 3 ? ' hi' + r.g : '') + (big ? ' big' : '') + '" data-g="' + r.g + '"><img src="' + eggURL(r.g) + '" style="transform:none;width:70%;height:62%;margin-top:4px"><span class="gg ts">' + GN[r.g] + '</span><span class="gn ts">펫 알</span></div>' }
   function admin() { st(); for (const p of PETS) st()[p.k] = { lv: MAXLV, st: MAXST }; S.petEggs = [8, 8, 8, 8, 8]; if (!S.pet) S.pet = 'dragon'; calc(); save() }
   function eggDot() { st(); return S.inc.some((o, i) => o && incReady(i)) || (S.inc.some(o => !o) && bagN() > 0) }
-  return { PETS, BY, GN, room, bagN, EGG_CAP, eggCard, apply, b, dr, revive, update, addDraw, drawFx, onKill, egg, rollBox, hatch, card, panel: panelHTML, act, admin, url, eggURL, eggDot, img, get F() { return F } };
+  return { PETS, BY, GN, room, bagN, EGG_CAP, eggCard, apply, b, dr, revive, update, addDraw, drawFx, onKill, egg, rollBox, hatch, card, panel: panelHTML, act, admin, give, url, eggURL, eggDot, img, get F() { return F } };
 })();
 calc();

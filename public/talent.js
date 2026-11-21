@@ -8,6 +8,7 @@
     { k: 'regen', n: '재생', d: '체력 회복', per: .015, max: 20, ic: 'regen' },
     { k: 'spd', n: '질풍', d: '이동 속도', per: .0025, max: 15, ic: 'spd' },
   ];
+  const cap = t => t.max + ((CHAP === 3 || S.chs?.[3]) ? (t.k === 'spd' ? 10 : 15) : 0);
   const START = 10, RESET = 100;
   const T0 = () => (S.tal = S.tal || {});
   const total = () => Math.max(0, S.lv - START + 1);
@@ -53,8 +54,8 @@
     const L = left(), can = used() && S.gem >= RESET;
     return `<div class="tlh"><span style="color:#cfc8ee">Lv.${START}부터 레벨업마다 1포인트</span><span>남은 포인트 <b style="color:${L ? '#7be36a' : '#cfc8ee'}">${L}</b><small style="color:#9d93ff">/${total()}</small></span></div><div class="tlg">` +
       TL.map(t => {
-        const n = lv(t.k), mx = n >= t.max;
-        return `<div class="tlc"><span class="ti">${IC[t.ic] || ''}</span><span class="tt"><b>${t.n} <small style="display:inline">${n}/${t.max}</small></b><small>${t.d}</small><i>${pct(t, n)}${mx ? ' MAX' : ' → ' + pct(t, n + 1)}</i></span>
+        const n = lv(t.k), mx = n >= cap(t);
+        return `<div class="tlc"><span class="ti">${IC[t.ic] || ''}</span><span class="tt"><b>${t.n} <small style="display:inline">${n}/${cap(t)}</small></b><small>${t.d}</small><i>${pct(t, n)}${mx ? ' MAX' : ' → ' + pct(t, n + 1)}</i></span>
           <button data-a="tal:${t.k}" ${!mx && L ? '' : 'disabled'}>${mx ? 'MAX' : '+1'}</button></div>`;
       }).join('') +
       `</div><button class="tlr" data-a="talreset" ${can ? '' : 'disabled'}>특성 초기화 · ${IC.gem}${RESET}</button>`;
@@ -76,7 +77,7 @@
   const _act = act;
   act = function (a) {
     const [k, v] = String(a).split(':');
-    if (k === 'tal') { const t = TL.find(x => x.k === v); if (t && left() > 0 && lv(v) < t.max) { T0()[v] = lv(v) + 1; calc(); save(); window.SFX && SFX.play('upgrade', { v: .5 }) } draw(); return }
+    if (k === 'tal') { const t = TL.find(x => x.k === v); if (t && left() > 0 && lv(v) < cap(t)) { T0()[v] = lv(v) + 1; calc(); save(); window.SFX && SFX.play('upgrade', { v: .5 }) } draw(); return }
     if (k === 'talreset') { if (used() && S.gem >= RESET) { S.gem -= RESET; S.tal = {}; calc(); save(); toast('특성을 초기화했어요') } draw(); return }
     return _act.apply(this, arguments);
   };

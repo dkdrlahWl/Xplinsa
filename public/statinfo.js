@@ -13,7 +13,8 @@
 #statpop .sps{font-size:13px;color:#9d93ff;margin:10px 2px 4px}`;
   document.head.appendChild(css);
   const pct = v => (Math.round(v * 1000) / 10) + '%';
-  function rows() {
+  function rows(stats = ST) {
+    const ST = stats;
     const R = [
       ['sword', '공격력', fmt(ST.atk)],
       ['hp', '최대 체력', fmt(ST.maxhp)],
@@ -60,13 +61,66 @@
     b.addEventListener('pointerdown', e => e.stopPropagation(), true);
     sb.appendChild(b);
   }
-  // 관리자 모드: 유저 현황 (대장간 레벨·레벨·챕터·승급·크리스탈)
+  function inspectSave(save) {
+    const previous = S, base = fresh();
+    try {
+      S = {...base, ...structuredClone(save), up:{...base.up, ...save.up}};
+      S.slots = base.slots.map((_, i) => {
+        const key = save.slots?.[i];
+        const [type, grade] = String(key || '').split('_');
+        return Object.hasOwn(WT, type) && Object.hasOwn(GR, grade) ? key : null;
+      });
+      S.slv = base.slv.map((lv, i) => Number(save.slv?.[i]) || lv);
+      calc();
+      return {...ST};
+    } finally {
+      S = previous;
+      calc();
+    }
+  }
   async function adminUsers() {
-    const j = await fetch('/api/adminusers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok||'') }) }).then(r => r.json()).catch(() => ({}));
-    if (!j.list) { toast(j.err || '불러오지 못했어요'); return }
-    let d = document.getElementById('statpop'); if (d) d.remove(); d = document.createElement('div'); d.id = 'statpop';
-    d.innerHTML = `<div class="sp" style="width:min(94vw,420px)"><div class="sph"><b>유저 현황</b><button class="spx">✕</button></div>
-      <div class="sps" style="margin-top:0">대장간 레벨 높은 순 · 🟢 접속 중</div>` + j.list.map(u => `<div class="spr" style="font-size:13px"><span style="flex:0 0 auto;color:#fff">${u.on ? '🟢' : '⚪'} ${u.n}</span><span></span><em>대장간 Lv.${u.smith} · Lv.${u.lv} · ${u.ch}챕 · ${u.promo}차 · 💎${fmt(u.gem)} · 크리 ${fmt(u.cry)} · 주문서 ${fmt(u.scr || 0)} · 탑 ${u.tw || 0}층</em></div>`).join('') + '</div>';
+    if (!window.IS_ADMIN) return;
+    const j = await fetch('/api/adminsaves', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOK() }) }).then(r => r.json()).catch(() => ({}));
+    if (!Array.isArray(j.list)) { toast(j.err || '불러오지 못했어요'); return }
+    document.getElementById('statpop')?.remove();
+    const d = document.createElement('div'); d.id = 'statpop';
+    d.innerHTML = '<div class="sp" style="width:min(94vw,460px)"><div class="sph"><b>전체 유저 능력치</b><button class="spx" aria-label="닫기">✕</button></div><p class="sps">마지막 저장 기준 · 유저를 눌러 상세 보기</p><div class="stat-users"></div></div>';
+    const list = d.querySelector('.stat-users');
+    if (!j.list.length) list.textContent = '등록된 유저가 없어요';
+    j.list.sort((a,b) => Number(b.save?.lv || 0) - Number(a.save?.lv || 0));
+    for (const u of j.list) {
+      const save = u.save;
+      const card = document.createElement('details');
+      card.className = 'spr'; card.style.display = 'block';
+      const title = document.createElement('summary');
+      title.textContent = u.n + (save ? ' · Lv.' + (save.lv || 1) + ' · 챕터 ' + (save.ch || 1) : ' · 저장 기록 없음');
+      card.append(title);
+      if (save) card.addEventListener('toggle', () => {
+        if (!card.open || card.childElementCount > 1) return;
+        const content = document.createElement('div');
+        try {
+          const stats = inspectSave(save);
+          const hero = HERO.find(h => h.k === save.hero) || HERO[0];
+          const pet = PET.BY[save.pet]?.n || '미장착';
+          const mount = MOUNT.BY[save.mount]?.n || '미장착';
+          const equipment = Array.from({length:6}, (_,i) => {
+            const key = save.slots?.[i], [type, grade] = String(key || '').split('_');
+            return Object.hasOwn(WT,type) && Object.hasOwn(GR,grade) ? wName(key)+' Lv.'+Math.min(Number(save.slv?.[i])||1,GMAX[grade]) : '비어 있음';
+          });
+          content.innerHTML = '<div class="spp">⚡ ' + fmt(stats.pow) + '</div>' + rows(stats);
+          const progress = document.createElement('p');
+          progress.textContent = '승급 ' + (save.promotion || 0) + '차 · 대장간 Lv.' + ((save.step || 0)+1) + ' · 탑 ' + (save.tower?.clear || 0) + '층 · 챕터 3 임무 ' + (save.chs?.[3]?.q || 0) + '/100';
+          const loadout = document.createElement('p');
+          loadout.textContent = '영웅 ' + hero.n + ' · 펫 ' + pet + ' · 탈것 ' + mount;
+          content.append(progress, loadout);
+          const slots = document.createElement('ol');
+          for (const name of equipment) { const slot = document.createElement('li'); slot.textContent = name; slots.append(slot); }
+          content.append(slots);
+        } catch { content.textContent = '저장 기록에서 능력치를 계산할 수 없어요'; }
+        card.append(content);
+      });
+      list.append(card);
+    }
     d.addEventListener('click', e => { if (e.target === d || e.target.closest('.spx')) d.remove() });
     document.body.appendChild(d);
   }
@@ -179,7 +233,7 @@
 #admSend #amList{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;color:#cfc8ee}#admSend .am-it{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:10px;background:#6b5a2b;border:2px solid #ffd23c;font-size:13px;cursor:pointer}#admSend .am-it :is(img,svg){width:18px;height:18px}
 #admSend #asReview span{display:inline-flex;align-items:center;gap:3px;margin:2px 4px}#admSend #asReview span :is(img,svg){width:18px;height:18px}
 #admSend .as-act{display:flex;gap:6px;margin-top:6px}#admSend .as-act .btn{flex:1}`; document.head.appendChild(sendCss);
-  draw = function () { const r = _draw2.apply(this, arguments); if (panel === 'admin' && window.IS_ADMIN && !document.getElementById('admUsersBtn')) { const b = document.createElement('button'); b.id = 'admUsersBtn'; b.className = 'btn'; b.textContent = '👥 유저 현황 (대장간 레벨 등)'; b.style.cssText = 'width:100%;margin:0 0 10px'; b.onclick = adminUsers; const s = document.createElement('button'); s.id = 'admSendBtn'; s.className = 'btn'; s.textContent = '💸 재화 송금 (모든 재화·열쇠)'; s.style.cssText = 'width:100%;margin:0 0 10px'; s.onclick = adminSend; const m = document.createElement('button'); m.id = 'admMailBtn'; m.className = 'btn'; m.textContent = '📮 전체 우편 (멘트 + 보상)'; m.style.cssText = 'width:100%;margin:0 0 10px'; m.onclick = adminMailAll; const mt = document.createElement('div'); mt.style.cssText = 'display:flex;gap:6px;margin:0 0 10px'; mt.innerHTML = '<button class="btn" style="flex:1" data-mt="1">🔧 점검 시작</button><button class="btn" style="flex:1" data-mt="0">✅ 점검 종료</button>'; mt.onclick = async e => { const x = e.target.closest('[data-mt]'); if (!x) return; const on = x.dataset.mt === '1'; if (on && !confirm('관리자 외 모든 유저 접속을 막을까요?')) return; const j = await fetch('/api/maint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok || ''), on }) }).then(r => r.json()).catch(() => ({})); toast(j.ok ? (j.on ? '점검 시작: 관리자 외 접속 차단' : '점검 종료: 모두 접속 가능') : (j.err || '실패')) }; $('mbody').prepend(b, s, m, mt) } return r };
+  draw = function () { const r = _draw2.apply(this, arguments); if (panel === 'admin' && window.IS_ADMIN && !document.getElementById('admUsersBtn')) { const b = document.createElement('button'); b.id = 'admUsersBtn'; b.className = 'btn'; b.textContent = '전체 유저 능력치 · 장착 현황'; b.style.cssText = 'width:100%;margin:0 0 10px'; b.onclick = adminUsers; const s = document.createElement('button'); s.id = 'admSendBtn'; s.className = 'btn'; s.textContent = '💸 재화 송금 (모든 재화·열쇠)'; s.style.cssText = 'width:100%;margin:0 0 10px'; s.onclick = adminSend; const m = document.createElement('button'); m.id = 'admMailBtn'; m.className = 'btn'; m.textContent = '📮 전체 우편 (멘트 + 보상)'; m.style.cssText = 'width:100%;margin:0 0 10px'; m.onclick = adminMailAll; const mt = document.createElement('div'); mt.style.cssText = 'display:flex;gap:6px;margin:0 0 10px'; mt.innerHTML = '<button class="btn" style="flex:1" data-mt="1">🔧 점검 시작</button><button class="btn" style="flex:1" data-mt="0">✅ 점검 종료</button>'; mt.onclick = async e => { const x = e.target.closest('[data-mt]'); if (!x) return; const on = x.dataset.mt === '1'; if (on && !confirm('관리자 외 모든 유저 접속을 막을까요?')) return; const j = await fetch('/api/maint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: (sessionStorage.xp_tok || ''), on }) }).then(r => r.json()).catch(() => ({})); toast(j.ok ? (j.on ? '점검 시작: 관리자 외 접속 차단' : '점검 종료: 모두 접속 가능') : (j.err || '실패')) }; $('mbody').prepend(b, s, m, mt) } return r };
   const _act = act;
   act = function (a) { if (a === 'powinfo') { show(); return } return _act.apply(this, arguments) };
 })();

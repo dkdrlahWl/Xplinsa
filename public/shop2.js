@@ -212,6 +212,11 @@
         <li><span class="vi">${featureImage('exchange')}</span><span>교환소 무료 <b>3회</b> / 일</span></li>
       </ul></div>
       <button class="buy" data-a="buyvip" ${S.gem < VIP_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(VIP_PRICE)}${on ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
+    const raidOn = window.RAID?.vip();
+    const raidVip = `<div class="s2pack vip"><div class="art">${img('feature_raid', AURL.shop_vip)}</div>
+      <div class="body"><h3>레이드 VIP 30일권</h3><div class="stat">${raidOn ? Math.ceil((S.raidVipUntil-Date.now())/86400000)+'일 남음' : '구매 즉시 30일 적용'}</div>
+      <ul class="s2vip"><li>하루 레이드 보상 3회 → 4회</li><li>그중 하루 2회 보상 1.5배 선택</li></ul></div>
+      <button class="buy" data-a="buyraidvip" ${S.gem < 3000 ? 'disabled' : ''}>${IC.gem}3,000${raidOn ? ' · 30일 연장' : ''}</button></div>`;
     const mc = mcState(), left = mcDaysRemaining(mc), gotToday = mc.left > 0 && mc.last < kstDay() && mc.last + mc.left >= kstDay();
     const card = `<div class="s2pack mc"><div class="val">${Math.round(MC_TOTAL / MC_PRICE * 100)}%<small>가치</small></div><div class="art">${img('pack_monthly', AURL.shop_vip)}</div>
       <div class="body"><h3>월정액 보석 카드</h3><div class="stat">${left > 0 ? '이용 중 · <b>' + left + '일 남음</b>' + (gotToday ? ' · 오늘 우편 발송' : '') : '구매 즉시 + 30일 동안 매일 우편 지급'}</div>
@@ -225,7 +230,7 @@
     const upg = ps.upgrade ? '' : `<div class="s2head ts">무기 업그레이드 팩</div>` + packHTML(UPG, '무기 업그레이드 팩', '', img('pack_upgrade', 'assets/icon_anvil.webp'), '1회 구매 가능', S.lv >= 15 ? '' : '<b>Lv.15</b> 달성 시 해금');
     const wk = packHTML(WEEK, '주간 탐험 패키지', 'wk', img('pack_weekly', AURL.shop_petbox), '이번 주 ' + (1 - (ps.weekly || 0)) + '/1', ps.weekly ? '이번 주 구매 완료' : '');
     return `<div class="s2ban">${img('shop_banner_special', AURL.shop_banner)}</div><div class="s2rib ts">• 스페셜 •</div>
-      <div class="s2head ts">VIP 멤버십 · 월정액</div><div class="s2car" id="s2car">${vip}${card}</div><div class="s2dots" id="s2dots"><button class="on" data-slide="0" aria-label="VIP"></button><button data-slide="1" aria-label="월정액 카드"></button></div>
+      <div class="s2head ts">VIP 멤버십 · 월정액</div><div class="s2car" id="s2car">${vip}${card}${raidVip}</div><div class="s2dots" id="s2dots"><button class="on" data-slide="0" aria-label="VIP"></button><button data-slide="1" aria-label="월정액 카드"></button><button data-slide="2" aria-label="레이드 VIP"></button></div>
       <div class="s2head ts">스테이지 패키지</div>${stage}${upg}
       <div class="s2head ts">주간 패키지</div>${wk}`;
   }

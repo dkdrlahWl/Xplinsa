@@ -5,11 +5,26 @@ const FIELD_BOSS_ROTATIONS = [
   ['impact', 'ring', 'charge'], ['charge', 'impact', 'volley'],
 ];
 const WORLD_BOSS_ROTATION = ['charge', 'ring', 'volley', 'impact', 'charge', 'volley'];
+const RAIJIN_ROTATION = ['volley', 'charge', 'radial', 'impact', 'ring', 'cataclysm'];
 
+function bossCircle(m) {
+  return m.d.world ? WBA : {x:m.hx,y:m.hy,r:m.ar};
+}
+function insideBossCircle(m, x, y) {
+  const a = bossCircle(m);
+  return Math.hypot(x-a.x,y-a.y) <= a.r;
+}
+function returnBossHome(m, x, y, max, dt, heal=true) {
+  const dx=x-m.x,dy=y-m.y,d=Math.hypot(dx,dy);
+  const step=d ? Math.min(1,460*dt/d) : 0;
+  m.x+=dx*step;
+  m.y+=dy*step;
+  if(heal)m.hp=Math.min(max,m.hp+max*.45*dt);
+}
 function fieldBossFight(m, dt, enabled, remote) {
-  const world = m.type === 'wboss' || m.type === 'wboss2';
-  if (combatArena || !m.d.boss || (!world && !(CHAP === 2 || m.z >= 2))) return false;
-  const arena = world ? WBA : {x:m.hx, y:m.hy, r:m.ar};
+  const world = !!m.d.world;
+  if (combatArena || !m.d.boss || (!world && !(CHAP >= 2 || m.z >= 2))) return false;
+  const arena = bossCircle(m);
   const inside = (x,y,pad=0) => Math.hypot(x-arena.x,y-arena.y) <= arena.r-pad;
   if (!enabled || m.dead || !inside(P.x,P.y)) {
     m.pattern = null;
@@ -21,7 +36,7 @@ function fieldBossFight(m, dt, enabled, remote) {
   const main = !world && m.type === ZS[m.z]?.boss;
   const enraged = (world || main) && m.hp <= m.d.hp*.5;
   const index = m.patternIndex || 0;
-  const rotation = world ? WORLD_BOSS_ROTATION : FIELD_BOSS_ROTATIONS[(m.z+(CHAP===2?1:0)+(m.type===ZS[m.z].boss2?1:0))%4];
+  const rotation = m.type === 'wboss3' ? RAIJIN_ROTATION : world ? WORLD_BOSS_ROTATION : FIELD_BOSS_ROTATIONS[(m.z+(CHAP>=2?1:0)+(m.type===ZS[m.z].boss2?1:0))%4];
   if (!m.pattern) {
     m.patternDelay = (m.patternDelay ?? 2)-dt;
     if (m.patternDelay > 0) return false;
@@ -35,7 +50,7 @@ function fieldBossFight(m, dt, enabled, remote) {
     const phase=Math.floor(index/2)%(rotation.length+2);
     const regionalKind=rotation[phase];
     const kind=!main?baseKind:phase===rotation.length?'radial':phase===rotation.length+1?'cataclysm':regionalKind==='impact'?'barrage':regionalKind;
-    const warn = kind==='cataclysm'?(enraged?1.12:1.38):world ? (enraged?.69:.88) : main ? (enraged?.72:.92) : (CHAP===2?.93:1.12);
+    const warn = kind==='cataclysm'?(enraged?1.12:1.38):world ? (enraged?.69:.88) : main ? (enraged?.72:.92) : (CHAP>=2?.93:1.12);
     const a = Math.atan2(P.y-m.y,P.x-m.x);
     const ux=Math.cos(a), uy=Math.sin(a);
     const origin={x:m.x,y:m.y}, target={x:P.x,y:P.y};
@@ -43,7 +58,7 @@ function fieldBossFight(m, dt, enabled, remote) {
     const chargeMax=Math.min(world?370:main?335:240,Math.hypot(P.x-m.x,P.y-m.y)+65);
     while (distance+8<=chargeMax && inside(origin.x+ux*(distance+8),origin.y+uy*(distance+8),24)) distance+=8;
     const end={x:origin.x+ux*distance,y:origin.y+uy*distance};
-    const count=world?(enraged?9:7):main?(enraged?9:7):(CHAP===2?5:3);
+    const count=world?(enraged?9:7):main?(enraged?9:7):(CHAP>=2?5:3);
     const radialCount=enraged?18:14;
     const rays=kind==='radial'?Array.from({length:radialCount},(_,i)=>a+i*TAU/radialCount):Array.from({length:count},(_,i)=>a+(i-(count-1)/2)*.29);
     const offset=Math.min(125,arena.r-70);
@@ -108,7 +123,7 @@ function fieldBossFight(m, dt, enabled, remote) {
       return true;
     }
     m.pattern=null;
-    m.patternDelay=world?(enraged?.45:.8):p.main?(p.enraged?.6:1.03):(CHAP===2?1.55:2.1);
+    m.patternDelay=world?(enraged?.45:.8):p.main?(p.enraged?.6:1.03):(CHAP>=2?1.55:2.1);
   }
   return true;
 }

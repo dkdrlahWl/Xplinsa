@@ -13,14 +13,15 @@ window.MOUNT = (() => {
     ['bigfrog', '왕개구리', 2, '#4ac860', 345, 'water', 20], ['whitehorse', '백마', 2, '#f4f0ea', 350, 'shine', 18], ['saber', '검치호', 2, '#e8a040', 360, 'sand', 13], ['goldstag', '황금뿔 수사슴', 2, '#c8963a', 365, 'gold', 10],
     ['crystalbear', '수정 곰', 3, '#9ad0ff', 400, 'frost', 28], ['frostwolf', '서리 늑대', 3, '#d8f0ff', 405, 'frost', 25], ['reindeer', '얼음 순록', 3, '#8fd8ff', 410, 'frost', 22],
     ['lion', '화염 사자', 3, '#ff8a3a', 410, 'fire', 22], ['nightmare', '그림자 말', 3, '#5a3a8a', 420, 'shadow', 16], ['lavadrake', '용암 도마뱀', 3, '#ff5a2a', 425, 'fire', 12], ['pegasus', '페가수스', 3, '#ffffff', 430, 'feather', 9],
+    ['nightwolf', '야월 흑랑', 5, '#986cdd', 560, 'shadow', 1],
     ['whitetiger', '백호왕', 4, '#f4f4ff', 480, 'storm', 25], ['stardeer', '별빛 사슴', 4, '#a8b8ff', 485, 'star', 22], ['kirin', '번개 기린', 4, '#4ad8c8', 490, 'storm', 20],
     ['phoenixsteed', '불사조 말', 4, '#ff7a2a', 495, 'fire', 15], ['griffin', '황금 그리핀', 4, '#ffc83c', 500, 'gfeather', 12], ['seraph', '천상의 천마', 4, '#fff6d8', 510, 'gfeather', 8], ['dragon', '붉은 용', 4, '#e83a3a', 520, 'fire', 6],
   ];
 
   const MS = L.map(([k, n, g, c, sp, fx, w]) => ({ k, n, g, c, sp, fx, w }));
   const BY = Object.fromEntries(MS.map(m => [m.k, m]));
-  const GN = ['일반', '희귀', '레어', '에픽', '전설'], GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c'];
-  const MAXST = 5, DUPGEM = [5, 10, 20, 40, 100], UNLOCK = 10;
+  const GN = ['일반', '희귀', '레어', '에픽', '전설', '고대'], GC = ['#c3cad6', '#6fe04f', '#5ab4ff', '#c97bff', '#ffc93c', '#3ee0c8'];
+  const MAXST = 5, DUPGEM = [5, 10, 20, 40, 100, 250], UNLOCK = 10;
   function st() { S.mounts = S.mounts || {}; if (S.lv >= UNLOCK && !S.mGot && !Object.keys(S.mounts).length) { S.mounts.donkey = { st: 1 }; if (!S.mount) S.mount = 'donkey'; { S.mGot = 1; setTimeout(() => toast('🐴 탈것이 열렸어요! 임무 아래 버튼으로 타고 내려요'), 400) } } return S.mounts }
   const own = k => st()[k];
   const cur = () => { const k = S.mount; return k && own(k) && BY[k] ? BY[k] : null };
@@ -40,6 +41,7 @@ window.MOUNT = (() => {
   // 그림 부품: mount_<키>_body(다리 없는 몸·머리·꼬리·안장, 오른쪽 보기), mount_<키>_leg(다리 1개, 위=몸에 붙는 쪽), 날개 달린 건 mount_<키>_wing(위=어깨)
   // RIG: 다리 붙는 위치(몸통 그림 비율 x,y), 다리 길이(몸 폭 비율), 안장(비율), 걸음 폭, 날개
   const RIG = {
+    nightwolf: { fl: [.71,.77], bl: [.33,.76], leg:.40, seat:[.49,.31], amp:.62 },
     pony: { fl: [.66, .86], bl: [.27, .80], leg: .38, seat: [0.48, 0.54], amp: .55 },
     boar: { fl: [.66, .82], bl: [.26, .86], leg: .28, seat: [0.37, 0.39], amp: .6 },
     wolf: { fl: [.66, .80], bl: [.25, .82], leg: .38, seat: [0.41, 0.45], amp: .65 },
@@ -99,6 +101,7 @@ window.MOUNT = (() => {
     PH[key] = c; return c }
   // Joint positions measured from each body sprite, with short stocky legs kept distinct from horse legs.
   const LEG_FIT = {
+    nightwolf: [.71,.77,.33,.76,.40],
     bear: [0.67, 0.881, 0.32, 0.924, 0.24],
     bigfrog: [0.68, 0.902, 0.32, 0.941, 0.2],
     boar: [0.67, 0.885, 0.31, 0.921, 0.23],
@@ -189,7 +192,7 @@ window.MOUNT = (() => {
   };
   const GAIT_GROUPS = {
     horse: 'donkey goat pony elk zebra camel whitehorse goldstag reindeer nightmare stardeer kirin phoenixsteed',
-    bound: 'shiba wolf panther saber frostwolf lion whitetiger',
+    bound: 'shiba wolf panther saber frostwolf lion whitetiger nightwolf',
     heavy: 'boar sheep bear rhino mammoth crystalbear',
   };
   const groundGaits = Object.fromEntries(Object.entries(GAIT_GROUPS).flatMap(([group, keys]) => keys.split(' ').map(key => [key, GAITS[group]])));
@@ -420,7 +423,7 @@ window.MOUNT = (() => {
     toggle();
   }, true);
   addEventListener('keyup', e => { if ((e.code === 'Space' || e.key === ' ') && !typing(e)) e.preventDefault() }, true);
-  return { MS, BY, apply, riding, toggle, update, riderDraw, drawFx, rollBox, card, panel: panelHTML, act, admin, url, get key() { return riding() ? S.mount : '' } };
+  return { MS, BY, apply, riding, toggle, update, riderDraw, drawFx, rollBox, card, panel: panelHTML, act, admin, give, url, get key() { return riding() ? S.mount : '' } };
 })();
 // 그리기 감싸기: 탄 상태면 탈것 위에 캐릭터를 올려 그림(내 캐릭터·다른 유저 모두)
 if (typeof drawPlayer === 'function') { const _dp = drawPlayer; drawPlayer = function () { return MOUNT.riderDraw(_dp, window.REM) } }

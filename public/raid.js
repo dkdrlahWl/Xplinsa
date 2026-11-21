@@ -14,6 +14,7 @@ window.RAID = (() => {
     else if (b === 1) r.scl = Math.round(base.scl * 1.5);
     else if (b === 2) { r.goldK = Math.round(base.goldK * 1.5); r.cry = 5 + lv; }
     else { r.gem = Math.round(base.gem * 1.5); r.scr = 10 + lv * 2; }
+    r.gem = Math.floor(r.gem / 4);
     return r;
   };
   const root = document.createElement('section'); root.id = 'raid-screen'; root.hidden = true; $('game').appendChild(root);
@@ -21,15 +22,28 @@ window.RAID = (() => {
   let surface = null, renderElapsed = 0, hudElapsed = 0;
   const RENDER_INTERVAL = 1 / 30, HUD_INTERVAL = .1;
   const btn = (a, label, dis = false) => '<button type="button" data-raid="' + a + '"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
+  const arenaRadius = 680;
   const topGold = () => MT[ZS[topZone()].m[0]].gold;
-  const items = r => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(r.goldK * topGold()) + '</span>' + (r.cry ? '<span>' + IC.cry + ' ' + r.cry + '</span>' : '') + (r.scr ? '<span>' + IC.scr + ' ' + r.scr + '</span>' : '') + (window.PET && S.raidEggDay !== today() ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알(오늘 첫 클리어)</span>' : '');
-  function st() { const day = calendarKey(); const r = S.raid || (S.raid = { day, wins: 0, best: [0, 0, 0, 0] }); if (r.day !== day) { r.day = day; r.wins = 0; } if (!Array.isArray(r.best)) r.best = [0, 0, 0, 0]; return r; }
-  const left = () => Math.max(0, DAILY - st().wins);
+  const items = (r, gold = r.goldK * topGold()) => '<span>' + IC.myth + ' ' + r.myth + '</span><span>' + IC.scl + ' ' + r.scl + '</span><span>' + IC.gem + ' ' + r.gem + '</span><span>' + IC.gold + ' ' + fmt(gold) + '</span>' + (r.cry ? '<span>' + IC.cry + ' ' + r.cry + '</span>' : '') + (r.scr ? '<span>' + IC.scr + ' ' + r.scr + '</span>' : '') + (window.PET && S.raidEggDay !== calendarKey() ? '<span><img src="' + PET.eggURL(3) + '" style="width:20px;height:20px;vertical-align:middle"> 펫 알(오늘 첫 클리어)</span>' : '');
+  function st() { const day = calendarKey(); const r = S.raid || (S.raid = { day, wins: 0, best: [0, 0, 0, 0] }); if (r.day !== day) { r.day = day; r.wins = 0; r.boosts = 0; } if (!Array.isArray(r.best)) r.best = [0, 0, 0, 0]; return r; }
+  const vip = () => Number(S.raidVipUntil || 0) > Date.now();
+  const limit = () => DAILY + Number(vip());
+  const left = () => Math.max(0, limit() - st().wins);
+  const boostLeft = () => vip() ? Math.max(0, 2 - (st().boosts || 0)) : 0;
+  const levelCap = best => Math.max(best, ch3Open() ? 50 : 30);
+  function buyVip() {
+    if (S.gem < 3000) return false;
+    S.gem -= 3000;
+    S.raidVipUntil = Math.max(Date.now(), Number(S.raidVipUntil) || 0) + 30 * 86400000;
+    save(true);
+    toast('레이드 VIP 30일 적용');
+    return true;
+  }
   function lobby() {
     const previousScroll = root.querySelector('.raid-scroll')?.scrollTop ?? 0;
     const focused = root.contains(document.activeElement) ? document.activeElement.dataset : null;
     mode = 'lobby'; run = null; arena = null; surface = null; root.className = 'raid-lobby'; calc();
-    const best = st().best, max = (best[selBoss] || 0) + 1, remaining = left();
+    const best = st().best, max = Math.min(levelCap(best[selBoss] || 0), (best[selBoss] || 0) + 1), remaining = left();
     selLv = clamp(selLv, 1, max);
     const cards = NAMES.map((name, i) =>
       `<button type="button" class="raid-pick raid-pick-${i}" data-raid="boss" data-b="${i}" aria-pressed="${i === selBoss}"><span><b>${name}</b><small>${best[i] ? '최고 Lv.' + best[i] : '미격파'}</small><small class="raid-focus">${FOCUS[i]} ↑</small></span></button>`
@@ -37,8 +51,9 @@ window.RAID = (() => {
     root.innerHTML = `<header class="raid-header"><h1>보스 레이드</h1>${btn('exit', '닫기')}</header>
       <main class="raid-scroll">
         <div class="raid-layout">
-          <div class="raid-select-title"><h2>보스 선택</h2><span>오늘 보상 <b>${remaining} / ${DAILY}</b></span></div>
+          <div class="raid-select-title"><h2>보스 선택</h2><span>오늘 보상 <b>${remaining} / ${limit()}</b></span></div>
           <div class="raid-bosses">${cards}</div>
+          <section class="raid-rewards"><h2>레이드 VIP 30일</h2><p>보상 하루 4회 · 1.5배 하루 2회${vip() ? ' · 오늘 1.5배 '+boostLeft()+'회 남음' : ''}</p>${btn('vip', vip() ? '보석 3,000 · 30일 연장' : '보석 3,000 · 구매', S.gem < 3000)}</section>
           <section class="raid-stage">
             <div class="raid-stage-row"><h2>도전 레벨</h2><div class="raid-lv">${btn('lvm', '−', selLv <= 1)}<strong>Lv.${selLv}</strong>${btn('lvp', '+', selLv >= max)}</div></div>
             <div class="raid-stat-row"><b>보스</b><span>체력 <strong>${fmt(bossHp(selLv))}</strong></span><span>공격 <strong>${fmt(bossAtk(selLv))}</strong></span></div>
@@ -75,15 +90,22 @@ window.RAID = (() => {
     c.onpointerup = c.onpointercancel = c.onlostpointercapture = e => { if (pointer?.id === e.pointerId) pointer = null; };
   }
   function finish(win) {
-    mode = 'result'; const r = run, s = st(), got = win && s.wins < DAILY ? rw(r.lv, r.b) : null;
+    mode = 'result'; const r = run, s = st(), got = win && s.wins < limit() ? rw(r.lv, r.b) : null;
     if (win) {
       if (got) { s.wins++; if (r.lv > (s.best[r.b] || 0)) s.best[r.b] = r.lv; }
       const bk = collectionState(); bk.monsters['raid' + r.b] = (bk.monsters['raid' + r.b] || 0) + 1; S.bossKills = S.bossKills || {}; S.bossKills['raid' + r.b] = (S.bossKills['raid' + r.b] || 0) + 1;
       trackTask('raid'); trackTask('boss'); window.SFX && SFX.play('fanfare', { v: .7, fixed: 1 });
     }
-    r.reward = got; save();
+    if (got) s.pending = {reward:got,gold:got.goldK * topGold(),day:s.day,b:r.b,lv:r.lv};
+    save(true);
+    showResult(win, r.b, r.lv);
+  }
+  function showResult(win, b, lv) {
+    mode = 'result';
+    const got = st().pending?.reward;
+    if (!$('raid-notice')) root.innerHTML = '<div id="raid-notice"></div>';
     const n = $('raid-notice'); n.className = 'raid-result';
-    n.innerHTML = '<h2>' + (win ? NAMES[r.b] + ' Lv.' + r.lv + ' 처치!' : '레이드 실패') + '</h2>' + (win ? (got ? '<div class="raid-reward-items">' + items(got) + '</div>' + btn('claim', '보상 받기') : '<p>오늘 보상 횟수를 다 써서 보상은 없어요 (연습)</p>') : '<p>90초 안에 처치하지 못했어요</p>') + btn('again', '다시 준비') + btn('exit', '나가기');
+    n.innerHTML = '<h2>' + (win ? NAMES[b] + ' Lv.' + lv + ' 처치!' : '레이드 실패') + '</h2>' + (win ? (got ? '<div class="raid-reward-items">' + items(got, st().pending.gold) + '</div>' + btn('claim', '보상 받기') + (st().pending.day === calendarKey() && boostLeft() ? btn('boost', '보상 1.5배 받기 · '+boostLeft()+'회') : '') : '<p>오늘 보상 횟수를 다 써서 보상은 없어요 (연습)</p>') : '<p>90초 안에 처치하지 못했어요</p>') + btn('again', '다시 준비', !!got) + btn('exit', '나가기');
   }
   function hurt(d) { const p = arena.player; if (p.dead || run.prep > 0) return; p.hp -= d; p.hitT = .2; withArenaCombat(arena, () => num(p.x, p.y - 56, '-' + fmt(d), '#ff6b6b')); window.SFX && SFX.play('hurt', { v: .5, gap: .25 }); if (p.hp <= 0) { p.hp = 0; p.dead = true; run.revive = 7; window.SFX && SFX.play('die', { v: .6 }); } }
   function input() {
@@ -97,7 +119,13 @@ window.RAID = (() => {
     if (p.dead) { r.revive -= dt; if (r.revive <= 0) { p.dead = false; p.hp = ST.maxhp * .6; p.x = BX; p.y = SPAWN_Y; } }
     else if (inp.on) { const v = clamp(ST.spd, 155, 330) * dt; p.x = clamp(p.x + inp.x * v, 40, W - 40); p.y = clamp(p.y + inp.y * v, 60, H - 50); }
     const enr = b.hp < b.d.hp * .4 ? 1.35 : 1;
-    if (r.prep <= 0 && !b.dead && !p.dead) {
+    const inside = !p.dead && Math.hypot(p.x - BX, p.y - BY) <= arenaRadius;
+    if (r.prep <= 0 && !b.dead && !inside) {
+      returnBossHome(b, BX, BY, b.d.hp, dt);
+      r.warns.length = 0;
+      r.pat = 2;
+    }
+    if (r.prep <= 0 && !b.dead && inside) {
       const d = Math.hypot(p.x - b.x, p.y - b.y);
       b.cd -= dt; r.pat -= dt * enr;
       if (d > 110) { const mv = Math.min(d - 110, 75 * enr * dt); b.x += (p.x - b.x) / d * mv; b.y += (p.y - b.y) / d * mv; }
@@ -109,7 +137,7 @@ window.RAID = (() => {
     withArenaCombat(arena, () => {
       T += dt;
       P.moving = !P.dead && inp.on; if (P.swingT <= 0 && P.moving) P.dir = Math.atan2(inp.y, inp.x); if (P.moving) P.walk += dt * 11 * Math.min(1.5, ST.spd / 190);
-      if (!P.dead && r.prep <= 0) { P.hp = Math.min(ST.maxhp, P.hp + ST.regen * dt); stepPlayerCombat(dt); stepCombatShots(dt); }
+      if (inside && r.prep <= 0) { P.hp = Math.min(ST.maxhp, P.hp + ST.regen * dt); stepPlayerCombat(dt); stepCombatShots(dt); }
       else { P.pend = null; P.s2 = null; P.extraT = 0; P.swingT = 0; arena.timers.length = 0; arena.shots.length = 0; }
       b.ph += dt * 6; b.hitT -= dt; stepCombatEffects(dt);
       if (arena.nums.length > 24) arena.nums.splice(0, arena.nums.length - 24); if (arena.fxs.length > 50) arena.fxs.splice(0, arena.fxs.length - 50);
@@ -140,6 +168,7 @@ window.RAID = (() => {
     const fl = AI('raid_floor_' + run.b);
     if (fl) { const fk = run.b + ':' + c.width; if (!floorPat || floorKey !== fk) { floorPat = g.createPattern(fl, 'repeat'); floorKey = fk; } g.fillStyle = floorPat; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); } else { g.fillStyle = FLOOR[run.b]; g.fillRect(cx - vw / 2 - 10, cy - vh / 2 - 10, vw + 20, vh + 20); }
     g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 14; g.strokeRect(0, 0, W, H);
+    g.beginPath();g.arc(BX,BY,arenaRadius,0,Math.PI*2);g.strokeStyle="#d3aaff";g.lineWidth=3;g.stroke();
     for (const wn of run.warns) { const q = 1 - wn.t / wn.T; g.globalAlpha = .28; g.fillStyle = '#ff3b2f'; g.beginPath(); g.arc(wn.x, wn.y, wn.r, 0, Math.PI * 2); g.fill(); g.globalAlpha = .5; g.beginPath(); g.arc(wn.x, wn.y, wn.r * Math.min(1, q), 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; g.strokeStyle = '#ff7a6a'; g.lineWidth = 4; g.beginPath(); g.arc(wn.x, wn.y, wn.r, 0, Math.PI * 2); g.stroke(); }
     withArenaCombat(arena, () => {
       ctx = g; PV = 0;
@@ -153,7 +182,9 @@ window.RAID = (() => {
     if (!ch2Open()) { toast('챕터 2가 열리면(화산 군주 처치 + Lv.50) 도전할 수 있어요'); return; }
     if (P.dead) { toast('부활한 뒤 입장할 수 있어요'); return; }
     close(); visible = true; root.hidden = false; joy.on = false; joy.x = joy.y = 0; P.moving = false; P.recall = null; pointer = null;
-    selLv = (st().best[selBoss] || 0) + 1; lobby();
+    selLv = (st().best[selBoss] || 0) + 1;
+    const pending = st().pending;
+    if (pending) showResult(true, pending.b, pending.lv); else lobby();
   }
   function exit() { visible = false; root.hidden = true; root.className = ''; root.innerHTML = ''; run = null; arena = null; surface = null; pointer = null; save(); }
   root.addEventListener('click', e => {
@@ -164,7 +195,19 @@ window.RAID = (() => {
     else if (a === 'lvm') { selLv--; lobby(); } else if (a === 'lvp') { selLv++; lobby(); }
     else if (a === 'start') start();
     else if (a === 'again') lobby();
-    else if (a === 'claim' && run?.reward) { const r = run.reward; run.reward = null; markRewardOrigin(c); give({ myth: r.myth, scl: r.scl, gem: r.gem, gold: r.goldK * topGold(), ...(r.cry ? { cry: r.cry } : {}), ...(r.scr ? { scr: r.scr } : {}) }); if (window.PET && S.raidEggDay !== today()) { S.raidEggDay = today(); PET.egg('raid') } save(); c.remove(); }
+    else if (a === 'vip' && buyVip()) lobby();
+    else if (a === 'claim' || a === 'boost') {
+      const s = st(), p = s.pending, boosted = a === 'boost';
+      if (!p || boosted && (p.day !== s.day || !boostLeft())) return;
+      if (boosted) s.boosts = (s.boosts || 0) + 1;
+      s.pending = null;
+      const {goldK,...resources} = p.reward;
+      resources.gold = p.gold;
+      if (boosted) for (const k in resources) resources[k] = Math.ceil(resources[k] * 1.5);
+      markRewardOrigin(c); give(resources);
+      if (window.PET && S.raidEggDay !== s.day) { S.raidEggDay = s.day; PET.egg('raid'); }
+      save(true); lobby();
+    }
   });
   function tick(dt) {
     if (!visible || mode !== 'battle' || !run) return;
@@ -176,5 +219,5 @@ window.RAID = (() => {
       draw();
     }
   }
-  return { get visible() { return visible; }, open, tick, receive() {}, disconnect() {} };
+  return { get visible() { return visible; }, open, tick, buyVip, vip, receive() {}, disconnect() {} };
 })();

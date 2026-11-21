@@ -60,7 +60,7 @@ $('tLogin').onclick=()=>setMode('login');$('tSign').onclick=()=>setMode('sign');
 async function api(p,b){const r=await fetch('/api/'+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({err:'서버 오류'}));if(!r.ok)throw j;return j}
 function fail(e){$('err').textContent=(e&&e.err)||'서버에 연결할 수 없어요'}
 // 진행도 비교: 챕터 → 레벨 → 경험치 순서로 더 높은 쪽을 씀
-function prog(s){if(!s||typeof s!=='object')return -1;return ((s.ch===2||(s.chs&&s.chs[2]))?1e15:0)+(+s.lv||0)*1e10+Math.min(9e9,+s.xp||0)}
+function prog(s){if(!s||typeof s!=='object')return -1;return (s.ch===3||s.chs?.[3]?2e15:s.ch===2||s.chs?.[2]?1e15:0)+(+s.lv||0)*1e10+Math.min(9e9,+s.xp||0)}
 async function enter(token){
  let me=await api('me',{token});
  let pending;

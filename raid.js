@@ -1,12 +1,14 @@
 'use strict';
 // 보스 레이드: 방(최대 4명) · 서버가 보스 체력/패턴/플레이어 위치를 정함 · 하루 3회 클리어
-const W = 1400, H = 1900, BX = W / 2, BY = 640, SPAWN_Y = 1600, DAILY_LIMIT = 3, TIME = 90;
+const W = 1400, H = 1900, BX = W / 2, BY = 640, SPAWN_Y = 1600, DAILY_LIMIT = 3, TIME = 90, RADIUS = 680;
 const BOSSES = 4;
+const inside = p => p.hp > 0 && Math.hypot(p.x - BX,p.y - BY) <= RADIUS;
+const levelCap = u => u.save?.bossKills?.c2dragon && u.save?.lv >= 100 ? 50 : 30;
 const dayKey = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
 // 레벨별 보스 능력치 (참가 인원에 따라 체력 증가). 하루 3시간 성장 기준으로 맞춤
 const bossHp = (lv, n) => Math.round(4.5e7 * Math.pow(1.22, lv - 1) * (1 + .75 * (n - 1)));
 const bossAtk = lv => Math.round(1e5 * Math.pow(1.15, lv - 1));
-const reward = lv => ({ myth: 2 + Math.floor(lv / 3), gem: 20 + lv * 2, scl: 2 + lv, goldK: 40 + lv * 4 });
+const reward = lv => ({ myth: 2 + Math.floor(lv / 3), gem: Math.floor((20 + lv * 2) / 4), scl: 2 + lv, goldK: 40 + lv * 4 });
 
 module.exports = function createRaid(clients, send, markDirty) {
   const rooms = new Map(), memberships = new Map(), watchers = new Set();
@@ -52,7 +54,7 @@ module.exports = function createRaid(clients, send, markDirty) {
       case 'create': {
         if (r) { sendRoom(r); return; }
         const b = m.boss | 0, lv = m.lv | 0;
-        if (b < 0 || b >= BOSSES || lv < 1 || lv > best(c.u)[b] + 1) return err('이전 레벨을 먼저 클리어해 주세요.');
+        if (b < 0 || b >= BOSSES || lv < 1 || lv > Math.min(best(c.u)[b] + 1, Math.max(best(c.u)[b], levelCap(c.u)))) return err('이전 레벨을 먼저 클리어해 주세요.');
         let code; do { code = String(Math.floor(100000 + Math.random() * 900000)); } while (rooms.has(code));
         const nr = { code, host: id, phase: 'lobby', players: new Map(), boss: b, lv, b: null, warns: [], timer: 0 };
         rooms.set(code, nr); join(c, nr); return;
@@ -85,7 +87,7 @@ module.exports = function createRaid(clients, send, markDirty) {
         sendRoom(r); publishRooms();
       }
     } else if (m.action === 'hit' && r.phase === 'battle' && r.b && r.b.hp > 0) {
-      if (p.hp <= 0 || Math.hypot(p.x - r.b.x, p.y - r.b.y) > 560) return;
+      if (!inside(p) || Math.hypot(p.x - r.b.x, p.y - r.b.y) > 560) return;
       // 1초에 공격력의 45배까지만 인정 (스킬 폭딜 포함)
       const now = Date.now(); if (now - p.winT > 1000) { p.winT = now; p.win = 0; }
       const d = Math.min(clamp(m.damage, 0, p.attack * 45), Math.max(0, p.attack * 45 - p.win));
@@ -108,7 +110,13 @@ module.exports = function createRaid(clients, send, markDirty) {
         if (p.moving) { p.x = clamp(p.x + p.dx * p.speed * dt, 40, W - 40); p.y = clamp(p.y + p.dy * p.speed * dt, 60, H - 50); p.dir = Math.atan2(p.dy, p.dx); }
       }
       if (r.phase === 'prepare') { if (!r.timer) { r.phase = 'battle'; r.timer = TIME; } sendRoom(r); continue; }
-      const b = r.b, alive = [...r.players.values()].filter(p => p.hp > 0), enr = b.hp < b.max * .4 ? 1.35 : 1;
+      const b = r.b, alive = [...r.players.values()].filter(inside), enr = b.hp < b.max * .4 ? 1.35 : 1;
+      if (!alive.length && b.hp > 0) {
+        const dx=BX-b.x,dy=BY-b.y,dist=Math.hypot(dx,dy),move=dist ? Math.min(1,460*dt/dist) : 0;
+        b.x+=dx*move;b.y+=dy*move;
+        b.hp=Math.min(b.max,b.hp+b.max*.45*dt);
+        r.warns.length=0;b.pat=2;
+      }
       // 근접: 가까운 사람 쫓아가서 때림
       let tg = null, nd = 1e9; for (const p of alive) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < nd) { nd = d; tg = p; } }
       b.cd -= dt; b.pat -= dt * enr;

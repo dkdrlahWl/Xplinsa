@@ -1,5 +1,6 @@
 'use strict';
 
+const bossInRange = (e,p) => p.hp > 0 && Math.hypot(p.x-e.hx,p.y-e.hy)<=e.radius;
 const WIDTH = 1920, HEIGHT = 2560, CENTER_X = WIDTH / 2, CENTER_Y = HEIGHT / 2;
 const HEAL_RADIUS = 34, DAILY_LIMIT = 10;
 const dayKey = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
@@ -176,7 +177,7 @@ module.exports = function createDefense(clients, send, markDirty) {
       }
     } else if (message.action === 'hit' && room.phase === 'battle') {
       const enemy = room.enemies.find(e => e.id === message.enemy && e.hp > 0);
-      if (!enemy || player.hp <= 0 || Math.hypot(player.x - CENTER_X, player.y - CENTER_Y) <= HEAL_RADIUS) return;
+      if (!enemy || player.hp <= 0 || enemy.boss && !bossInRange(enemy,player) || Math.hypot(player.x - CENTER_X, player.y - CENTER_Y) <= HEAL_RADIUS) return;
       if (Math.hypot(player.x - enemy.x, player.y - enemy.y) > 470) return;
       const damage = clamp(message.damage, 0, player.attack * 18);
       enemy.hp -= damage;
@@ -221,10 +222,15 @@ module.exports = function createDefense(clients, send, markDirty) {
           const next = room.queue.shift(), [x, y] = ENTRIES[next.lane];
           const offset = (Math.random() - .5) * 54;
           room.enemies.push({ ...next, id: ++sequence, x: x + (x === CENTER_X ? offset : 0),
-            y: y + (y === CENTER_Y ? offset : 0), maxHp: next.hp, cooldown: .8 });
+            y: y + (y === CENTER_Y ? offset : 0), hx:x, hy:y, radius:Math.hypot(x-CENTER_X,y-CENTER_Y)+200, maxHp: next.hp, cooldown: .8 });
         }
         room.enemies = room.enemies.filter(e => e.hp > 0);
         for (const e of room.enemies) {
+          if(e.boss && ![...room.players.values()].some(p=>bossInRange(e,p))){
+            const dx=e.hx-e.x,dy=e.hy-e.y,dist=Math.hypot(dx,dy),move=dist?Math.min(1,460*dt/dist):0;
+            e.x+=dx*move;e.y+=dy*move;e.hp=Math.min(e.maxHp,e.hp+e.maxHp*.45*dt);
+            continue;
+          }
           const campDistance = Math.hypot(e.x - CENTER_X, e.y - CENTER_Y);
           let target = null, nearest = e.boss ? 145 : 86;
           for (const p of room.players.values()) {

@@ -13,7 +13,7 @@ let db = { users: {} };
 try { db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); if (!db.users) db.users = {}; } catch (e) {}
 let dirty = false;
 function markDirty() { dirty = true; }
-function prog(s) { if (!s || typeof s !== 'object') return -1; return ((s.ch === 2 || (s.chs && s.chs[2])) ? 1e15 : 0) + (+s.lv || 0) * 1e10 + Math.min(9e9, +s.xp || 0); }
+function prog(s) { if (!s || typeof s !== 'object') return -1; return (s.ch===3||s.chs?.[3]?2e15:s.ch===2||s.chs?.[2]?1e15:0) + (+s.lv || 0) * 1e10 + Math.min(9e9, +s.xp || 0); }
 setInterval(flush, 3000);
 function flush() {
   if (!dirty) return;
@@ -77,7 +77,7 @@ function market(u, b, res) {
   if (b.a === 'inbox') return send(res, 200, { mail: sysMail(u).concat(monthly, mail.map(m => { const o = { w: m.w, t: m.t, keys: m.keys }; for (const k of SEND_RES) if (m[k]) o[k] = m[k]; return o; }).reverse()) });
   if (b.a === 'sell') {
     const key = String(b.key || ''), q = Math.round(Number(b.q) * 100) / 100, price = Math.floor(Number(b.price)), cur = b.cur === 'gem' ? 'gem' : 'gold';
-    if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-6]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
+    if (!/^(dagger|sword|mace|spear|axe|bow|gun|staff)_[0-7]$/.test(key) || !(q >= .8 && q <= 1.2)) return send(res, 400, { err: '잘못된 무기예요' });
     if (!(price >= 1 && price <= MK_LIMIT[cur])) return send(res, 400, { err: '가격을 확인해 주세요' });
     if (mk.list.filter(l => l.seller === u.id).length >= MK_MAX) return send(res, 400, { err: '한 사람당 ' + MK_MAX + '개까지 등록할 수 있어요' });
     const l = { id: ++mk.seq, seller: u.id, nick: u.nick || '모험가', key, q, price, cur, t: Date.now() };
@@ -170,7 +170,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/adminsaves') { // 관리자 전용: 유저별 기록(능력치 계산용)
       if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
-      return send(res, 200, { list: Object.values(db.users).filter(x => x.nick && x.save).map(x => ({ id: x.id, n: x.nick, save: x.save })) });
+      return send(res, 200, { list: Object.values(db.users).map(x => ({ id: x.id, n: x.nick || x.id, save: x.save || null })) });
     }
     if (p === '/api/admmail') { // 관리자 전용: 모든 유저 우편함에 멘트 + 보상 보내기
       if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
@@ -277,7 +277,7 @@ setInterval(() => raid.tick(.1), 100);
 // 보스 번호는 클라이언트 지도 생성 순서로 정해짐 → 범위만 확인 (일반 몬스터는 애초에 서버로 안 보냄)
 const SHARED_BOSSES = { has: i => Number.isInteger(i) && i >= 0 && i < 20000 };
 const mons = new Map(); // i -> {hp,max,dead,hit:Set,own,last,resp,rt}
-function mon(i, mx, rs) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } else if (mx > 1 && m.max !== mx) { const fraction = m.max > 0 ? m.hp / m.max : 1; m.max = mx; if (!m.dead) m.hp = Math.max(1, Math.round(mx * fraction)); } return m; }
+function mon(i, mx, rs, arena) { let m = mons.get(i); if (!m) { m = { hp: mx, max: mx, dead: false, hit: new Set(), own: null, last: 0, resp: rs || 10, rt: 0 }; mons.set(i, m); } else if (mx > 1 && m.max !== mx) { const fraction = m.max > 0 ? m.hp / m.max : 1; m.max = mx; if (!m.dead) m.hp = Math.max(1, Math.round(mx * fraction)); } if (!m.arena && arena && Number.isFinite(arena.x) && Number.isFinite(arena.y) && arena.r > 0 && arena.r <= 1500) m.arena = arena; return m; }
 const MONS_FILE = path.join(DATA, 'mons.json');
 try { for (const [i, g] of Object.entries(JSON.parse(fs.readFileSync(MONS_FILE, 'utf8')))) if (SHARED_BOSSES.has(+i) && g.rt > Date.now()) mons.set(+i, { hp: 0, max: g.max, dead: true, hit: new Set(), own: null, last: 0, resp: g.resp, rt: g.rt }); } catch (e) {}
 function saveMons() { const o = {}; for (const [i, g] of mons) if (g.dead && g.rt > Date.now() && g.resp >= 60) o[i] = { max: g.max, resp: g.resp, rt: g.rt }; fs.writeFile(MONS_FILE, JSON.stringify(o), () => {}); }
@@ -363,23 +363,28 @@ function onMsg(c, m) {
   if (m.t === 'admboss' && c.u.id === 'ehgus') { for (const [i, g] of mons) { pendingBossHp.delete(i); g.dead = false; g.hp = g.max; g.hit.clear(); g.rt = 0; broadcast({ t: 'mr', i }); } saveMons(); return; } // 관리자: 모든 공유 보스 즉시 재생성
   if (m.t === 's') { // 내 상태
     const n = v => (typeof v === 'number' && isFinite(v) ? Math.round(v * 100) / 100 : 0);
-    c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), pt: String(m.pt || '').slice(0, 20), mt: String(m.mt || '').slice(0, 20), sl: Array.isArray(m.sl) ? m.sl.slice(0, 5).map(k => String(k || '').slice(0, 12)) : [], hp: n(m.hp), lv: m.lv | 0, ch: m.ch === 2 ? 2 : 1, rank: Math.max(0, Math.min(10, m.rank | 0)), dead: m.dead ? 1 : 0 };
+    c.st = { x: n(m.x), y: n(m.y), d: n(m.d), mv: m.mv ? 1 : 0, sc: m.sc | 0, sw: n(m.sw), w: String(m.w || 'sword_0').slice(0, 20), h: String(m.h || '').slice(0, 20), pt: String(m.pt || '').slice(0, 20), mt: String(m.mt || '').slice(0, 20), sl: Array.isArray(m.sl) ? m.sl.slice(0, 5).map(k => String(k || '').slice(0, 12)) : [], hp: n(m.hp), lv: m.lv | 0, ch: [2,3].includes(m.ch) ? m.ch : 1, field: m.field !== false, rank: Math.max(0, Math.min(15, m.rank | 0)), dead: m.dead ? 1 : 0 };
     c.dirty = true;
     if (Array.isArray(m.mp)) { const mp = []; for (let k = 0; k + 2 < m.mp.length && k < 300; k += 3) { const g = mons.get(m.mp[k] | 0); if (g && g.own === c.u.id && !g.dead) mp.push(m.mp[k] | 0, n(m.mp[k + 1]), n(m.mp[k + 2])); } c.st.mp = mp; }
   } else if (m.t === 'h') { // 몬스터 때림
     const i = m.i | 0, d = +m.d, mx = +m.mx; if (!(d > 0) || !(mx > 0) || !SHARED_BOSSES.has(i)) return;
-    const g = mon(i, mx, +m.rs); if (g.dead) return;
+    const g = mon(i, mx, +m.rs, m.arena); if (g.dead || !bossParticipant(c,i,g)) return;
     g.hp -= d; g.hit.add(c.u.id); g.last = Date.now();
     if (g.hp <= 0) { pendingBossHp.delete(i); g.dead = true; g.own = null; g.rt = m.w ? nextWorld() : Date.now() + g.resp * 1000; broadcast({ t: 'mk', i, w: [...g.hit], rs: Math.round((g.rt - Date.now()) / 1000) }); saveMons(); g.hit.clear(); }
     else pendingBossHp.set(i, g.hp);
   } else if (m.t === 'c') { // 몬스터 주인 요청
     const i = m.i | 0; if (!SHARED_BOSSES.has(i)) return;
-    const g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs);
-    if (!g.dead && (!g.own || !clients.has(g.own))) { g.own = c.u.id; broadcast({ t: 'mo', i, o: g.own }); }
+    const g = mon(i, +m.mx > 0 ? +m.mx : 1, +m.rs, m.arena);
+    if (!g.dead && bossParticipant(c,i,g) && (!g.own || !clients.has(g.own))) { g.own = c.u.id; broadcast({ t: 'mo', i, o: g.own }); }
   } else if (m.t === 'r') { const g = mons.get(m.i | 0); if (g && g.own === c.u.id) { g.own = null; broadcast({ t: 'mo', i: m.i | 0, o: null }); } }
   else if (m.t === 'p') wsSend(c.sock, { t: 'p', k: m.k });
 }
 
+function bossParticipant(c,i,g) {
+  if(!g.arena) return true;
+  const {x,y,r}=g.arena, p=c.st;
+  return !!p && p.field && !p.dead && Date.now()-c.alive<20000 && p.ch===Math.floor(i/5000)+1 && Math.hypot(p.x-x,p.y-y)<=r+10;
+}
 // 1초에 20번 묶어서 보냄
 setInterval(() => {
   for (const [i, hp] of pendingBossHp) broadcast({ t: 'mh', i, hp });
@@ -393,9 +398,9 @@ setInterval(() => {
   for (const [i, g] of mons) {
     if (g.dead && now >= g.rt) { g.dead = false; g.hp = g.max; g.hit.clear(); broadcast({ t: 'mr', i }); }
     // 원 안에 쫓는 사람이 없으면(주인 없음) 1.5초 뒤부터 빠르게 회복 (약 2.5초에 가득)
-    else if (!g.dead && g.hp < g.max && !g.own && now - g.last > 1500) { g.hp = Math.min(g.max, g.hp + g.max * .02); if (g.hp >= g.max) g.hit.clear(); if (g.hp >= g.max || (now / 50 | 0) % 4 === 0) broadcast({ t: 'mh', i, hp: g.hp }); }
+    else if (!g.dead && g.hp < g.max && (g.arena ? ![...clients.values()].some(c=>bossParticipant(c,i,g)) : !g.own && now-g.last>1500)) { g.hp = Math.min(g.max, g.hp + g.max * .02); if (g.hp >= g.max) g.hit.clear(); if (g.hp >= g.max || (now / 50 | 0) % 4 === 0) broadcast({ t: 'mh', i, hp: g.hp }); }
   }
-  for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); raid.leave(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
+  for (const [id, c] of clients) if (now - c.alive > 20000) { clients.delete(id); defense.leave(id); raid.leave(id); release(id); wsClose(c.sock); broadcast({ t: 'leave', id }); }
 }, 50);
 
 /* ---------------- 정식 오픈 초기화 ----------------
@@ -452,6 +457,38 @@ if (!questRepairUser?.aspdQuestRepairApplied && questRepairSave?.ch === 2 && [32
   markDirty();
   flush();
 }
+// One-time upgrade for the existing administrator on the Samurai Lands release.
+function applySamuraiRelease() {
+  if (db.samuraiReleaseApplied) return;
+  const admin = db.users.ehgus, save = admin?.save;
+  if (save) {
+    const level = Number(save.lv) || 0;
+    if (level < 145) { save.lv = 145; save.xp = 0; }
+    save.promotion = Math.max(Number(save.promotion) || 0, 15);
+    save.bossKills = { ...save.bossKills, volc: Math.max(1, save.bossKills?.volc || 0), c2dragon: Math.max(1, save.bossKills?.c2dragon || 0) };
+    save.awk = { ...save.awk, atk: Math.max(30, save.awk?.atk || 0), hp: Math.max(30, save.awk?.hp || 0) };
+    save.weapons = { ...save.weapons, sword_7: Math.max(1, save.weapons?.sword_7 || 0) };
+    save.wq = { ...save.wq, sword_7: [1.2, ...(save.wq?.sword_7 || []).slice(1)] };
+    save.slots = ['sword_7', ...(save.slots || []).slice(1, 6)];
+    save.slv = [Math.max(130, save.slv?.[0] || 0), ...(save.slv || []).slice(1, 6)];
+    save.heroes = { ...save.heroes, moonbushi: 1 };
+    save.heroLv = { ...save.heroLv, moonbushi: 120 };
+    save.heroStars = { ...save.heroStars, moonbushi: 6 };
+    save.pets = { ...save.pets, twinfox: { lv: 50, st: 5 } };
+    save.mounts = { ...save.mounts, nightwolf: { st: 5 } };
+    if (save.collection?.weapons) save.collection.weapons.sword_7 = Math.max(1, save.collection.weapons.sword_7 || 0);
+    admin.rev = (admin.rev || 0) + 1;
+  }
+  const releaseWindow = Date.parse('2026-11-21T16:00:00+09:00');
+  if (MAINT_AT === releaseWindow) {
+    if (db.maintFrom === releaseWindow) db.maint = { on: 0 };
+    db.maintFrom = releaseWindow;
+  }
+  db.samuraiReleaseApplied = true;
+  markDirty();
+  flush();
+}
+applySamuraiRelease();
 deliverAllMonthlyMail();
 setInterval(deliverAllMonthlyMail, 30000);
 
