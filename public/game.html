@@ -538,7 +538,7 @@ async function idbAll(){const db=await idb();return new Promise(res=>{const out=
 async function idbPut(k,v){const db=await idb();return new Promise(res=>{const tx=db.transaction('a','readwrite');tx.objectStore('a').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>res()})}
 async function idbDel(k){const db=await idb();return new Promise(res=>{const tx=db.transaction('a','readwrite');tx.objectStore('a').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res()})}
 const BAKED={};
-async function loadAssets(){try{const r=await fetch('assets/manifest.json',{cache:'no-cache'});if(r.ok){const j=await r.json();for(const f of(j.files||[])){const n=f.replace(/\.(png|webp|jpe?g|gif)$/i,'');BAKED[n]='assets/'+f;setAsset(n,'assets/'+f+(n==='bld_fire'?'?v=2041':/^wpn_.*_7$/.test(n)?'?v=2':/^wpn_.*_5$/.test(n)?'?v=2057':/^hero_moonbushi_/.test(n)?'?v=5':/^hero_/.test(n)?'?v=2040':/^(tile|obs)/.test(n)?'?v=2037':/^fx_(boom|meteor)$/.test(n)?'?v=2101':''))}}}catch(e){}
+async function loadAssets(){try{const r=await fetch('assets/manifest.json',{cache:'no-cache'});if(r.ok){const j=await r.json();for(const f of(j.files||[])){const n=f.replace(/\.(png|webp|jpe?g|gif)$/i,'');BAKED[n]='assets/'+f;setAsset(n,'assets/'+f+(n==='bld_fire'?'?v=2041':/^wpn_.*_7$/.test(n)?'?v=3':/^wpn_.*_5$/.test(n)?'?v=2057':/^hero_moonbushi_/.test(n)?'?v=6':/^hero_/.test(n)?'?v=2040':/^(tile|obs)/.test(n)?'?v=2037':/^fx_(boom|meteor)$/.test(n)?'?v=2101':''))}}}catch(e){}
  try{for(const[k,v]of await idbAll()){LOCAL[k]=1;setAsset(k,URL.createObjectURL(v))}}catch(e){}}
 const SHAPE={sprout:'머리에 새싹 잎이 난 동글동글한 몸',slime:'말랑한 젤리 슬라임',mush:'버섯 갓을 쓴 작은 몸',spider:'다리 8개 달린 벌레형',golem:'큼직한 돌덩이 골렘',tall:'키 큰 인간형(로브·갑옷)',bat:'날개를 편 박쥐형',chest:'보물상자(때리면 부서짐)',cactus:'선인장'};
 const HERO_LOOK={archer:'초록 후드와 가죽 조끼의 견습 궁수',farmer:'밀짚모자와 멜빵바지의 농부',mage:'파란 뾰족 모자와 로브의 수습 마법사',miner:'노란 안전모와 헤드랜턴, 갈색 작업복의 광부',monk:'주황 승복과 민머리의 수도승',pirate:'삼각 해적모자와 빨간 두건, 안대의 해적',viking:'뿔 달린 투구와 털망토, 갈색 수염의 바이킹',samurai:'빨간 일본 갑옷과 투구의 사무라이',icewitch:'하늘색 마녀 모자와 얼음 결정 장식 로브의 마녀',dragon:'붉은 용비늘 갑옷과 용머리 투구의 용기사',adv:'얼굴 없는 노란 마네킹 같은 기본 캐릭터, 몸 전체가 노란색',knight:'은색 갑옷, 가슴에 파란 천, 빨간 깃털 달린 투구',rogue:'짙은 보라색 후드와 옷, 어두운 얼굴에 빛나는 노란 눈 두 개'};
@@ -1962,6 +1962,10 @@ const PISTOL_GRIPS=[[.19,.65],[.18,.67],[.115,.67],[.165,.70],[.16,.64]];
 const BUILTIN_GRIP={dagger:.235,sword:.22,mace:.23,spear:.27,axe:.23,bow:.235,staff:.235};
 const ANCIENT_GRIP={dagger:[.21,.12],sword:[.21,.12],mace:[.27,.16],spear:[.32,.20],axe:[.30,.20],bow:[.23,.45],gun:[.21,.21],staff:[.29,.18]};
 function weaponGrip(im,k,gr){
+ if(gr===7){
+  const legendary=AI('wpn_'+k+'_4');
+  if(legendary)return weaponGrip(legendary,k,4);
+ }
  if(gr===5&&ANCIENT_GRIP[k]&&!LOCAL['wpn_'+k+'_5']&&AI('wpn_'+k+'_5')===im){
   const [gx,bx]=ANCIENT_GRIP[k];
   const gy=k==='gun'? .69:gripY(im,gx);
