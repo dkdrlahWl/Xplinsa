@@ -71,6 +71,10 @@
 .s2vip li{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.28);border-radius:10px;padding:5px 8px;margin:4px 0;font-size:14px}
 .s2vip li .vi{flex:0 0 30px;height:30px}.s2vip li .vi>img,.s2vip li .vi>svg{width:100%;height:100%;object-fit:contain}
 .s2vip li b{color:#ffe066;font-weight:normal}
+.s2pack.raid-vip{display:flex;flex-direction:column}
+.s2pack.raid-vip .art{bottom:60px;pointer-events:none}
+.s2pack.raid-vip .body{padding-top:12px}
+.s2pack.raid-vip .buy{margin-top:auto;position:relative}
 .s2pack.vip .stat{font-size:13px;color:#cfc8ee;margin:2px 0 4px}
 .s2car{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:10px;margin:0 0 4px;overscroll-behavior-x:contain}
 .s2car::-webkit-scrollbar{display:none}
@@ -213,7 +217,7 @@
       </ul></div>
       <button class="buy" data-a="buyvip" ${S.gem < VIP_PRICE ? 'disabled' : ''}>${IC.gem}${fmt(VIP_PRICE)}${on ? '<span style="font-size:16px">&nbsp;· 30일 연장</span>' : ''}</button></div>`;
     const raidOn = window.RAID?.vip();
-    const raidVip = `<div class="s2pack vip"><div class="art">${img('feature_raid', AURL.shop_vip)}</div>
+    const raidVip = `<div class="s2pack vip raid-vip"><div class="art">${img('shop_raid_vip', 'assets/shop_raid_vip.webp')}</div>
       <div class="body"><h3>레이드 VIP 30일권</h3><div class="stat">${raidOn ? Math.ceil((S.raidVipUntil-Date.now())/86400000)+'일 남음' : '구매 즉시 30일 적용'}</div>
       <ul class="s2vip"><li>하루 레이드 보상 3회 → 4회</li><li>그중 하루 2회 보상 1.5배 선택</li></ul></div>
       <button class="buy" data-a="buyraidvip" ${S.gem < 3000 ? 'disabled' : ''}>${IC.gem}3,000${raidOn ? ' · 30일 연장' : ''}</button></div>`;
