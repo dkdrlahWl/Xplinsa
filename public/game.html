@@ -1974,10 +1974,16 @@ function weaponGrip(im,k,gr){
  }
  return gripInfo(im,k);
 }
+function weaponDrawSize(k,im){
+ const width=wLen(k),reference=AI('wpn_'+k+'_4')||im;
+ const aspect=im.height/im.width, maxHeight=width*reference.height/reference.width;
+ const height=Math.min(width*aspect,maxHeight);
+ return {width:height/aspect,height};
+}
 function handInfo(k,gr){
  const im=AI('wpn_'+k+'_'+gr)||AI('wpn_'+k);
  if(!im||k==='dagger'||k==='gun')return{fist:6.4,off:TWO[k]||-7,perp:0};
- const grip=weaponGrip(im,k,gr),width=wLen(k),height=width*im.height/im.width;
+ const grip=weaponGrip(im,k,gr),{width,height}=weaponDrawSize(k,im);
  return{fist:clamp(grip.th*height*1.25,6.2,7.2),
   off:k==='bow'?clamp((grip.bx-grip.gx)*width,6,11):clamp((grip.bx-grip.gx)*width,-8,-4),
   perp:k==='bow'?clamp((grip.by-grip.gy)*height-1,-2,4):0};
@@ -1986,7 +1992,7 @@ function gripY(im,gx){let m=GY.get(im);if(!m){m={};GY.set(im,m)}if(m[gx]!==undef
 function blade(x0,x1,w,tip,c){const g=ctx.createLinearGradient(0,-w,0,w);g.addColorStop(0,'#ffffff');g.addColorStop(.45,c);g.addColorStop(1,lt(c,-.35));ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x0,-w);ctx.lineTo(x1,-w*.8);ctx.lineTo(x1+tip,0);ctx.lineTo(x1,w*.8);ctx.lineTo(x0,w);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x0+2,-w*.25);ctx.lineTo(x1+tip*.4,-w*.1);ctx.stroke();ctx.strokeStyle=OLC;ctx.lineWidth=2}
 function handle(x0,x1,h){const g=ctx.createLinearGradient(0,-h,0,h);g.addColorStop(0,'#b07a4a');g.addColorStop(1,'#5e3a1e');ctx.fillStyle=g;rr(x0,-h,x1-x0,h*2,h);ctx.fill();ctx.stroke()}
 function drawWeapon(k,gc,glow,gi){ // pointing +x from the hand
- {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const L=((WL[k]||40)+8)*(PV?1.05:1)*(k==='dagger'?1.1:k==='bow'||k==='gun'?1.0:1.38)*(gi>=6?1.18:1),h=L*im.height/im.width*(gi===5?.8:1),GIi=weaponGrip(im,k,gi),gx=GIi.gx,gy=GIi.gy;if(gi>=5){const pu=.5+.5*Math.sin(performance.now()/180);ctx.shadowColor=gi===7?'#8affed':gi>=6?'#ff3d7f':'#3ee0c8';ctx.shadowBlur=14+12*pu;ctx.drawImage(im,-L*gx,-h*gy,L,h);if(gi>=6){ctx.save();ctx.globalAlpha*=gi===7?.14+.12*pu:.35+.25*pu;ctx.globalCompositeOperation='lighter';ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.restore()}ctx.shadowBlur=0;return}if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
+ {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const {width:L,height:h}=weaponDrawSize(k,im),GIi=weaponGrip(im,k,gi),gx=GIi.gx,gy=GIi.gy;if(gi>=5){const pu=.5+.5*Math.sin(performance.now()/180);ctx.shadowColor=gi===7?'#8affed':gi>=6?'#ff3d7f':'#3ee0c8';ctx.shadowBlur=14+12*pu;ctx.drawImage(im,-L*gx,-h*gy,L,h);if(gi>=6){ctx.save();ctx.globalAlpha*=gi===7?.14+.12*pu:.35+.25*pu;ctx.globalCompositeOperation='lighter';ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.restore()}ctx.shadowBlur=0;return}if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
  ctx.lineWidth=2;ctx.strokeStyle=OLC;const metal=gc==='#c3cad6'?'#d6dde8':lt(gc,.25);
  if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}
  if(k==='sword'||k==='dagger'){const L=k==='sword'?34:20;handle(-6,4,2.6);ell(-7,0,3.2,3.2,'#ffd23c');blade(7,L,4.4,9,metal);frr('#ffd23c',3,-8.5,5,17,2.5)}
@@ -2039,7 +2045,8 @@ function drawHead(h,hx,hy,lean,up,fl){{const im=AI('hero_'+h.k+'_head');if(im){c
  if(h.k==='rogue'){ell(hx,hy,12.5,12,'#4d4270');if(!up){ctx.fillStyle='#1c1830';ctx.beginPath();ctx.ellipse(hx+4,hy+1,7.5,7,0,0,TAU);ctx.fill();ctx.fillStyle='#ffe066';ctx.shadowColor='#ffe066';ctx.shadowBlur=6;ctx.beginPath();ctx.ellipse(hx+2,hy,1.4,2.2,0,0,TAU);ctx.ellipse(hx+7,hy,1.4,2.2,0,0,TAU);ctx.fill();ctx.shadowBlur=0}
   ctx.fillStyle='#4d4270';ctx.beginPath();ctx.moveTo(hx-9,hy-8);ctx.quadraticCurveTo(hx-18,hy-14,hx-17,hy-3);ctx.quadraticCurveTo(hx-12,hy-4,hx-9,hy-2);ctx.fill();ctx.stroke();return}
  ell(hx,hy,12.5,12,h.body);ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(hx-4,hy-5,4,2.6,-.5,0,TAU);ctx.fill()}
-function drawTorso(h,hipx,hipy,lean){ctx.save();ctx.translate(hipx,hipy);ctx.rotate(lean);{const im=AI('hero_'+h.k+'_body');if(im){const hh=22,w=Math.min(22,hh*im.width/im.height);ctx.drawImage(im,-w/2,3-hh,w,hh);ctx.restore();return}}
+const MOONBUSHI_RIG={torsoHeight:31,torsoTop:-21,headX:-6.4,headY:-26.8};
+function drawTorso(h,hipx,hipy,lean){ctx.save();ctx.translate(hipx,hipy);ctx.rotate(lean);{const im=AI('hero_'+h.k+'_body');if(im){const rig=h.k==='moonbushi'?MOONBUSHI_RIG:null,hh=rig?.torsoHeight||22,w=Math.min(rig?27:22,hh*im.width/im.height);ctx.drawImage(im,-w/2,rig?.torsoTop??3-hh,w,hh);ctx.restore();return}}
  if(h.k==='knight'){frr('#cdd6e2',-9.5,-17,19,19,7);ctx.fillStyle='#3f6fd8';ctx.fillRect(-4,-16,8,16);ctx.strokeRect(-4,-16,8,16);ctx.fillStyle='#6b4326';ctx.fillRect(-9,-4,18,3.5);ell(-11,-14,5,4.2,'#9aa4b6');}
  else if(h.k==='rogue'){frr('#4d4270',-9,-17,18,19,7);ctx.fillStyle='#2a2244';ctx.fillRect(-9,-5,18,3);ctx.fillStyle='#ffd23c';ctx.fillRect(-2,-5.5,4,4)}
  else{frr(h.body,-9,-17,18,19,8);ctx.fillStyle='rgba(180,110,10,.35)';ctx.fillRect(-8.5,-5,17,2.5)}
@@ -2080,7 +2087,13 @@ function drawPlayer(){if(P.dead)return;const x=P.x,y=P.y,mv=P.moving,k=wType(),g
   if(k==='dagger'){const ba=p>=0?-1.2+eio(p)*1.6:-1.0+(mv?.1*s:0);ctx.save();ctx.translate(bh.x,bh.y);ctx.rotate(ba);drawWeapon(k,gc,gr>=2,gr);ctx.restore()}
   HA('hand')?pimg(HA('hand'),bh.x,bh.y,5.5):ell(bh.x,bh.y,3.2,3.2,h.body);
  };
- const NK=IMG?neckAdj(h):0,hx=chx+Math.sin(lean)*(IMG?11.5-NK:11),hy=chy-Math.cos(lean)*(IMG?11.5-NK:11);
+ const NK=IMG&&h.k!=='moonbushi'?neckAdj(h):0;
+ let hx=chx+Math.sin(lean)*(IMG?11.5-NK:11),hy=chy-Math.cos(lean)*(IMG?11.5-NK:11);
+ if(IMG&&h.k==='moonbushi'){
+  const {headX,headY}=MOONBUSHI_RIG;
+  hx=hipx+headX*Math.cos(lean)-headY*Math.sin(lean);
+  hy=hipy+headX*Math.sin(lean)+headY*Math.cos(lean);
+ }
  // front arm + weapon
  const fs={x:chx-(IMG?BW*.36:1.5)*Math.cos(lean),y:chy+(IMG?4.8:2.5)};
  let fhx=fs.x+Math.cos(ua)*l1+Math.cos(ua+ea)*l2,fhy=fs.y+Math.sin(ua)*l1+Math.sin(ua+ea)*l2;
