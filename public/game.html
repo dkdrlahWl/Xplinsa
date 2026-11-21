@@ -482,7 +482,7 @@ body.wide #modal{left:0;right:0;width:560px;margin:0 auto;zoom:var(--uiz,1);bord
 <script>window.saveReady=!!sessionStorage.xp_enter && sessionStorage.xp_enter===sessionStorage.xp_tok;window.TOK=()=>sessionStorage.xp_tok||"";sessionStorage.removeItem("xp_enter");if(!window.saveReady)location.replace("index.html")</script>
 <script src="net.js?v=36"></script>
 <script src="chief-patterns.js?v=4"></script>
-<script src="chapter-three.js?v=3"></script>
+<script src="chapter-three.js?v=5"></script>
 <script src="boss-patterns.js?v=6"></script>
 <script src="weapon-skill-fx.js?v=6"></script>
 <script src="reward-fx.js?v=1"></script>
@@ -624,13 +624,16 @@ const BR=[];for(let a=0;a<NZ;a++)for(let b=a+1;b<NZ;b++)for(const ca of ZA[a])fo
 const BRIDGES=[];if(CHAP===2)for(const{za,zb,p1:q1,p2:q2}of BRX){const p1={x:CX+q1[0]*MS,y:CY+q1[1]*MS},p2={x:CX+q2[0]*MS,y:CY+q2[1]*MS};BRIDGES.push({a:za,b:zb,p1,p2});JN.push(p1,p2);
  const L=Math.hypot(p2.x-p1.x,p2.y-p1.y),ux=(p2.x-p1.x)/L,uy=(p2.y-p1.y)/L;for(let t=-260;t<=L+260;t+=28)BR.push({x:p1.x+ux*t,y:p1.y+uy*t,r:58,a:za,b:zb})}
 const LAND_ROADS=[];
-if(CHAP===3)for(const [a,ia,b,ib] of CH3_ROADS){
+if(CHAP===3)for(const [a,ia,b,ib,bends=[]] of CH3_ROADS){
  const A=ia<0?{x:CX,y:CY,r:BASE.sand}:ZB[a][ia],B=ZB[b][ib];
- const d=Math.hypot(B.x-A.x,B.y-A.y),ux=(B.x-A.x)/d,uy=(B.y-A.y)/d;
- const p1={x:A.x+ux*(A.r-120),y:A.y+uy*(A.r-120)},p2={x:B.x-ux*(B.r-120),y:B.y-uy*(B.r-120)};
- LAND_ROADS.push({a,b,p1,p2});JN.push(p1,p2);
- const length=Math.hypot(p2.x-p1.x,p2.y-p1.y);
- for(let t=0;t<=length+25;t+=25)BR.push({x:p1.x+ux*t,y:p1.y+uy*t,r:74,a,b});
+ const corners=bends.map(([x,y])=>({x:CX+x*MS,y:CY+y*MS}));
+ const inset=(from,to)=>{
+  const scale=(from.r-160)/Math.hypot(to.x-from.x,to.y-from.y);
+  return {x:from.x+(to.x-from.x)*scale,y:from.y+(to.y-from.y)*scale};
+ };
+ const nodes=[inset(A,corners[0]||B),...corners,inset(B,corners.at(-1)||A)];
+ JN.push(nodes[0],nodes.at(-1));
+ for(let i=1;i<nodes.length;i++)LAND_ROADS.push({a,b,p1:nodes[i-1],p2:nodes[i]});
 }
 const coastPath=new Path2D();
 const coast=CH3_COAST.flatMap(([x,y],i)=>{
@@ -658,20 +661,16 @@ function roadDistance(q,x,y){
 }
 function continentWalk(x,y){
  if(!onContinent(x,y))return false;
- if(Math.hypot(x-WBA.x,y-WBA.y)<WBA.r+120)return zoneOpen(WBA.z);
- if(LAND_ROADS.some(q=>zoneOpen(q.a)&&zoneOpen(q.b)&&roadDistance(q,x,y)<170))return true;
- let best=Infinity,region=0;
- for(let i=0;i<NZ;i++){
-  const c=ZB[i][1],d=(x-c.x)**2+(y-c.y)**2;
-  if(d<best){best=d;region=i}
- }
- return zoneOpen(region);
+ if(zoneOpen(WBA.z)&&inWB(x,y,16))return true;
+ if(LAND_ROADS.some(q=>zoneOpen(q.a)&&zoneOpen(q.b)&&roadDistance(q,x,y)<75))return true;
+ for(let i=0;i<NZ;i++)if(zoneOpen(i)&&gz(i,x,y)>3)return true;
+ return false;
 }
 function paintContinent(){
  ctx.save();
  ctx.strokeStyle='#7ebfa8';ctx.lineWidth=145;ctx.stroke(coastPath);
  ctx.strokeStyle='#bba77b';ctx.lineWidth=70;ctx.stroke(coastPath);
- ctx.fillStyle=pat('tile3_1')||'#719456';ctx.fill(coastPath);
+ ctx.fillStyle=pat('tile_cliff_rough')||'#585044';ctx.fill(coastPath);
  ctx.restore();
 }
 function drawLandRoads(){
@@ -680,10 +679,10 @@ function drawLandRoads(){
  for(const q of LAND_ROADS){
   const {p1,p2}=q;
   ctx.beginPath();ctx.moveTo(p1.x,p1.y);
-  ctx.quadraticCurveTo((p1.x+p2.x)/2,(p1.y+p2.y)/2+95,p2.x,p2.y);
+  ctx.lineTo(p2.x,p2.y);
   ctx.strokeStyle='#758052';ctx.lineWidth=174;ctx.stroke();
-  ctx.strokeStyle='#c5a878';ctx.lineWidth=137;ctx.stroke();
-  ctx.strokeStyle='#dfc28f';ctx.lineWidth=96;ctx.stroke();
+  ctx.strokeStyle='#c5a878';ctx.lineWidth=162;ctx.stroke();
+  ctx.strokeStyle='#dfc28f';ctx.lineWidth=150;ctx.stroke();
  }
  ctx.restore();
 }
@@ -1308,6 +1307,11 @@ const HERO=[
  {k:'flamesw',n:'불꽃 마검사',g:4,d:'공격력 +14%',body:'#3a2a26',limb:'#ff7a2b',fx:{atk:.14}},
  {k:'frostarcher',n:'서리 궁수',g:4,d:'공격력 +9% · 이동 속도 +8% · 경험치 +5%',body:'#3a9ae0',limb:'#c8d4e2',fx:{atk:.09,spd:.08,xp:.05}}];
 HERO.push({k:'moonbushi',n:'월광 검희',g:5,d:'공격력 +20% · 체력 +14% · 치명타 +4%',body:'#a63c53',limb:'#e7a752',fx:{atk:.2,hp:.14,crit:.04}});
+HERO.push(
+ {k:'stormmiko',n:'뇌전 무녀',g:5,d:'공격력 +18% · 공격 속도 +10% · 치명타 +4%',body:'#7450b5',limb:'#25305f',fx:{atk:.18,aspd:.1,crit:.04}},
+ {k:'jadeoni',n:'비취 오니 수호자',g:5,d:'공격력 +16% · 체력 +22% · 체력 회복 +15%',body:'#317e63',limb:'#294f47',fx:{atk:.16,hp:.22,regen:.15}},
+ {k:'craneonmyo',n:'천학 음양사',g:5,d:'공격력 +17% · 체력 +12% · 이동 속도 +8% · 경험치 +8%',body:'#d9504a',limb:'#f4dfc6',fx:{atk:.17,hp:.12,spd:.08,xp:.08}}
+);
 const HNEED=[10,20,30,50,80,100];function hneed(h){return HNEED[h.g]}
 
 let heroFocus=null,heroTab='level';
@@ -1371,13 +1375,17 @@ function contour(z){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const c of ZA[z]){x0=M
 const ZC=ZA.map((z,i)=>contour(i));
 const obs=[],deco=[];
 function wig(pts){const o=[pts[0]];for(let i=1;i<pts.length;i++){const a=pts[i-1],c=pts[i],dx=c.x-a.x,dy=c.y-a.y,l=Math.hypot(dx,dy),k=(sr()-.5)*120/l;o.push({x:(a.x+c.x)/2-dy*k,y:(a.y+c.y)/2+dx*k},c)}return o}
-const PATH=ZB.map((b,i)=>[wig([{x:CX,y:CY},b[0],b[1],b[2],b[3]]),wig([b[ZS[i].lk],b[4]])]);
+const PATH=ZB.map((b,i)=>{
+ const main=b.slice(0,4);
+ if(CHAP!==3||i===0)main.unshift({x:CX,y:CY});
+ return [wig(main),wig([b[ZS[i].lk],b[4]])];
+});
 function dSeg(x,y,a,b){const dx=b.x-a.x,dy=b.y-a.y,t=clamp(((x-a.x)*dx+(y-a.y)*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(x-a.x-dx*t,y-a.y-dy*t)}
 function nearPath(i,x,y,d){for(const pl of PATH[i])for(let k=1;k<pl.length;k++)if(dSeg(x,y,pl[k-1],pl[k])<d)return true;return false}
 function freeObs(x,y,pad){for(const o of obs)if(Math.hypot(x-o.x,y-o.y)<o.r+pad)return false;return true}
 function rpt(c,m){const a=sr()*Math.PI*2,q=Math.sqrt(sr())*(c.r-m);return{x:c.x+Math.cos(a)*q,y:c.y+Math.sin(a)*q}}
 ZB.forEach((b,i)=>{let n=0,tr=0;while(n<75&&tr++<7000){const q=rpt(b[Math.floor(sr()*4)],46);
- if(gz(i,q.x,q.y)<60||Math.hypot(q.x-CX,q.y-CY)<BASE.sand+70||Math.hypot(q.x-b[4].x,q.y-b[4].y)<b[4].r+30||nearPath(i,q.x,q.y,82)||JN.some(j=>Math.hypot(q.x-j.x,q.y-j.y)<150*MS)||BR.some(j=>Math.hypot(q.x-j.x,q.y-j.y)<j.r+40)||!freeObs(q.x,q.y,66))continue;
+ if(gz(i,q.x,q.y)<60||Math.hypot(q.x-CX,q.y-CY)<BASE.sand+70||Math.hypot(q.x-b[4].x,q.y-b[4].y)<b[4].r+30||nearPath(i,q.x,q.y,82)||JN.some(j=>Math.hypot(q.x-j.x,q.y-j.y)<150*MS)||BR.some(j=>Math.hypot(q.x-j.x,q.y-j.y)<j.r+40)||LAND_ROADS.some(road=>roadDistance(road,q.x,q.y)<110)||!freeObs(q.x,q.y,66))continue;
  const pl=sr()<.55;obs.push({x:q.x,y:q.y,r:pl?23:27,k:(CHAP===2?[1,2,3,0,4,5][i]:i%6)*2+(pl?1:0),k2:i*2+(pl?1:0),z:i,s:.85+sr()*.35});n++}});
 ZB.forEach((b,i)=>{const z=ZS[i];for(let ci=0;ci<4;ci++){let n=0,tr=0;while(n<(ci===3?22:27)&&tr++<6000){const C=ZA[i],tot=C.reduce((a,c)=>a+c.r*c.r,0);let rr=sr()*tot,cc=C[0];for(const c of C){rr-=c.r*c.r;if(rr<=0){cc=c;break}}const q=rpt(cc,72);
   if(gz(i,q.x,q.y)<70||Math.hypot(q.x-CX,q.y-CY)<BASE.sand+110||Math.hypot(q.x-b[4].x,q.y-b[4].y)<b[4].r+40||Math.hypot(q.x-b[2].x,q.y-b[2].y)<Math.min(b[4].r,260)+40||!freeObs(q.x,q.y,52)||ZA.some((_,j)=>j!==i&&gz(j,q.x,q.y)>-60)||mons.some(o=>o.z===i&&Math.hypot(o.x-q.x,o.y-q.y)<(tr<3000?170:110)))continue;mk(z.m[ci],q.x,q.y,i);n++}}
@@ -2319,7 +2327,7 @@ const SUPT=4*3600e3,ATT=[{gold:1000},{gem:90},{cry:90},{orb:9},{gem:180},{scr:30
 function offRw(sec){const z=topZone(),fg=ZS[z].m.reduce((a,k)=>a+MT[k].gold,0)/ZS[z].m.length,h=sec/3600;return{gold:Math.round(fg*60*h),shard:0}}
 function showOffline(){if(!S.offPend||document.getElementById('offp'))return;const sec=S.offPend,r=offRw(sec),hh=Math.floor(sec/3600),mm=Math.floor(sec%3600/60);const d=document.createElement('div');d.id='offp';d.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(15,12,29,.72);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';
  d.innerHTML=`<div style="background:#2b2546;border:4px solid #1c1830;border-radius:22px;padding:22px 20px;width:min(86vw,320px);text-align:center;color:#fff"><div style="font-size:24px;color:#ffe066">오프라인 보상</div><div style="color:#cfc8ee;margin:6px 0 14px">${hh}시간 ${mm}분 동안 모았어요 (최대 8시간)</div><div style="font-size:20px;line-height:1.7">금화 <b style="color:#ffd23c">${fmt(r.gold)}</b>${r.shard?`<br>영웅 파편 <b style="color:#c79bff">${r.shard}개</b>`:''}</div><button id="offok" style="margin-top:16px;font:inherit;font-size:20px;padding:10px 34px;border:3px solid #1c1830;border-radius:14px;background:linear-gradient(#7be36a,#3fae3a);color:#fff">받기</button></div>`;
- document.body.appendChild(d);d.querySelector('#offok').onclick=()=>{const r2=offRw(S.offPend||0);S.gold+=r2.gold;const got={};for(let i=0;i<r2.shard;i++){const pool=HERO.filter(h=>h.k!=='adv'),h=pool[Math.floor(Math.random()*pool.length)];S.shards[h.k]=(S.shards[h.k]||0)+1;got[h.n]=(got[h.n]||0)+1}S.offPend=0;save();d.remove();toast('금화 '+fmt(r2.gold)+(r2.shard?' · 파편 '+Object.entries(got).map(([n,c])=>n+' '+c).join(', '):''))}}
+ document.body.appendChild(d);d.querySelector('#offok').onclick=()=>{const r2=offRw(S.offPend||0);S.gold+=r2.gold;const got={};for(let i=0;i<r2.shard;i++){const pool=HERO.filter(h=>h.k!=='adv'&&h.g<5),h=pool[Math.floor(Math.random()*pool.length)];S.shards[h.k]=(S.shards[h.k]||0)+1;got[h.n]=(got[h.n]||0)+1}S.offPend=0;save();d.remove();toast('금화 '+fmt(r2.gold)+(r2.shard?' · 파편 '+Object.entries(got).map(([n,c])=>n+' '+c).join(', '):''))}}
 setTimeout(showOffline,1500);
 function ch2Open(){return !!(S.bossKills||{}).volc&&S.lv>=50}
 function ch3Open(){return !!(S.bossKills||{}).c2dragon&&S.lv>=100}
@@ -2338,7 +2346,7 @@ function rollBox(id){const b=BOX[id];let r=Math.random()*100,g=0;while(g<4&&r>=b
  for(const[pg]of(b.pity||[]))if(g>=pg)S.pity[id+'_'+pg]=0;
  const ts=Object.keys(WT),k=ts[Math.floor(Math.random()*ts.length)]+'_'+g,nw=!collectionState().weapons[k];addW(k);return{k,g,nw}}
 // 상자 확률표 (! 버튼)
-const ANC_BOX=.3; // 영혼·펫·탈것 상자 고대 확률(%)
+const ANC_BOX=.3; // 펫·탈것 상자 고대 확률(%)
 function boxOdds(id){const b=BOX[id];if(id==='hero')return [45,30,16,7,1,1];if(!b||!b.odds)return null;const o=b.odds.slice(0,5);if(id==='pet'||id==='mount'){const t=o.reduce((a,v)=>a+v,0);return [...o.map(v=>v/t*(100-ANC_BOX)),ANC_BOX]}return o}
 function showOdds(id){const b=BOX[id],o=boxOdds(id);if(!o)return;document.getElementById('oddsPop')?.remove();const nm=['일반','희귀','레어','에픽','전설','고대'],f=v=>(v>=1?+v.toFixed(2):+v.toFixed(3))+'%';const d=document.createElement('div');d.id='oddsPop';
  d.innerHTML=`<div class="op"><h3>${b.n} 확률</h3>${o.map((v,g)=>v>0?`<div class="or"><b style="color:${GCOL[g]}">${nm[g]}</b><span>${f(v)}</span></div>`:'').join('')}<div class="on2">${[...(b.pity||[]).map(([pg,pn,n])=>pn+'회 안에 '+n+' 이상 확정'),...(id==='hero'?['영웅 파편 3~20개 · 고대는 한 번에 20개 (100개면 제작)']:[]),...(id==='pet'?['고대 펫은 알 없이 바로 지급']:[])].join(' · ')}</div><button class="btn">닫기</button></div>`;
@@ -2661,7 +2669,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
    B.innerHTML=`<div style="position:relative;text-align:center;margin:2px 0 8px">${U('rank_banner')?`<div class="ts" style="${bg('rank_banner')}padding:10px 0 18px;font-size:20px;color:#fff">${t==='level'?'레벨 랭킹':'도전의 탑 랭킹'}</div>`:''}</div><div class="feature-head ts" style="${bg('rank_row')}${U('rank_row')?'padding:10px 18px;color:#fff;':''}">${featureImage('rank')}<div><b style="color:#ffe066">${U('rank_banner')?'내 순위':(t==='level'?'레벨 랭킹':'도전의 탑 랭킹')}</b><small style="color:#fff">${L.my?L.my.rank+'위 · '+fv(L.my.v):'아직 기록이 없어요'}</small></div></div>`+(L.list.length?L.list.map((r,i)=>row(r,i,r.me)).join(''):'<div class="note">아직 기록이 없어요</div>')}}
  else if(panel==='market'){$('mtitle').textContent='거래소';cur(['gem','gold']);B.innerHTML=marketPanel();F.innerHTML='<div class="tabs">'+[['buy','구매'],['sell','판매'],['mine','내 등록']].map(([k,n])=>'<button class="tab '+(MK.tab===k?'on':'')+'" data-a="mkt:'+k+'">'+n+'</button>').join('')+'</div>'}
  else if(panel==='menu'){$('mtitle').textContent='메뉴';$('mcur').innerHTML='';
-  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1121-0105</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
+  B.innerHTML='<div class="feature-shortcuts"><button data-a="collection">'+featureImage('book')+'도감</button><button data-a="tasks:daily">'+featureImage('missions')+'일일 활동</button><button data-a="tasks:weekly">'+featureImage('weekly')+'주간 활동</button><button data-a="market">'+featureImage('market')+'거래소</button><button data-a="rank">'+featureImage('rank')+'랭킹</button></div>'+(window.IS_ADMIN?'':'<!--')+`<div class="row" style="border-color:#ffd23c"><div class="rin"><h4>🛠 관리자 모드 ${S.admin?'<b style="color:#7be36a">켜짐</b>':''}</h4><p>재화 무한 · 모든 무기 · 영웅 · 레벨 · 지역 테스트용</p></div><button class="btn eq" data-a="goadmin">열기</button></div>`+(window.IS_ADMIN?'':'-->')+`<div class="row"><div class="rin"><h4>계정</h4><p>${window.NET?NET.nick:''} · 저장하고 로그인 화면으로</p></div><button class="btn no" data-a="logout" style="min-width:76px">로그아웃</button></div><div class="row"><div class="rin"><h4>닉네임 변경</h4><p>한글·영어·숫자 2~8자 · 다른 사람과 겹칠 수 없어요</p><input id="nickin" maxlength="8" value="${window.NET?NET.nick:''}" style="margin-top:6px;width:100%;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #1c1830"></div><button class="btn" data-a="nickset" style="min-width:64px">변경</button></div><div class="row"><div class="rin"><h4>소리</h4><p>효과음 · 배경 소리(바람·물·불·파도)</p></div><button class="btn ${window.SFX&&SFX.on.sfx?'':'no'}" data-a="snd:sfx" style="min-width:64px">효과음 ${window.SFX&&SFX.on.sfx?'켜짐':'꺼짐'}</button><button class="btn ${window.SFX&&SFX.on.amb?'':'no'}" data-a="snd:amb" style="min-width:64px">배경 ${window.SFX&&SFX.on.amb?'켜짐':'꺼짐'}</button></div><div class="row"><div class="rin"><h4>모루 한 번에 만들기</h4><p>모루 버튼을 한 번 누를 때 만드는 개수</p></div>${[1,5,10].map(n=>`<button class="btn ${(S.cn||1)===n?'':'eq'}" data-a="cn:${n}" style="min-width:44px;padding:6px 4px 9px">${n}개</button>`).join('')}</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>이미지 넣기</h4><p>캐릭터·몬스터·버튼·아이콘 등 모든 그림을 내 이미지로 바꾸기</p></div><button class="btn eq" data-a="goassets">열기</button></div>`:'')+`<div class="note" style="color:#ffd23c">버전 1121-2330</div><div class="note">진행 상황은 서버에 자동 저장돼요.<br>이동: 화면을 누른 채 끌기 (PC는 WASD)<br>공격: 몬스터 가까이 가면 자동<br>가방 속 물건은 기지에 돌아오면 입금돼요.<br>금화·크리스탈·보석·오브 모두 가방에 담겨요. 가득 차면 더 주울 수 없어요.</div>`+(window.IS_ADMIN?`<div class="row"><div class="rin"><h4>처음부터 다시</h4><p>모든 진행 상황을 지웁니다.</p></div><button class="btn no" data-a="reset">${resetArm?'한 번 더 누르기':'초기화'}</button></div>`:'')}}
 function act(a){const[k,v]=a.split(':');if(k==='gochap'){goChapter(+v);return}
  if(k==='nickset'){const n=(document.getElementById('nickin')||{}).value?.trim()||'';fetch('/api/nick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOK(),nick:n})}).then(r=>r.json().then(j=>[r.ok,j])).then(([ok,j])=>{if(!ok){toast(j.err||'변경 실패');return}localStorage.setItem('xp_nick',j.nick);if(window.NET)NET.nick=j.nick;toast('닉네임이 '+j.nick+'(으)로 바뀌었어요');draw()}).catch(()=>toast('서버에 연결할 수 없어요'));return}
  if(k==='challengeTower'){window.TOWER?.open();return}
@@ -2793,7 +2801,7 @@ loadAssets();requestAnimationFrame(frame);
 <script src="tower.js?v=12"></script>
 <script src="defense.js?v=13"></script>
 <script src="raid.js?v=15"></script>
-<script src="pet.js?v=14"></script>
+<script src="pet.js?v=15"></script>
 <script src="mount.js?v=30"></script>
 <script src="unlock.js?v=5"></script>
 <script>if(window.saveReady){if(questSaveNeeded)save();qlv()}</script>

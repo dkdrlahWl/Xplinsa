@@ -1,4 +1,4 @@
-/* 펫: 30종(등급별 6마리) · 1마리 장착 → 따라다니며 공격 + 능력치
+/* 펫: 34종 · 1마리 장착 → 따라다니며 공격 + 능력치
    그림: assets/pet_<키>.webp, 알: assets/pet_egg0~4.webp (없으면 임시 그림) */
 window.PET = (() => {
   // 키, 이름, 등급, 색, 비행, 능력치(기본값), 공격{종류, 대기, 색}
@@ -34,6 +34,9 @@ window.PET = (() => {
     ['whale', '하늘 고래', 4, '#7ab8ff', 1, { gold: .2 }, { k: 'nova', cd: 2.4, c: '#8fd8ff', r: 120 }],
     ['tiger', '아기 백호', 4, '#f4f4ff', 0, { atk: .08, crit: .03 }, { k: 'bite', cd: .9, hits: 2 }],
     ['twinfox', '벚꽃 쌍미호', 5, '#3ee0c8', 0, { atk: .14, crit: .04 }, { k: 'chain', cd: 1.25, c: '#ffb8df', n: 5 }],
+    ['tideryu', '파도 비룡', 5, '#44d9ce', 1, { atk: .12, hp: .08 }, { k: 'breath', cd: 1.8, c: '#63e8ed', r: 140 }],
+    ['dreambaku', '꿈먹이 바쿠', 5, '#cfadf6', 0, { hp: .16, dr: .06 }, { k: 'nova', cd: 2.0, c: '#c9a9ff', r: 120 }],
+    ['suncrane', '홍련 신학', 5, '#f68a50', 1, { atk: .1, critd: .22 }, { k: 'shot', cd: 1.25, c: '#ff9650', s: 'fire', aoe: 70 }],
   ];
   const PETS = L.map(([k, n, g, c, fly, pa, at]) => ({ k, n, g, c, fly: !!fly, pa, at }));
   const BY = Object.fromEntries(PETS.map(p => [p.k, p]));
@@ -67,7 +70,7 @@ window.PET = (() => {
   function eq() { const k = S.pet; return k && own(k) && BY[k] ? BY[k] : null }
   function b(key) { const p = eq(); if (!p || !p.pa[key]) return 0; return key === 'revive' ? 1 : p.pa[key] * mult(p.k) }
   function ownBonus() { let a = 0; for (const p of PETS) if (own(p.k)) a += .002 * (p.g + 1); return a }
-  function cost(k) { const p = BY[k]; return Math.round(3000 * Math.pow(1.13, lvOf(k) - 1) * [1, 1.3, 1.7, 2.2, 3][p.g]) }
+  function cost(k) { const p = BY[k]; return Math.round(3000 * Math.pow(1.13, lvOf(k) - 1) * [1, 1.3, 1.7, 2.2, 3, 4][p.g]) }
 
   // 능력치 반영 (calc 끝에서 호출)
   function apply(ST) {

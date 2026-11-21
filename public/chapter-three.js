@@ -15,21 +15,36 @@ const CH3_SCALE = Math.sqrt(.6);
 const CH3_POINTS = [[15,70],[38,69],[62,69],[86,69],[15,28],[39,28],[62,29],[84,25]];
 // Coastline points in world coordinates, clockwise around a single landmass.
 const CH3_COAST = [
- [260,5510],[550,4240],[930,3150],[1380,1650],[2050,995],[3420,910],
+ [260,5510],[550,4240],[930,3150],[1380,1650],[2050,875],[3420,850],
  [5160,800],[6680,970],[8190,805],[10460,900],[12170,680],[13740,850],
- [14745,1820],[14930,3100],[14380,4400],[14620,5760],[14170,6950],[13640,8010],
- [12730,8590],[11100,8390],[9870,8820],[8010,8660],[6570,8970],[4910,8640],
+ [14745,1820],[14930,3100],[14380,4400],[14620,5760],[14170,6950],[13980,8740],
+ [12730,9190],[11100,8390],[9870,8820],[8010,8660],[6570,8970],[4910,8640],
  [3380,8760],[1830,8110],[725,7590],[260,6910]
 ].map(point=>point.map(coord=>coord*CH3_SCALE));
 const CH3_CENTERS = [[750,220],[2100,220],[3450,220],[4800,220],[750,-1500],[2100,-1500],[3450,-1500],[4800,-1500]];
+// Battle grounds use chapter 2's footprint as the reference. The coast is decorative outside the fields and trails.
+const CH3_FIELDS = [
+ [[-290,40,280],[0,0,275],[175,285,245],[300,-100,260],[-35,-380,255]],
+ [[-340,-75,305],[0,0,330],[145,355,290],[335,25,320],[55,-455,280]],
+ [[-365,65,315],[0,0,350],[255,320,315],[345,-205,340],[-40,-460,315]],
+ [[-340,-45,325],[0,0,330],[210,345,275],[370,-130,300],[100,-455,300]],
+ [[-320,60,320],[0,0,335],[255,345,290],[365,-165,320],[-55,-455,300]],
+ [[-350,-30,340],[0,0,320],[180,355,290],[355,-65,310],[75,-455,280]],
+ [[-320,55,315],[0,0,330],[240,340,295],[390,-110,310],[10,-455,290]],
+ [[-345,-5,335],[0,0,340],[210,350,300],[365,-155,330],[15,-465,310]],
+];
 const ZS3 = CHAPTER_THREE.map(([n,req,c],i) => {
  const [x,y]=CH3_CENTERS[i],p='c3_'+i+'_';
  return {n,req,c,rim:'#644a49',path:'#e1bd99',lk:1,
   m:[0,1,2,3].map(j=>p+j),e:p+'elite',boss:p+'boss',boss2:p+'guard',ch:p+'chest',
-  b:[[-320,0,365],[0,0,365],[230,340,300],[330,-170,365],[0,-440,315]].map(([dx,dy,r])=>[x+dx,y+dy,r]),
+  b:CH3_FIELDS[i].map(([dx,dy,r])=>[x+dx,y+dy,r]),
   hub:i===0?[[0,0,240]]:[]};
 });
-const CH3_ROADS=[[0,-1,0,0],...ZS3.slice(1).map((_,i)=>[i,1,i+1,1])];
+const CH3_ROADS=[
+ [0,-1,0,0],[0,3,1,0],[1,3,2,0],[2,3,3,0],
+ [3,4,4,2,[[4800,-665],[750,-665]]],
+ [4,3,5,0],[5,3,6,0],[6,3,7,0],
+];
 
 function chapterThreeMonsters(mt) {
  const base=mt.c2dragon;
@@ -40,15 +55,15 @@ function chapterThreeMonsters(mt) {
   const ordinary=['들짐승','떠도는 요괴','그림자 무사','수호 정령'];
   z.m.forEach((k,j)=>{
    const src=mt[['c2drake','c2ghost','c2armor','c2ember'][j]];
-   mt[k]={...src,img:['c2drake','c2ghost','c2armor','c2ember'][j],n:z.n+' '+ordinary[j],lv:z.req+j,
+   mt[k]={...src,img:'c3_normal_'+j,n:z.n+' '+ordinary[j],lv:z.req+j,
     hp:Math.round(mt.c2drake.hp*1.8*scale*(1+j*.12)),atk:Math.round(Math.max(base.atk*.85*scale,normalFloor*1.22**i)*(1+j*.08)),
     xp:Math.round(NEEDF(z.req)*(.05+j*.008)),gold,c2ch:1,gem:0}; // 1121: 레벨 1업 ≈ 20마리 (2챕 10~14, 1챕 30~46 사이)
   });
-  mt[z.e]={...mt.c2dknight,img:'c2dknight',n:z.n+' 무사대장',lv:z.req+4,hp:Math.round(mt.c2dknight.hp*2*scale),
+  mt[z.e]={...mt.c2dknight,img:'c3_elite_'+i,n:z.n+' 무사대장',lv:z.req+4,hp:Math.round(mt.c2dknight.hp*2*scale),
    atk:Math.round(Math.max(base.atk*1.12*scale,eliteFloor*1.22**i)),xp:Math.round(NEEDF(z.req)*.09),gold:gold*8};
   mt[z.boss]={...base,img:CHAPTER_THREE[i][4],n:CHAPTER_THREE[i][3],lv:z.req+8,hp:Math.round(base.hp*2.4*scale),
    atk:Math.round(base.atk*2.1*1.29**i),xp:Math.round(NEEDF(z.req)*.8),gold:gold*110,gem:(3+i)*4,rb:2+Math.floor(i/2),cry:Math.round((base.cry||0)*(1+.2*i)),orb:Math.round((base.orb||0)*(1+.2*i)),scr:(base.scr||0)+i}; // 1121: 무지개 2~5(2챕 1에서 완만하게), 크리·오브·주문서 스테이지마다 증가 // 보석: 2챕 기준(나중에 /4 → 3~10개)
-  mt[z.boss2]={...mt[z.boss],img:'c2dknight',n:z.n+' 수문장',hp:Math.round(mt[z.boss].hp*.65),
+  mt[z.boss2]={...mt[z.boss],img:'c3_guard_'+i,n:z.n+' 수문장',hp:Math.round(mt[z.boss].hp*.65),
    atk:Math.round(mt[z.boss].atk*.8),gold:gold*70,gem:(3+i)*4,rb:1+Math.floor(i/3)};
   mt[z.ch]={...mt.c2chest5,img:'chest6',lv:z.req,hp:Math.round(mt.c2chest5.hp*2*scale),gold:gold*20};
   mt[p+'crys']={...mt[z.m[0]],img:'crys0',n:'수정 슬라임',hp:mt[z.m[0]].hp*2,cry:3};
