@@ -42,19 +42,19 @@ function chapterThreeMonsters(mt) {
    const src=mt[['c2drake','c2ghost','c2armor','c2ember'][j]];
    mt[k]={...src,img:['c2drake','c2ghost','c2armor','c2ember'][j],n:z.n+' '+ordinary[j],lv:z.req+j,
     hp:Math.round(mt.c2drake.hp*1.8*scale*(1+j*.12)),atk:Math.round(Math.max(base.atk*.85*scale,normalFloor*1.22**i)*(1+j*.08)),
-    xp:Math.round(NEEDF(z.req)*(.012+j*.002)),gold,c2ch:1,gem:0};
+    xp:Math.round(NEEDF(z.req)*(.05+j*.008)),gold,c2ch:1,gem:0}; // 1121: 레벨 1업 ≈ 20마리 (2챕 10~14, 1챕 30~46 사이)
   });
   mt[z.e]={...mt.c2dknight,img:'c2dknight',n:z.n+' 무사대장',lv:z.req+4,hp:Math.round(mt.c2dknight.hp*2*scale),
    atk:Math.round(Math.max(base.atk*1.12*scale,eliteFloor*1.22**i)),xp:Math.round(NEEDF(z.req)*.09),gold:gold*8};
   mt[z.boss]={...base,img:CHAPTER_THREE[i][4],n:CHAPTER_THREE[i][3],lv:z.req+8,hp:Math.round(base.hp*2.4*scale),
-   atk:Math.round(base.atk*2.1*1.29**i),xp:Math.round(NEEDF(z.req)*.8),gold:gold*110,gem:(3+i)*4,rb:8+2*i}; // 보석: 2챕 기준(나중에 /4 → 3~10개)
+   atk:Math.round(base.atk*2.1*1.29**i),xp:Math.round(NEEDF(z.req)*.8),gold:gold*110,gem:(3+i)*4,rb:2+Math.floor(i/2),cry:Math.round((base.cry||0)*(1+.2*i)),orb:Math.round((base.orb||0)*(1+.2*i)),scr:(base.scr||0)+i}; // 1121: 무지개 2~5(2챕 1에서 완만하게), 크리·오브·주문서 스테이지마다 증가 // 보석: 2챕 기준(나중에 /4 → 3~10개)
   mt[z.boss2]={...mt[z.boss],img:'c2dknight',n:z.n+' 수문장',hp:Math.round(mt[z.boss].hp*.65),
-   atk:Math.round(mt[z.boss].atk*.8),gold:gold*70,gem:(3+i)*4,rb:4+i};
+   atk:Math.round(mt[z.boss].atk*.8),gold:gold*70,gem:(3+i)*4,rb:1+Math.floor(i/3)};
   mt[z.ch]={...mt.c2chest5,img:'chest6',lv:z.req,hp:Math.round(mt.c2chest5.hp*2*scale),gold:gold*20};
   mt[p+'crys']={...mt[z.m[0]],img:'crys0',n:'수정 슬라임',hp:mt[z.m[0]].hp*2,cry:3};
  });
  const last=mt[ZS3[7].boss];
- mt.wboss3={...mt.wboss2,n:'뇌명룡 라이진',img:'wboss2',lv:145,hp:last.hp*3,atk:Math.round(last.atk*1.4),
+ mt.wboss3={...mt.wboss2,n:'뇌명룡 라이진',img:'wboss3',lv:145,hp:last.hp*3,atk:Math.round(last.atk*1.4),
   gold:last.gold*5,xp:last.xp*3,gem:100,orb:300,rb:30,cry:500,r:110};
 }
 
