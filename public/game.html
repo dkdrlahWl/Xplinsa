@@ -1961,8 +1961,14 @@ function gripInfo(im,k){let r=GI.get(im);if(r)return r;r={gx:GRIP[k]||.14,gy:.5,
 const PISTOL_GRIPS=[[.19,.65],[.18,.67],[.115,.67],[.165,.70],[.16,.64]];
 const BUILTIN_GRIP={dagger:.235,sword:.22,mace:.23,spear:.27,axe:.23,bow:.235,staff:.235};
 const ANCIENT_GRIP={dagger:[.21,.12],sword:[.21,.12],mace:[.27,.16],spear:[.32,.20],axe:[.30,.20],bow:[.23,.45],gun:[.21,.21],staff:[.29,.18]};
+// Contact points measured on the original transcendent art. The front hand
+// uses the same horizontal position as legendary and lands on the painted grip.
+const TRANSCEND_GRIP_Y={dagger:.41,sword:.31,mace:.51,spear:.37,axe:.51,bow:.52,gun:.64,staff:.57};
 function weaponGrip(im,k,gr){
- if(gr===7)return gripInfo(im,k);
+ if(gr===7&&!LOCAL['wpn_'+k+'_7']&&AI('wpn_'+k+'_7')===im){
+  const gx=k==='gun'?PISTOL_GRIPS[4][0]:BUILTIN_GRIP[k],gy=TRANSCEND_GRIP_Y[k];
+  return {gx,gy,bx:k==='bow'?.46:gx-.115,by:gy,th:k==='gun'?.16:.12};
+ }
  if(gr===5&&ANCIENT_GRIP[k]&&!LOCAL['wpn_'+k+'_5']&&AI('wpn_'+k+'_5')===im){
   const [gx,bx]=ANCIENT_GRIP[k];
   const gy=k==='gun'? .69:gripY(im,gx);
@@ -1975,9 +1981,10 @@ function weaponGrip(im,k,gr){
  }
  return gripInfo(im,k);
 }
-function weaponDrawSize(k,im){
+function weaponDrawSize(k,im,grade){
  const width=wLen(k),reference=AI('wpn_'+k+'_4')||im;
  const aspect=im.height/im.width, maxHeight=width*reference.height/reference.width;
+ if(grade===7)return {width,height:maxHeight};
  const height=Math.min(width*aspect,maxHeight);
  return {width:height/aspect,height};
 }
@@ -1994,7 +2001,7 @@ function gripY(im,gx){let m=GY.get(im);if(!m){m={};GY.set(im,m)}if(m[gx]!==undef
 function blade(x0,x1,w,tip,c){const g=ctx.createLinearGradient(0,-w,0,w);g.addColorStop(0,'#ffffff');g.addColorStop(.45,c);g.addColorStop(1,lt(c,-.35));ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x0,-w);ctx.lineTo(x1,-w*.8);ctx.lineTo(x1+tip,0);ctx.lineTo(x1,w*.8);ctx.lineTo(x0,w);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(x0+2,-w*.25);ctx.lineTo(x1+tip*.4,-w*.1);ctx.stroke();ctx.strokeStyle=OLC;ctx.lineWidth=2}
 function handle(x0,x1,h){const g=ctx.createLinearGradient(0,-h,0,h);g.addColorStop(0,'#b07a4a');g.addColorStop(1,'#5e3a1e');ctx.fillStyle=g;rr(x0,-h,x1-x0,h*2,h);ctx.fill();ctx.stroke()}
 function drawWeapon(k,gc,glow,gi){ // pointing +x from the hand
- {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const {width:L,height:h}=weaponDrawSize(k,im),GIi=weaponGrip(im,k,gi),gx=GIi.gx,gy=GIi.gy;if(gi>=5){const pu=.5+.5*Math.sin(performance.now()/180);ctx.shadowColor=gi===7?'#8affed':gi>=6?'#ff3d7f':'#3ee0c8';ctx.shadowBlur=14+12*pu;ctx.drawImage(im,-L*gx,-h*gy,L,h);if(gi>=6){ctx.save();ctx.globalAlpha*=gi===7?.14+.12*pu:.35+.25*pu;ctx.globalCompositeOperation='lighter';ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.restore()}ctx.shadowBlur=0;return}if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
+ {const im=AI('wpn_'+k+'_'+gi)||AI('wpn_'+k);if(im){const {width:L,height:h}=weaponDrawSize(k,im,gi),GIi=weaponGrip(im,k,gi),gx=GIi.gx,gy=GIi.gy;if(gi>=5){const pu=.5+.5*Math.sin(performance.now()/180);ctx.shadowColor=gi===7?'#8affed':gi>=6?'#ff3d7f':'#3ee0c8';ctx.shadowBlur=14+12*pu;ctx.drawImage(im,-L*gx,-h*gy,L,h);if(gi>=6){ctx.save();ctx.globalAlpha*=gi===7?.14+.12*pu:.35+.25*pu;ctx.globalCompositeOperation='lighter';ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.restore()}ctx.shadowBlur=0;return}if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}ctx.drawImage(im,-L*gx,-h*gy,L,h);ctx.shadowBlur=0;return}}
  ctx.lineWidth=2;ctx.strokeStyle=OLC;const metal=gc==='#c3cad6'?'#d6dde8':lt(gc,.25);
  if(glow){ctx.shadowColor=gc;ctx.shadowBlur=10}
  if(k==='sword'||k==='dagger'){const L=k==='sword'?34:20;handle(-6,4,2.6);ell(-7,0,3.2,3.2,'#ffd23c');blade(7,L,4.4,9,metal);frr('#ffd23c',3,-8.5,5,17,2.5)}
