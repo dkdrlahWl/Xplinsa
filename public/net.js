@@ -4,7 +4,19 @@ window.IS_ADMIN=(sessionStorage.xp_admin||localStorage.getItem('xp_admin'))==='1
 if(!TOKEN || !window.saveReady){location.replace('index.html');return}
 const others=new Map();let ME=null,ws=null,sc=0,lastSw=0,sendT=0,kicked=false,retry=0,saveT=0,saveDirty=false;
 const DELAY=110;
-const CHO=()=>((typeof CHAP!=='undefined'?CHAP:1)-1)*5000,L=i=>{const o=CHO();return i>=o&&i<o+5000?i-o:-1},Gi=i=>i+CHO(),MYCH=()=>typeof CHAP!=='undefined'?CHAP:1; // ms 보간 지연
+const MYCH=()=>typeof CHAP!=='undefined'?CHAP:1;
+const CHO=()=>(MYCH()-1)*5000;
+// Keep chapter 3 boss IDs used by the server before the map was compacted.
+const CH3_BOSS_IDS=[108,109,219,220,330,331,441,442,552,553,663,664,774,775,885,886,1856];
+function L(id){
+ const index=id-CHO();
+ if(index<0||index>=5000)return -1;
+ return MYCH()===3?(sharedBosses[CH3_BOSS_IDS.indexOf(index)]?.i??-1):index;
+}
+function Gi(i){
+ if(MYCH()!==3)return i+CHO();
+ return CH3_BOSS_IDS[sharedBosses.findIndex(boss=>boss.i===i)]+CHO();
+}
 
 function resetGo(){if(kicked)return;kicked=true;try{ws&&ws.close()}catch(e){}localStorage.removeItem('camp_save_v2');window.save=function(){};
  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,12,29,.88);display:flex;align-items:center;justify-content:center;font-family:Jua,sans-serif';

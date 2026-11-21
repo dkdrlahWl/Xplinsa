@@ -11,6 +11,7 @@ const CHAPTER_THREE = [
  ['황금 쇼군성',135,'#c4a168','황금 쇼군','c2dragon'],
 ];
 
+const CH3_SCALE = Math.sqrt(.6);
 const CH3_POINTS = [[15,70],[38,69],[62,69],[86,69],[15,28],[39,28],[62,29],[84,25]];
 // Coastline points in world coordinates, clockwise around a single landmass.
 const CH3_COAST = [
@@ -19,7 +20,7 @@ const CH3_COAST = [
  [14745,1820],[14930,3100],[14380,4400],[14620,5760],[14170,6950],[13640,8010],
  [12730,8590],[11100,8390],[9870,8820],[8010,8660],[6570,8970],[4910,8640],
  [3380,8760],[1830,8110],[725,7590],[260,6910]
-];
+].map(point=>point.map(coord=>coord*CH3_SCALE));
 const CH3_CENTERS = [[750,220],[2100,220],[3450,220],[4800,220],[750,-1500],[2100,-1500],[3450,-1500],[4800,-1500]];
 const ZS3 = CHAPTER_THREE.map(([n,req,c],i) => {
  const [x,y]=CH3_CENTERS[i],p='c3_'+i+'_';
@@ -32,17 +33,19 @@ const CH3_ROADS=[[0,-1,0,0],...ZS3.slice(1).map((_,i)=>[i,1,i+1,1])];
 
 function chapterThreeMonsters(mt) {
  const base=mt.c2dragon;
+ const normalFloor=Math.max(...ZS2.at(-1).m.map(k=>mt[k].atk))*1.10;
+ const eliteFloor=mt.c2dknight.atk*1.10;
  ZS3.forEach((z,i)=>{
   const p='c3_'+i+'_',scale=1.46**i, gold=Math.round(mt.c2drake.gold*1.8*scale);
   const ordinary=['들짐승','떠도는 요괴','그림자 무사','수호 정령'];
   z.m.forEach((k,j)=>{
    const src=mt[['c2drake','c2ghost','c2armor','c2ember'][j]];
    mt[k]={...src,img:['c2drake','c2ghost','c2armor','c2ember'][j],n:z.n+' '+ordinary[j],lv:z.req+j,
-    hp:Math.round(mt.c2drake.hp*1.8*scale*(1+j*.12)),atk:Math.round(base.atk*.85*scale*(1+j*.08)),
+    hp:Math.round(mt.c2drake.hp*1.8*scale*(1+j*.12)),atk:Math.round(Math.max(base.atk*.85*scale,normalFloor*1.22**i)*(1+j*.08)),
     xp:Math.round(NEEDF(z.req)*(.012+j*.002)),gold,c2ch:1,gem:0};
   });
   mt[z.e]={...mt.c2dknight,img:'c2dknight',n:z.n+' 무사대장',lv:z.req+4,hp:Math.round(mt.c2dknight.hp*2*scale),
-   atk:Math.round(base.atk*1.12*scale),xp:Math.round(NEEDF(z.req)*.09),gold:gold*8};
+   atk:Math.round(Math.max(base.atk*1.12*scale,eliteFloor*1.22**i)),xp:Math.round(NEEDF(z.req)*.09),gold:gold*8};
   mt[z.boss]={...base,img:CHAPTER_THREE[i][4],n:CHAPTER_THREE[i][3],lv:z.req+8,hp:Math.round(base.hp*2.4*scale),
    atk:Math.round(base.atk*2.1*1.29**i),xp:Math.round(NEEDF(z.req)*.8),gold:gold*110,gem:(3+i)*4,rb:8+2*i}; // 보석: 2챕 기준(나중에 /4 → 3~10개)
   mt[z.boss2]={...mt[z.boss],img:'c2dknight',n:z.n+' 수문장',hp:Math.round(mt[z.boss].hp*.65),

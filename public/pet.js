@@ -32,8 +32,8 @@ window.PET = (() => {
     ['phoenix', '불사조 병아리', 4, '#ff7a2a', 1, { atk: .05, revive: 1 }, { k: 'shot', cd: 1.6, c: '#ff6a1a', s: 'fire', aoe: 70 }],
     ['kirin', '번개 기린', 4, '#4ad8c8', 1, { crit: .05, critd: .2 }, { k: 'bolt', cd: 1.8, c: '#bff6ff', r: 70 }],
     ['whale', '하늘 고래', 4, '#7ab8ff', 1, { gold: .2 }, { k: 'nova', cd: 2.4, c: '#8fd8ff', r: 120 }],
-    ['twinfox', '벚꽃 쌍미호', 5, '#3ee0c8', 0, { atk: .14, crit: .04 }, { k: 'chain', cd: 1.25, c: '#ffb8df', n: 5 }],
     ['tiger', '아기 백호', 4, '#f4f4ff', 0, { atk: .08, crit: .03 }, { k: 'bite', cd: .9, hits: 2 }],
+    ['twinfox', '벚꽃 쌍미호', 5, '#3ee0c8', 0, { atk: .14, crit: .04 }, { k: 'chain', cd: 1.25, c: '#ffb8df', n: 5 }],
   ];
   const PETS = L.map(([k, n, g, c, fly, pa, at]) => ({ k, n, g, c, fly: !!fly, pa, at }));
   const BY = Object.fromEntries(PETS.map(p => [p.k, p]));
