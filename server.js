@@ -131,6 +131,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/login') {
       const id = String(b.id || '').trim().toLowerCase(), u = db.users[id];
+      if (maintOn() && id !== 'ehgus') return send(res, 503, { err: MAINT_MSG, maint: 1 });
       if (!u || hashPw(String(b.pw || ''), u.salt) !== u.hash) return send(res, 400, { err: '아이디 또는 비밀번호가 틀렸어요' });
       const active = clients.get(id);
       if (active?.handoffCapable) {
@@ -149,6 +150,13 @@ const server = http.createServer(async (req, res) => {
     }
     const u = byToken(b.token);
     if (!u) return send(res, 401, { err: '다른 곳에서 로그인되어 접속이 끊겼어요', kick: 1 });
+    // 점검 중: 관리자 외 차단 (점검 시작 직후 20초는 마지막 저장만 받음)
+    if (maintOn() && u.id !== 'ehgus' && !(p === '/api/save' && Date.now() - db.maint.since < 20000)) return send(res, 503, { err: MAINT_MSG, maint: 1 });
+    if (p === '/api/maint') { // 관리자: 점검 켜기/끄기
+      if (u.id !== 'ehgus') return send(res, 403, { err: '관리자만 가능' });
+      if (b.on) maintStart(); else { db.maint = { on: 0 }; markDirty(); }
+      return send(res, 200, { ok: 1, on: maintOn() });
+    }
     if (p === '/api/rank') { // 레벨·탑 랭킹 (이전 클라이언트 전투력 응답 호환)
       const all = Object.values(db.users).filter(x => x.id !== 'ehgus'); // 관리자 계정은 랭킹에서 제외
       const top = f => all.map(x => ({ n: x.nick || x.id, v: (x.save && f(x.save)) || 0, me: x.id === u.id })).sort((a, b) => b.v - a.v);
@@ -306,6 +314,7 @@ server.on('upgrade', (req, sock) => {
   sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + acc + '\r\n\r\n');
   sock.setNoDelay(true);
   if (!u) { wsSend(sock, { t: 'kick' }); return setTimeout(() => wsClose(sock), 50); }
+  if (maintOn() && u.id !== 'ehgus') { wsSend(sock, { t: 'kick', msg: MAINT_MSG }); return setTimeout(() => wsClose(sock), 50); }
   const old = clients.get(u.id);
   if (old && old.sock !== sock) { wsSend(old.sock, { t: 'kick' }); setTimeout(() => wsClose(old.sock), 50); }
   const c = { sock, u, handoffCapable:url.searchParams.get('handoff')==='1', st: null, alive: Date.now() };
@@ -413,6 +422,20 @@ function launchReset() {
   console.log('정식 오픈 초기화 완료');
 }
 setInterval(launchReset, 5000); launchReset();
+// ── 점검: MAINT_AT(한국 시간)부터 관리자(ehgus) 외 접속 차단. 끝낼 땐 관리자 모드 '점검 종료' 버튼(/api/maint on:false)
+const MAINT_AT = Date.parse(process.env.MAINT_AT || '2026-11-21T16:00:00+09:00'), MAINT_MSG = '🔧 점검 중이에요. 점검이 끝나면 다시 접속해 주세요!';
+function maintOn() { return !!(db.maint && db.maint.on) }
+function maintStart() {
+  db.maint = { on: 1, since: Date.now() }; db.maintFrom = MAINT_AT; markDirty();
+  for (const c of [...clients.values()]) {
+    if (c.u.id === 'ehgus') continue;
+    // 접속 중인 사람은 마지막 저장 먼저 받고 내보냄
+    if (c.handoffCapable && !c.handoff) { const key = crypto.randomBytes(16).toString('hex'); c.handoff = { key, finish() { delete c.handoff } }; wsSend(c.sock, { t: 'handoff', key }); }
+    setTimeout(() => { if (clients.get(c.u.id) === c) { wsSend(c.sock, { t: 'kick', msg: MAINT_MSG }); setTimeout(() => wsClose(c.sock), 80); } }, 5000);
+  }
+  console.log('maintenance on');
+}
+setInterval(() => { if (Date.now() >= MAINT_AT && db.maintFrom !== MAINT_AT) maintStart(); }, 3000);
 
 // 운영 보정: 포차코의 현재 챕터 2 공격 속도 강화 임무만 완료 처리.
 const questRepairUser = Object.values(db.users).find(u => u.nick === '포차코');
