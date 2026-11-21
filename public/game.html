@@ -1125,8 +1125,6 @@ function featureAct(action,value){
  else if(action==='stageclaim'){
   const i=+value;if(!Number.isInteger(i)||i<0||i>=NZ||!stageClear(i)||(S.stageClaimed||{})[i])return true;
   S.stageClaimed=S.stageClaimed||{};S.stageClaimed[i]=true;S.gem+=STAGE_GEMS[i];if(CHAP===3){
-   if(i===3)PET.give('twinfox');
-   if(i===5)S.shards.moonbushi=(S.shards.moonbushi||0)+180;
    if(i===7)MOUNT.give('nightwolf');
   }calc();save(true);rewardFly({gem:STAGE_GEMS[i]});toast('스테이지 '+(i+1)+' · 보석 '+STAGE_GEMS[i]+'개 획득!');
  }
@@ -1395,8 +1393,6 @@ function kill(m){if(m.dead)return;const d=m.d;window.SFX&&SFX.play(d.boss?'kill_
  }if(d.boss){trackTask('boss');if(m.type===ZS[m.z].boss){S.stageClears=S.stageClears||{};S.stageClears[m.z]=true;toast('지역 대장보스 격파! 지도에서 보석 보상을 받으세요')}S.bk[m.z]=1;if(m.type===ZS[m.z].boss&&Math.random()<.2){S.keys=S.keys||{};S.keys.b1=(S.keys.b1||0)+1;num(m.x,m.y-d.r*2-80,'🔑 초보자 상자 열쇠 획득!','#7be36a',true);save()}S.bossKills=S.bossKills||{};S.bossKills[m.type]=(S.bossKills[m.type]||0)+1;}if(d.chest)qev('chest',null,1);
  qev('kill',m.type,1);if(window.PET)PET.onKill(m);if(d.boss){
   if(CHAP===3&&Math.random()<.05){
-   if(m.type===ZS[3].boss&&S.pets?.twinfox){PET.give('twinfox');toast('벚꽃 쌍미호 추가 획득!');calc()}
-   if(m.type===ZS[5].boss){S.shards.moonbushi=(S.shards.moonbushi||0)+15;toast('월광 검희 영혼 파편 +15')}
    if(m.type===ZS[7].boss&&S.mounts?.nightwolf){MOUNT.give('nightwolf');toast('야월 흑랑 추가 획득!');calc()}
   }
   save();
@@ -2499,7 +2495,7 @@ function draw(){queueMicrotask(()=>refreshRewardNotices(true));const B=$('mbody'
   <div class="note">현재 Lv.${S.lv} · 공격력 ${fmt(ST.atk)} · 체력 ${fmt(ST.maxhp)}</div>`}
  else if(panel==='shop'){$('mtitle').textContent='상점';cur(['gem','gold']);const bu=AURL.shop_banner;
   const card=(id)=>{const b=BOX[id],u=chestUrl(b),free=b.free&&S.freeDay!==today();const item=window.ShopBoxItem,itemIcon=item?.icon(id),itemName=item?.name(id)||'상자 이용권';const itemBadge=itemIcon?`<span class="shop-key-icon" aria-hidden="true">${itemIcon}</span>`:'';const pt=(b.pity||[]).map(([pg,pn,nm])=>`<div><b style="color:${GCOL[pg]}">${pn-(S.pity[id+'_'+pg]||0)}</b>회 오픈 내 <b style="color:${GCOL[pg]}">${nm}</b> 확정</div>`).join('');
-   if(b.big||id==='hero')return `<div class="sbig ${id==='hero'?'hero':''}"><div class="sbi">${u?`<img src="${u}">`:'🎁'}</div><div class="sbt"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}${id==='hero'&&ch3Open()?' · 고대 파편 0.5%':''}${['hero','pet','mount'].includes(id)&&itemIcon?`<span class="shop-token-label">${itemIcon}${itemName}</span>`:''}</div>${pt?`<div class="spity">${pt}</div>`:id==='hero'?`<div class="spity">${`영웅 ${HERO.length-1}종 · 일반 45% 희귀 30% 레어 16% 에픽 7% 전설 2%<br>보유 ${Object.keys(S.heroes).length}/${HERO.length} · 제작 가능 <b style="color:#ffe066">${HERO.filter(h=>!S.heroes[h.k]&&(S.shards[h.k]||0)>=hneed(h)).length}</b>`}</div>`:''}</div>
+   if(b.big||id==='hero')return `<div class="sbig ${id==='hero'?'hero':''}"><div class="sbi">${u?`<img src="${u}">`:'🎁'}</div><div class="sbt"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}${(id==='hero'||id==='pet')&&ch3Open()?(id==='hero'?' · 고대 파편 0.5%':' · 고대 펫 0.5%'):''}${['hero','pet','mount'].includes(id)&&itemIcon?`<span class="shop-token-label">${itemIcon}${itemName}</span>`:''}</div>${pt?`<div class="spity">${pt}</div>`:id==='hero'?`<div class="spity">${`영웅 ${HERO.length-1}종 · 일반 45% 희귀 30% 레어 16% 에픽 7% 전설 2%<br>보유 ${Object.keys(S.heroes).length}/${HERO.length} · 제작 가능 <b style="color:#ffe066">${HERO.filter(h=>!S.heroes[h.k]&&(S.shards[h.k]||0)>=hneed(h)).length}</b>`}</div>`:''}</div>
     ${id==='pet'&&window.PET?`<div class="spity" style="margin:4px 0 0">알 가방 <b style="color:${PET.room(10)?'#fff':'#ff8a7a'}">${PET.bagN()}/${PET.EGG_CAP}</b>${PET.room(1)?'':' · 가득 찼어요! 펫 화면 부화기에 넣어주세요'}</div>`:''}<div class="sbb"><button class="sbtn2 yel" data-a="buy:${id}|1">1개 열기<br><span>${((S.keys||{})[id]||0)>0?`${itemBadge} ${itemName} ${S.keys[id]}개`:IC.gem+b.cost}</span></button>${b.c10?`<button class="sbtn2 grn" data-a="buy:${id}|10">10개 열기<br><span>${((S.keys||{})[id]||0)>=10?`${itemBadge} ${itemName} 10개`:IC.gem+fmt(b.c10)}</span></button>`:''}</div></div>`;
    return `<div class="shalf ${b.col}"><h3 class="ts">${b.n}</h3><div class="ssub">${b.sub}</div><div class="shi">${u?`<img src="${u}">`:'🎁'}</div>${pt?`<div class="spity sm">${pt}</div>`:'<div class="spity sm">하루 1번 무료</div>'}<button class="sbtn2 grn wide" data-a="buy:${id}|1">${free?'무료 열기':((S.keys||{})[id]||0)>0?`<span>${itemBadge} ${itemName} ${S.keys[id]}개</span>`:`<span>${IC.gem}${b.cost}</span>`}</button></div>`};
   B.innerHTML=`<div class="sban">${bu?`<img src="${bu}">`:'<div class="sban0">🛒</div>'}</div><div class="srib ts">• 상자 •</div>${card('b3')}<div class="shalves">${card('b1')}${card('b2')}</div><div class="shead ts">영웅 상자</div>${card('hero')}<div class="shead ts">펫 상자</div>${card('pet')}<div class="shead ts">탈것 상자</div>${card('mount')}`;
@@ -2678,7 +2674,7 @@ loadAssets();requestAnimationFrame(frame);
 <script src="tower.js?v=12"></script>
 <script src="defense.js?v=13"></script>
 <script src="raid.js?v=15"></script>
-<script src="pet.js?v=12"></script>
+<script src="pet.js?v=13"></script>
 <script src="mount.js?v=28"></script>
 <script src="unlock.js?v=5"></script>
 <script>if(window.saveReady){if(questSaveNeeded)save();qlv()}</script>

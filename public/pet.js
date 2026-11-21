@@ -112,7 +112,8 @@ window.PET = (() => {
   }
   function pickGrade(odds) { let r = Math.random() * odds.reduce((a, v) => a + v, 0), g = 0; while (g < 4 && r >= odds[g]) { r -= odds[g]; g++ } return g }
   function rollOf(g) { const pool = PETS.filter(p => p.g === g), p = pool[Math.floor(Math.random() * pool.length)]; return { p, g, ...give(p.k) } }
-  function rollBox() { // 상점 펫 알 상자 (천장 포함)
+  function rollBox() { // 상점 펫 알 상자 (천장 포함) · 3챕 열면 0.5%로 고대 펫(알 대신 바로 지급)
+    if (typeof ch3Open === 'function' && ch3Open() && Math.random() < .005) { const anc = PETS.filter(p => p.g === 5), p = anc[Math.floor(Math.random() * anc.length)]; if (p) return Object.assign({ p, g: 5 }, give(p.k)); }
     const bx = BOX.pet; S.pity = S.pity || {}; let g = pickGrade(bx.odds);
     for (const [pg, pn] of bx.pity) { const key = 'pet_' + pg; S.pity[key] = (S.pity[key] || 0) + 1; if (g < pg && S.pity[key] >= pn) g = pg }
     for (const [pg] of bx.pity) if (g >= pg) S.pity['pet_' + pg] = 0;
